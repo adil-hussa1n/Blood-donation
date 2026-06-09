@@ -34,11 +34,258 @@
     <!-- Google Fonts: loaded via <link> instead of CSS @import for non-blocking render -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" />
     
-    <!-- Cloudflare Turnstile CAPTCHA (Explicit rendering mode) -->
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+    <!-- Theme check initialization to prevent flashes on reload -->
+    <script>
+      (function() {
+        var theme = 'dark';
+        try {
+          theme = localStorage.getItem('theme') || 'dark';
+        } catch (e) {}
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static preloader to display instantly during bundle download (eliminates white screen) -->
+      <div class="static-preloader" style="
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        font-family: system-ui, -apple-system, sans-serif;
+        transition: background-color 0.3s ease;
+      ">
+        <!-- Decorative background glows -->
+        <div style="
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 320px;
+          height: 320px;
+          background-color: rgba(239, 68, 68, 0.1);
+          border-radius: 50%;
+          filter: blur(100px);
+          pointer-events: none;
+        "></div>
+        <div style="
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 192px;
+          height: 192px;
+          background-color: rgba(244, 63, 94, 0.1);
+          border-radius: 50%;
+          filter: blur(60px);
+          pointer-events: none;
+        "></div>
+
+        <div style="
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          max-width: 384px;
+          padding: 0 24px;
+          text-align: center;
+          z-index: 10;
+        ">
+          <!-- Pulsing logo container -->
+          <div style="
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 96px;
+            height: 96px;
+            margin-bottom: 32px;
+          ">
+            <!-- Ping ripple -->
+            <div class="static-ping" style="
+              position: absolute;
+              inset: -4px;
+              border-radius: 50%;
+              background-color: rgba(239, 68, 68, 0.3);
+            "></div>
+            <!-- Pulse ripple -->
+            <div class="static-pulse" style="
+              position: absolute;
+              inset: -16px;
+              border-radius: 50%;
+              background-color: rgba(239, 68, 68, 0.1);
+            "></div>
+            <!-- Heart Container -->
+            <div style="
+              position: relative;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 80px;
+              height: 80px;
+              border-radius: 24px;
+              background: linear-gradient(135deg, #ef4444, #f43f5e);
+              box-shadow: 0 25px 50px -12px rgba(239, 68, 68, 0.3);
+            ">
+              <!-- Heart Icon SVG -->
+              <svg class="static-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="width: 40px; height: 40px; color: white;">
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- App Title -->
+          <div style="margin-bottom: 16px;">
+            <h1 style="
+              font-size: 30px;
+              font-weight: 900;
+              letter-spacing: -0.025em;
+              margin: 0 0 8px 0;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              justify-content: center;
+            ">
+              <span style="
+                background: linear-gradient(to right, #ef4444, #f43f5e);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+              ">Beanibazar</span>
+              <span class="static-title-blood" style="font-weight: 800; transition: color 0.3s ease;">Blood</span>
+            </h1>
+            <p class="static-pulse-text" style="
+              font-size: 12px;
+              font-weight: 700;
+              color: rgba(239, 68, 68, 0.8);
+              text-transform: uppercase;
+              letter-spacing: 0.2em;
+              margin: 0;
+            ">
+              A project of GraffixInnovation
+            </p>
+          </div>
+
+          <!-- Loading Bar -->
+          <div style="width: 192px; margin-top: 16px;">
+            <div class="static-loading-bar-track" style="
+              height: 3px;
+              width: 100%;
+              border-radius: 9999px;
+              overflow: hidden;
+              position: relative;
+              transition: background-color 0.3s ease;
+            ">
+              <div class="static-loading-bar" style="
+                height: 100%;
+                width: 50%;
+                background: linear-gradient(to right, #ef4444, #f43f5e);
+                border-radius: 9999px;
+                position: absolute;
+                top: 0;
+              "></div>
+            </div>
+            <div class="static-connecting-text" style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 6px;
+              margin-top: 12px;
+              font-size: 11px;
+              font-weight: 700;
+              letter-spacing: 0.05em;
+              text-transform: uppercase;
+              transition: color 0.3s ease;
+            ">
+              <span class="static-dot-pulse" style="
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background-color: #ef4444;
+              "></span>
+              Connecting to database...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style>
+        /* Light mode defaults (White theme) */
+        body {
+          background-color: #fafafa !important;
+          margin: 0;
+        }
+        .static-preloader {
+          background-color: #fafafa !important;
+        }
+        .static-title-blood {
+          color: #18181b !important;
+        }
+        .static-connecting-text {
+          color: #71717a !important;
+        }
+        .static-loading-bar-track {
+          background-color: #e4e4e7 !important;
+        }
+
+        /* Dark mode overrides (Black theme) */
+        .dark body {
+          background-color: #09090b !important;
+        }
+        .dark .static-preloader {
+          background-color: #09090b !important;
+        }
+        .dark .static-title-blood {
+          color: #f4f4f5 !important;
+        }
+        .dark .static-connecting-text {
+          color: #a1a1aa !important;
+        }
+        .dark .static-loading-bar-track {
+          background-color: #27272a !important;
+        }
+
+        @keyframes staticPing {
+          0% { transform: scale(1); opacity: 0.75; }
+          100% { transform: scale(1.5); opacity: 0; }
+        }
+        @keyframes staticPulse {
+          0%, 100% { transform: scale(1); opacity: 0.5; }
+          50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        @keyframes staticBounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes staticBar {
+          0% { left: -100%; width: 50%; }
+          50% { left: 25%; width: 70%; }
+          100% { left: 100%; width: 50%; }
+        }
+        .static-ping {
+          animation: staticPing 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        .static-pulse, .static-dot-pulse {
+          animation: staticPulse 1.5s ease-in-out infinite;
+        }
+        .static-pulse-text {
+          animation: staticPulse 2s ease-in-out infinite;
+        }
+        .static-bounce {
+          animation: staticBounce 0.6s ease-in-out infinite;
+        }
+        .static-loading-bar {
+          animation: staticBar 1.5s ease-in-out infinite;
+        }
+      </style>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

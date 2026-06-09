@@ -23,7 +23,10 @@ const formatTimeAgo = (dateString) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
+import { useApp } from '../context/AppContext';
+
 export default function EmergencyRequestCard({ request, onDelete, showAdminActions }) {
+  const { t } = useApp();
   const [showContact, setShowContact] = useState(false);
   const timeAgo = formatTimeAgo(request.created_at);
   const isRecent = new Date().getTime() - new Date(request.created_at).getTime() < 24 * 60 * 60 * 1000;
@@ -115,10 +118,10 @@ export default function EmergencyRequestCard({ request, onDelete, showAdminActio
           {!showContact ? (
             <button
               onClick={() => setShowContact(true)}
-              className="w-full flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200 cursor-pointer"
+              className="w-full flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-650 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200 cursor-pointer"
             >
               <Phone className="w-3.5 h-3.5" />
-              Show Contact
+              {t('showContact')}
             </button>
           ) : (
             <>
@@ -127,7 +130,7 @@ export default function EmergencyRequestCard({ request, onDelete, showAdminActio
                 className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200"
               >
                 <Phone className="w-3.5 h-3.5" />
-                Call Now
+                {t('call')}
               </a>
               
               <a
@@ -137,7 +140,7 @@ export default function EmergencyRequestCard({ request, onDelete, showAdminActio
                 className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-[0.98] transition-all duration-200"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
-                WhatsApp
+                {t('whatsapp')}
               </a>
             </>
           )}

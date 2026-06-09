@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Phone, Calendar, MapPin, CheckCircle, Clock, AlertTriangle, MessageCircle, Heart } from 'lucide-react';
-import { calculateDaysSince, getDonorBadge } from '../context/AppContext';
+import { calculateDaysSince, getDonorBadge, useApp } from '../context/AppContext';
 
 export default function DonorCard({ donor, onUpdateAvailability }) {
+  const { t } = useApp();
   const [showContact, setShowContact] = useState(false);
 
   const daysSince = calculateDaysSince(donor.last_donation_date);
@@ -140,10 +141,10 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
         {!showContact ? (
           <button
             onClick={() => setShowContact(true)}
-            className="w-full flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 text-white py-2.5 px-3 rounded-xl text-xs font-bold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200 cursor-pointer"
+            className="w-full flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-650 text-white py-2.5 px-3 rounded-xl text-xs font-bold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200 cursor-pointer"
           >
             <Phone className="w-3.5 h-3.5" />
-            Show Contact
+            {t('showContact')}
           </button>
         ) : (
           <>
@@ -152,7 +153,7 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
               className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-650 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200"
             >
               <Phone className="w-3.5 h-3.5" />
-              Call Now
+              {t('call')}
             </a>
             <a
               href={`https://wa.me/${waPhone}?text=${waMessage}`}
@@ -161,7 +162,7 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
               className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-[0.98] transition-all duration-200"
             >
               <MessageCircle className="w-3.5 h-3.5" />
-              WhatsApp
+              {t('whatsapp')}
             </a>
           </>
         )}

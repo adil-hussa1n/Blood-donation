@@ -273,7 +273,7 @@ export default function Home() {
                           onClick={() => setRevealedContacts(prev => ({ ...prev, [req.id]: true }))}
                           className="text-[10px] bg-red-500 hover:bg-red-600 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-all shadow-sm cursor-pointer"
                         >
-                          Show Contact
+                          {t('showContact')}
                         </button>
                       ) : (
                         <>
@@ -463,9 +463,9 @@ export default function Home() {
                                       <button
                                         onClick={() => setRevealedContacts(prev => ({ ...prev, [donor.id]: true }))}
                                         className="px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-[10px] font-bold shadow-sm transition-all cursor-pointer"
-                                        title="Show Contact"
+                                        title={t('showContact')}
                                       >
-                                        Show
+                                        {t('show')}
                                       </button>
                                     ) : (
                                       <div className="flex gap-1.5 justify-center flex-wrap">
@@ -606,7 +606,7 @@ export default function Home() {
                                   className="w-full flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-sm cursor-pointer"
                                 >
                                   <Phone className="w-3.5 h-3.5" />
-                                  Show Contact
+                                  {t('showContact')}
                                 </button>
                               ) : (
                                 <>

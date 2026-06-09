@@ -101,6 +101,8 @@ export const TRANSLATIONS = {
     status: 'Status',
     call: 'Call',
     whatsapp: 'WhatsApp',
+    showContact: 'Show Contact',
+    show: 'Show',
 
     // Quick Stats
     totalRegistered: 'Total Registered',
@@ -343,6 +345,8 @@ export const TRANSLATIONS = {
     status: 'অবস্থা',
     call: 'কল করুন',
     whatsapp: 'হোয়াটসঅ্যাপ',
+    showContact: 'যোগাযোগ দেখুন',
+    show: 'দেখুন',
 
     // Quick Stats
     totalRegistered: 'মোট নিবন্ধিত',
@@ -631,23 +635,57 @@ export const AppProvider = ({ children }) => {
     try {
       if (!isDemoMode && supabase) {
         try {
-          await Promise.all([
+          // Trigger RPC background checks without blocking page loading fetches
+          Promise.all([
             supabase.rpc('reset_expired_cooldowns'),
             supabase.rpc('prune_expired_emergencies')
-          ]);
+          ]).catch((e) => console.error("DB background RPC failed:", e));
         } catch (e) {
           console.error("Database maintenance RPC error:", e);
         }
       }
 
-      const donorsRes = await dbService.getDonors();
-      const requestsRes = await dbService.getEmergencyRequests();
+      // 6-second timeout wrapper for live database fetches to ensure fast mobile startup
+      const fetchPromise = Promise.all([
+        dbService.getDonors(),
+        dbService.getEmergencyRequests()
+      ]);
 
-      if (donorsRes.error) throw new Error(donorsRes.error.message);
-      if (requestsRes.error) throw new Error(requestsRes.error.message);
+      const res = await Promise.race([
+        fetchPromise,
+        new Promise((resolve) => setTimeout(() => {
+          console.warn("Database fetch timed out. Falling back to offline cache.");
+          resolve(null);
+        }, 6000))
+      ]);
 
-      let fetchedDonors = donorsRes.data || [];
-      let fetchedRequests = requestsRes.data || [];
+      let fetchedDonors = [];
+      let fetchedRequests = [];
+
+      if (res) {
+        const [donorsRes, requestsRes] = res;
+        if (donorsRes.error) throw new Error(donorsRes.error.message);
+        if (requestsRes.error) throw new Error(requestsRes.error.message);
+        
+        fetchedDonors = donorsRes.data || [];
+        fetchedRequests = requestsRes.data || [];
+
+        // Save successfully fetched live data to local cache for future offline startups
+        if (!isDemoMode && fetchedDonors.length > 0) {
+          localStorage.setItem('bb_donors_cache', JSON.stringify(fetchedDonors));
+        }
+        if (!isDemoMode && fetchedRequests.length > 0) {
+          localStorage.setItem('bb_emergencies_cache', JSON.stringify(fetchedRequests));
+        }
+      } else {
+        // Fetch timed out - retrieve offline cache
+        const cachedDonors = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
+        const cachedRequests = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
+        
+        if (cachedDonors) fetchedDonors = JSON.parse(cachedDonors);
+        if (cachedRequests) fetchedRequests = JSON.parse(cachedRequests);
+        console.info("Database connection delayed. Loaded content from offline cache.");
+      }
 
       if (isDemoMode) {
         // Fallback maintenance for demo mode (local storage)
@@ -678,6 +716,14 @@ export const AppProvider = ({ children }) => {
     } catch (err) {
       console.error("Error fetching data:", err);
       setError(err.message || "Something went wrong while loading data.");
+      
+      // Load offline cache on throw error
+      try {
+        const cachedDonors = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
+        const cachedRequests = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
+        if (cachedDonors) setDonors(JSON.parse(cachedDonors));
+        if (cachedRequests) setEmergencyRequests(JSON.parse(cachedRequests));
+      } catch (e) {}
     } finally {
       setLoading(false);
     }
@@ -895,7 +941,7 @@ export const AppProvider = ({ children }) => {
   // Render preloader screen during initial fetch
   if (!initialFetchDone) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950 transition-colors duration-300 overflow-hidden">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 dark:bg-zinc-950 transition-colors duration-300 overflow-hidden">
         {/* Soft decorative background glows */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-red-600/10 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-rose-500/10 rounded-full blur-[60px] pointer-events-none" />
@@ -917,11 +963,11 @@ export const AppProvider = ({ children }) => {
 
           {/* Typography */}
           <div className="space-y-3">
-            <h1 className="text-3xl font-black tracking-tight text-white">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
               <span className="bg-gradient-to-r from-red-500 to-rose-400 bg-clip-text text-transparent">
                 Beanibazar
               </span>{' '}
-              <span className="text-zinc-100 font-extrabold">Blood</span>
+              <span className="text-slate-900 dark:text-zinc-100 font-extrabold">Blood</span>
             </h1>
             <p className="text-xs font-bold text-rose-500/80 uppercase tracking-[0.2em] animate-pulse">
               A project of GraffixInnovation
@@ -930,10 +976,10 @@ export const AppProvider = ({ children }) => {
 
           {/* Elegant customized progress line */}
           <div className="w-48 space-y-3 pt-4">
-            <div className="h-[3px] w-full bg-zinc-800 rounded-full overflow-hidden relative">
+            <div className="h-[3px] w-full bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden relative">
               <div className="h-full w-1/2 bg-gradient-to-r from-red-500 to-rose-500 rounded-full absolute top-0 animate-[loading-bar_1.5s_infinite_ease-in-out]" />
             </div>
-            <div className="flex items-center justify-center gap-1.5 text-[11px] text-zinc-400 font-bold tracking-wider uppercase">
+            <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 dark:text-zinc-400 font-bold tracking-wider uppercase">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
               Connecting to database...
             </div>
