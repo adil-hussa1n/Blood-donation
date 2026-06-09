@@ -39,7 +39,7 @@ export default function Layout({ children }) {
                   <path d="M50 12C50 12 22 45 22 65C22 80.46 34.54 93 50 93C65.46 93 78 80.46 78 65C78 45 50 12 50 12Z" fill="#ffffff" />
                   <path d="M32 65h10l4-18 5 32 4-22 4 8h9" stroke="#ef4444" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
-                <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-yellow-300" />
+                
               </div>
               <div className="flex flex-col text-left">
                 <span className="font-extrabold text-sm md:text-base leading-tight tracking-tight text-slate-900 dark:text-white group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">
