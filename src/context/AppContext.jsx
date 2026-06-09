@@ -585,9 +585,34 @@ export const getDonorBadge = (count) => {
 };
 
 export const AppProvider = ({ children }) => {
-  const [donors, setDonors] = useState([]);
-  const [emergencyRequests, setEmergencyRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [donors, setDonors] = useState(() => {
+    try {
+      const cached = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  
+  const [emergencyRequests, setEmergencyRequests] = useState(() => {
+    try {
+      const cached = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [loading, setLoading] = useState(() => {
+    try {
+      const hasCached = (localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors')) ||
+                        (localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests'));
+      return !hasCached;
+    } catch (e) {
+      return true;
+    }
+  });
+
   const [initialFetchDone, setInitialFetchDone] = useState(false);
   const [error, setError] = useState(null);
 
@@ -645,7 +670,7 @@ export const AppProvider = ({ children }) => {
         }
       }
 
-      // 6-second timeout wrapper for live database fetches to ensure fast mobile startup
+      // 3.5-second timeout wrapper for live database fetches to ensure fast mobile startup
       const fetchPromise = Promise.all([
         dbService.getDonors(),
         dbService.getEmergencyRequests()
@@ -656,7 +681,7 @@ export const AppProvider = ({ children }) => {
         new Promise((resolve) => setTimeout(() => {
           console.warn("Database fetch timed out. Falling back to offline cache.");
           resolve(null);
-        }, 6000))
+        }, 3500))
       ]);
 
       let fetchedDonors = [];
@@ -729,14 +754,18 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Enforce a minimum 3 seconds loading timer for the preloader on startup
+  // Enforce a minimum loading timer for the preloader on startup
   useEffect(() => {
     const startTime = Date.now();
+    const hasCachedData = donors.length > 0 || emergencyRequests.length > 0;
 
-    refreshData().then(() => {
+    if (hasCachedData) {
+      // Trigger a silent background refresh to update stale cache
+      refreshData(true);
+
+      // Resolve the preloader after a brief aesthetic intro delay (1.2 seconds)
       const elapsedTime = Date.now() - startTime;
-      const remainingTime = 3000 - elapsedTime;
-
+      const remainingTime = 1200 - elapsedTime;
       if (remainingTime > 0) {
         setTimeout(() => {
           setInitialFetchDone(true);
@@ -744,7 +773,20 @@ export const AppProvider = ({ children }) => {
       } else {
         setInitialFetchDone(true);
       }
-    });
+    } else {
+      // No cache available (first load) - block on database fetch
+      refreshData(false).then(() => {
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = 2500 - elapsedTime; // slightly shorter for snappier first load
+        if (remainingTime > 0) {
+          setTimeout(() => {
+            setInitialFetchDone(true);
+          }, remainingTime);
+        } else {
+          setInitialFetchDone(true);
+        }
+      });
+    }
   }, []);
 
   const lastClickCoords = useRef({ x: 0, y: 0 });
