@@ -7,18 +7,34 @@ export default function Emergency() {
   const { emergencyRequests, createEmergencyRequest, deleteEmergencyRequest, loading, error, isAdmin, language, t } = useApp();
   
   const [currentPage, setCurrentPage] = useState(1);
+  const [feedBloodFilter, setFeedBloodFilter] = useState('');
 
-  // Reset page to 1 when emergencyRequests length changes
+  const bloodGroupCounts = useMemo(() => {
+    const counts = Object.fromEntries(BLOOD_GROUPS.map((group) => [group, 0]));
+    emergencyRequests.forEach((req) => {
+      if (counts[req.blood_group] !== undefined) {
+        counts[req.blood_group] += 1;
+      }
+    });
+    return counts;
+  }, [emergencyRequests]);
+
+  const filteredEmergencyRequests = useMemo(() => {
+    if (!feedBloodFilter) return emergencyRequests;
+    return emergencyRequests.filter((req) => req.blood_group === feedBloodFilter);
+  }, [emergencyRequests, feedBloodFilter]);
+
+  // Reset page when feed filters or request list changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [emergencyRequests.length]);
+  }, [feedBloodFilter, emergencyRequests.length]);
 
   const itemsPerPage = 10;
-  const totalPages = Math.max(1, Math.ceil(emergencyRequests.length / itemsPerPage));
+  const totalPages = Math.max(1, Math.ceil(filteredEmergencyRequests.length / itemsPerPage));
   const paginatedRequests = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return emergencyRequests.slice(startIndex, startIndex + itemsPerPage);
-  }, [emergencyRequests, currentPage]);
+    return filteredEmergencyRequests.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredEmergencyRequests, currentPage]);
   
   // Form state
   const [bloodGroup, setBloodGroup] = useState('O+');
@@ -444,15 +460,78 @@ export default function Emergency() {
 
         {/* Right: Requests Board */}
         <div className="lg:col-span-8 space-y-6 text-left">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <h3 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
               <ClipboardList className="w-5 h-5 text-slate-500" />
               {t('activeFeedTitle')}
               <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-900 px-2 py-0.5 rounded-md border border-slate-200/30 dark:border-zinc-800/30">
-                {emergencyRequests.length} {t('activeCount')}
+                {filteredEmergencyRequests.length} {t('activeCount')}
+                {feedBloodFilter && (
+                  <span className="text-red-500 dark:text-red-400"> · {feedBloodFilter}</span>
+                )}
               </span>
             </h3>
           </div>
+
+          {!loading && emergencyRequests.length > 0 && (
+            <div className="glass-panel rounded-2xl p-4 border border-slate-200/50 dark:border-zinc-800/50">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+                  {t('filterEmergencyByBlood')}
+                </label>
+                {feedBloodFilter && (
+                  <button
+                    type="button"
+                    onClick={() => setFeedBloodFilter('')}
+                    className="text-xs font-semibold text-red-500 hover:text-red-600 flex items-center gap-0.5 cursor-pointer"
+                  >
+                    <X className="w-3 h-3" />
+                    {t('clearButton')}
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFeedBloodFilter('')}
+                  className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    !feedBloodFilter
+                      ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/10'
+                      : 'border-slate-200 dark:border-zinc-800 hover:border-red-500 dark:hover:border-red-500/50 bg-slate-50/30 dark:bg-zinc-900/30 text-slate-700 dark:text-zinc-300'
+                  }`}
+                >
+                  {t('allBloodGroups')}
+                  <span className="block text-[10px] font-semibold opacity-80 mt-0.5">
+                    {emergencyRequests.length}
+                  </span>
+                </button>
+                {BLOOD_GROUPS.map((group) => {
+                  const count = bloodGroupCounts[group] || 0;
+                  const active = feedBloodFilter === group;
+                  return (
+                    <button
+                      type="button"
+                      key={group}
+                      onClick={() => setFeedBloodFilter(active ? '' : group)}
+                      disabled={count === 0}
+                      className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${
+                        count === 0
+                          ? 'border-slate-100 dark:border-zinc-900 text-slate-300 dark:text-zinc-600 cursor-not-allowed opacity-60'
+                          : active
+                            ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/10 cursor-pointer'
+                            : 'border-slate-200 dark:border-zinc-800 hover:border-red-500 dark:hover:border-red-500/50 bg-slate-50/30 dark:bg-zinc-900/30 text-slate-700 dark:text-zinc-300 cursor-pointer'
+                      }`}
+                    >
+                      {group}
+                      <span className={`block text-[10px] font-semibold mt-0.5 ${active ? 'opacity-90' : 'opacity-70'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {loading ? (
             <div className="glass-panel border rounded-2xl overflow-hidden animate-pulse">
@@ -477,6 +556,26 @@ export default function Emergency() {
               <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
                 {t('allAddressedDesc')}
               </p>
+            </div>
+          ) : filteredEmergencyRequests.length === 0 ? (
+            <div className="glass-panel rounded-3xl p-10 text-center border space-y-4">
+              <div className="w-12 h-12 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h3 className="font-bold text-lg text-slate-800 dark:text-white">
+                {t('noEmergencyForBloodGroup', { bloodGroup: feedBloodFilter })}
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
+                {t('noEmergencyForBloodGroupDesc')}
+              </p>
+              <button
+                type="button"
+                onClick={() => setFeedBloodFilter('')}
+                className="inline-flex items-center gap-1.5 text-sm font-bold text-red-500 hover:text-red-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+                {t('resetFiltersButton')}
+              </button>
             </div>
           ) : (
             <>

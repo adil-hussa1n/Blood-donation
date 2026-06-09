@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Search, Save, History, Sparkles, Key, Eye, EyeOff, User, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useApp, AREAS, BLOOD_GROUPS } from '../context/AppContext';
+import { useApp, AREAS, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor } from '../context/AppContext';
 import { dbService } from '../services/db';
 
 export default function Register() {
@@ -38,6 +38,7 @@ export default function Register() {
   const [regBloodGroup, setRegBloodGroup] = useState('O+');
   const [regArea, setRegArea] = useState('Beanibazar Sadar');
   const [regLastDonationDate, setRegLastDonationDate] = useState('');
+  const [regTotalDonations, setRegTotalDonations] = useState('');
   const [regAvailable, setRegAvailable] = useState(true);
   const [regPassword, setRegPassword] = useState('');
 
@@ -120,12 +121,28 @@ export default function Register() {
       return;
     }
 
+    let totalDonations = null;
+    if (regTotalDonations.trim() !== '') {
+      const parsedCount = Number.parseInt(regTotalDonations, 10);
+      if (Number.isNaN(parsedCount) || parsedCount < 0 || parsedCount > 999) {
+        setErrorMsg(t('invalidDonationCountError'));
+        setFormLoading(false);
+        return;
+      }
+      totalDonations = parsedCount;
+    } else if (regLastDonationDate) {
+      totalDonations = 1;
+    } else {
+      totalDonations = 0;
+    }
+
     const donorData = {
       name: regName.trim(),
       phone: phoneTrimmed,
       blood_group: regBloodGroup,
       area: regArea,
       last_donation_date: regLastDonationDate || null,
+      total_donations: totalDonations,
       is_available: regAvailable,
       password: regPassword
     };
@@ -137,6 +154,7 @@ export default function Register() {
         setRegName('');
         setRegPhone('');
         setRegLastDonationDate('');
+        setRegTotalDonations('');
         setRegAvailable(true);
         setRegPassword('');
         setHoneypot('');
@@ -179,7 +197,7 @@ export default function Register() {
         return;
       }
 
-      const donor = res.donor;
+      const donor = normalizeDonor(res.donor);
       setFoundDonor(donor);
       setEditName(donor.name);
       setEditArea(donor.area);
@@ -249,7 +267,7 @@ export default function Register() {
           setDonorHistory(historyRes.data || []);
         }
 
-        setFoundDonor(prev => ({
+        setFoundDonor(prev => normalizeDonor({
           ...prev,
           total_donations: (prev.total_donations || 0) + 1,
           last_donation_date: newDonationDate,
@@ -503,6 +521,30 @@ export default function Register() {
                   />
                   <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 </div>
+              </div>
+
+              {/* Total Times Donated */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                  {t('timesDonatedOptional')}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="999"
+                    step="1"
+                    inputMode="numeric"
+                    placeholder={t('timesDonatedPlaceholder')}
+                    value={regTotalDonations}
+                    onChange={(e) => setRegTotalDonations(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                  />
+                  <History className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                </div>
+                <span className="text-[10px] text-slate-400 dark:text-zinc-500 block leading-tight">
+                  {t('timesDonatedHelper')}
+                </span>
               </div>
 
               {/* Availability Toggle */}
@@ -766,9 +808,20 @@ export default function Register() {
                     </div>
                   </div>
 
+                  <div className="flex flex-wrap items-center gap-2">
+                    {(() => {
+                      const badge = getDonorBadge(foundDonor.total_donations);
+                      return (
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide ${badge.color}`}>
+                          {getDonorBadgeLabel(badge.label, t)}
+                        </span>
+                      );
+                    })()}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-zinc-950/50 p-3 rounded-xl border border-slate-100 dark:border-zinc-900">
                     <div>
-                      <span className="text-slate-400 dark:text-zinc-500 block mb-0.5">{t('totalDonationsCount')}</span>
+                      <span className="text-slate-400 dark:text-zinc-500 block mb-0.5">{t('timesDonatedHeader')}</span>
                       <strong className="text-slate-800 dark:text-zinc-200 font-bold text-base">{t('timesUnit', { count: foundDonor.total_donations })}</strong>
                     </div>
                     <div>

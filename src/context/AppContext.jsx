@@ -119,6 +119,10 @@ export const TRANSLATIONS = {
     choosePassword: 'Choose Account Password (min. 4 chars)',
     selectArea: 'Area (Beanibazar Union)',
     lastDonationOptional: 'Last Donation Date (Optional)',
+    timesDonatedOptional: 'How Many Times Donated (Optional)',
+    timesDonatedHelper: 'Approximate lifetime count if you donated before.',
+    timesDonatedPlaceholder: 'e.g. 3',
+    invalidDonationCountError: 'Donation count must be a number between 0 and 999.',
     setAvailable: 'Set Available to Donate',
     availableDesc: 'Toggle to appear available on searches',
     completeRegistration: 'Complete Registration',
@@ -149,6 +153,10 @@ export const TRANSLATIONS = {
     postRequestButton: 'Post Emergency Request',
     activeFeedTitle: 'Active Emergency Posts Feed',
     activeCount: 'active',
+    filterEmergencyByBlood: 'Filter by Blood Group',
+    allBloodGroups: 'All Groups',
+    noEmergencyForBloodGroup: 'No active requests for {bloodGroup} blood.',
+    noEmergencyForBloodGroupDesc: 'Try another blood group or check back later.',
     allAddressedTitle: 'All Requests Addressed!',
     allAddressedDesc: 'There are no active emergency blood requests in Beanibazar at the moment. Keep saving lives!',
     postedAgo: 'Posted',
@@ -267,6 +275,7 @@ export const TRANSLATIONS = {
     donorInfoLabel: 'Donor Info',
     areaUnionLabel: 'Area Union',
     availabilityLabel: 'Availability',
+    timesDonatedHeader: 'Times Donated',
     actionsLabel: 'Actions',
     unavailableManual: 'Unavailable (Manual)',
     totalDonationsText: 'Total: {count} times',
@@ -363,6 +372,10 @@ export const TRANSLATIONS = {
     choosePassword: 'অ্যাকাউন্ট পাসওয়ার্ড (নূন্যতম ৪ অক্ষর)',
     selectArea: 'এলাকা (বিয়ানীবাজার ইউনিয়ন)',
     lastDonationOptional: 'শেষ রক্তদানের তারিখ (ঐচ্ছিক)',
+    timesDonatedOptional: 'কতবার রক্ত দিয়েছেন (ঐচ্ছিক)',
+    timesDonatedHelper: 'আগে রক্ত দিয়ে থাকলে আনুমানিক মোট সংখ্যা লিখুন।',
+    timesDonatedPlaceholder: 'যেমন: ৩',
+    invalidDonationCountError: 'রক্তদানের সংখ্যা ০ থেকে ৯৯৯ এর মধ্যে হতে হবে।',
     setAvailable: 'রক্তদানে প্রস্তুত থাকুন',
     availableDesc: 'অনুসন্ধানে আপনার নাম দেখাতে টিক দিন',
     completeRegistration: 'নিবন্ধন সম্পন্ন করুন',
@@ -393,6 +406,10 @@ export const TRANSLATIONS = {
     postRequestButton: 'জরুরি অনুরোধ পোস্ট করুন',
     activeFeedTitle: 'সক্রিয় অনুরোধসমূহের তালিকা',
     activeCount: 'সক্রিয়',
+    filterEmergencyByBlood: 'রক্তের গ্রুপ অনুযায়ী ফিল্টার',
+    allBloodGroups: 'সব গ্রুপ',
+    noEmergencyForBloodGroup: '{bloodGroup} রক্তের জন্য কোনো সক্রিয় অনুরোধ নেই।',
+    noEmergencyForBloodGroupDesc: 'অন্য রক্তের গ্রুপ বেছে নিন অথবা পরে আবার দেখুন।',
     allAddressedTitle: 'সব অনুরোধ সম্পন্ন হয়েছে!',
     allAddressedDesc: 'এই মুহূর্তে বিয়ানীবাজারে কোনো সক্রিয় জরুরি রক্তের অনুরোধ নেই। জীবন বাঁচাতে থাকুন!',
     postedAgo: 'পোস্টের সময়',
@@ -500,6 +517,7 @@ export const TRANSLATIONS = {
     donorInfoLabel: 'দাতার তথ্য',
     areaUnionLabel: 'এলাকা ইউনিয়ন',
     availabilityLabel: 'প্রাপ্যতা',
+    timesDonatedHeader: 'রক্তদানের সংখ্যা',
     actionsLabel: 'অ্যাকশন',
     unavailableManual: 'অনুপস্থিত (ম্যানুয়াল)',
     totalDonationsText: 'মোট: {count} বার',
@@ -576,11 +594,45 @@ export const calculateHoursSince = (dateString) => {
   return diffMs / (1000 * 60 * 60);
 };
 
+export const getDonorDonationCount = (donor) => {
+  if (!donor) return 0;
+  const lifetime = Number.parseInt(donor.lifetime_donation_count, 10);
+  if (!Number.isNaN(lifetime)) {
+    return Math.min(Math.max(lifetime, 0), 999);
+  }
+  const total = Number.parseInt(donor.total_donations, 10);
+  if (!Number.isNaN(total)) {
+    return Math.min(Math.max(total, 0), 999);
+  }
+  return 0;
+};
+
+export const normalizeDonor = (donor) => {
+  if (!donor) return donor;
+  const count = getDonorDonationCount(donor);
+  return {
+    ...donor,
+    lifetime_donation_count: count,
+    total_donations: count,
+  };
+};
+
 export const getDonorBadge = (count) => {
-  if (count <= 0) return { label: 'New Donor', color: 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300' };
-  if (count >= 1 && count <= 2) return { label: 'Normal Donor', color: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/35' };
-  if (count >= 3 && count <= 5) return { label: 'Active Donor', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/35' };
+  const total = normalizeDonor({ total_donations: count }).total_donations;
+  if (total <= 0) return { label: 'New Donor', color: 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300' };
+  if (total >= 1 && total <= 2) return { label: 'Normal Donor', color: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/35' };
+  if (total >= 3 && total <= 5) return { label: 'Active Donor', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/35' };
   return { label: 'Hero Donor', color: 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200/35 font-semibold pulse-glow' };
+};
+
+export const getDonorBadgeLabel = (badgeLabel, t) => {
+  switch (badgeLabel) {
+    case 'New Donor': return t('donorBadgeNew');
+    case 'Normal Donor': return t('donorBadgeNormal');
+    case 'Active Donor': return t('donorBadgeActive');
+    case 'Hero Donor': return t('donorBadgeHero');
+    default: return badgeLabel;
+  }
 };
 
 export const AppProvider = ({ children }) => {
@@ -734,7 +786,7 @@ export const AppProvider = ({ children }) => {
         fetchedRequests = activeRequests;
       }
 
-      setDonors(fetchedDonors);
+      setDonors(fetchedDonors.map(normalizeDonor));
       setEmergencyRequests(fetchedRequests);
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -744,7 +796,7 @@ export const AppProvider = ({ children }) => {
       try {
         const cachedDonors = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
         const cachedRequests = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
-        if (cachedDonors) setDonors(JSON.parse(cachedDonors));
+        if (cachedDonors) setDonors(JSON.parse(cachedDonors).map(normalizeDonor));
         if (cachedRequests) setEmergencyRequests(JSON.parse(cachedRequests));
       } catch (e) {}
     } finally {

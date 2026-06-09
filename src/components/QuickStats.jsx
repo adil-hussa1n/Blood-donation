@@ -1,17 +1,18 @@
 import React from 'react';
 import { Heart, CheckCircle2, Trophy, Flame } from 'lucide-react';
-import { calculateDaysSince, useApp } from '../context/AppContext';
+import { calculateDaysSince, normalizeDonor, useApp } from '../context/AppContext';
 
 export default function QuickStats({ donors, emergencyRequests }) {
   const { language } = useApp();
-  const totalDonors = donors.length;
+  const normalizedDonors = donors.map(normalizeDonor);
+  const totalDonors = normalizedDonors.length;
 
-  const availableDonors = donors.filter(d => {
+  const availableDonors = normalizedDonors.filter(d => {
     const days = calculateDaysSince(d.last_donation_date);
     return d.is_available && days >= 90;
   }).length;
 
-  const heroDonors = donors.filter(d => d.total_donations >= 6).length;
+  const heroDonors = normalizedDonors.filter(d => d.total_donations >= 6).length;
 
   const totalEmergencies = emergencyRequests.length;
 

@@ -202,8 +202,116 @@ input[type="date"]::-webkit-date-and-time-value {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes mobileNavItemIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 @utility animate-fade-in {
   animation: fadeIn 0.4s ease-out both;
+}
+
+.mobile-nav-shell {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.mobile-nav-shell--open {
+  grid-template-rows: 1fr;
+  pointer-events: auto;
+}
+
+.mobile-nav-dropdown {
+  overflow: hidden;
+  min-height: 0;
+  opacity: 0;
+  border-top: 1px solid transparent;
+  background: color-mix(in srgb, #ffffff 95%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition:
+    opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark .mobile-nav-dropdown {
+  background: color-mix(in srgb, #09090b 95%, transparent);
+}
+
+.mobile-nav-shell--open .mobile-nav-dropdown {
+  opacity: 1;
+  border-top-color: color-mix(in srgb, #e2e8f0 50%, transparent);
+}
+
+.dark .mobile-nav-shell--open .mobile-nav-dropdown {
+  border-top-color: color-mix(in srgb, #27272a 50%, transparent);
+}
+
+.mobile-nav-dropdown__inner {
+  min-height: 0;
+  padding: 0 1rem;
+  transform: translate3d(0, -6px, 0);
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mobile-nav-shell--open .mobile-nav-dropdown__inner {
+  padding-top: 0.5rem;
+  padding-bottom: 1rem;
+  transform: translate3d(0, 0, 0);
+}
+
+.mobile-nav-shell--open .mobile-nav-item {
+  animation: mobileNavItemIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mobile-menu-icon {
+  transition:
+    opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mobile-menu-icon--menu {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.mobile-menu-icon--close {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.75);
+}
+
+.mobile-menu-icon--menu-hidden {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.75);
+}
+
+.mobile-menu-icon--close-visible {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav-shell {
+    transition: none;
+  }
+
+  .mobile-nav-dropdown,
+  .mobile-nav-dropdown__inner,
+  .mobile-menu-icon {
+    transition: none !important;
+  }
+
+  .mobile-nav-shell--open .mobile-nav-item {
+    animation: none !important;
+  }
 }
 
 @utility animate-scale-up {

@@ -197,18 +197,36 @@ serve(async (req) => {
           .eq("donor_id", id);
 
         if (events && events.length > 0) {
-          const total = events.length;
+          const { data: donorRow } = await supabase
+            .from("donors")
+            .select("total_donations")
+            .eq("id", id)
+            .single();
+
+          const currentTotal = Number.parseInt(String(donorRow?.total_donations ?? 0), 10);
+          const newTotal = (Number.isNaN(currentTotal) ? 0 : currentTotal) + 1;
           const latest = events.reduce((latestDate, current) => {
             if (!latestDate) return current.donation_date;
             return new Date(current.donation_date) > new Date(latestDate) ? current.donation_date : latestDate;
           }, null);
 
+          const { error: rpcError } = await supabase.rpc("set_donor_total_donations", {
+            p_donor_id: id,
+            p_total: newTotal,
+          });
+
+          if (rpcError) {
+            await supabase
+              .from("donors")
+              .update({ total_donations: newTotal })
+              .eq("id", id);
+          }
+
           await supabase
             .from("donors")
             .update({
-              total_donations: total,
               last_donation_date: latest,
-              is_available: false
+              is_available: false,
             })
             .eq("id", id);
         }

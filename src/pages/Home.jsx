@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, Calendar, CheckCircle2, Clock, Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useApp, AREAS, BLOOD_GROUPS, calculateDaysSince, getDonorBadge } from '../context/AppContext';
+import { useApp, AREAS, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor } from '../context/AppContext';
 import QuickStats from '../components/QuickStats';
 
 export default function Home() {
@@ -57,15 +57,17 @@ export default function Home() {
 
   // Filtered Donors List (computed using applied filters)
   const filteredDonors = useMemo(() => {
-    return donors.filter((donor) => {
-      const matchBlood = appliedBloodGroup ? donor.blood_group === appliedBloodGroup : true;
-      const matchArea = appliedArea ? donor.area === appliedArea : true;
-      const matchSearch = appliedSearchQuery
-        ? donor.name.toLowerCase().includes(appliedSearchQuery.toLowerCase()) ||
-          donor.phone.includes(appliedSearchQuery)
-        : true;
-      return matchBlood && matchArea && matchSearch;
-    });
+    return donors
+      .map(normalizeDonor)
+      .filter((donor) => {
+        const matchBlood = appliedBloodGroup ? donor.blood_group === appliedBloodGroup : true;
+        const matchArea = appliedArea ? donor.area === appliedArea : true;
+        const matchSearch = appliedSearchQuery
+          ? donor.name.toLowerCase().includes(appliedSearchQuery.toLowerCase()) ||
+            donor.phone.includes(appliedSearchQuery)
+          : true;
+        return matchBlood && matchArea && matchSearch;
+      });
   }, [donors, appliedBloodGroup, appliedArea, appliedSearchQuery]);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -370,18 +372,20 @@ export default function Home() {
                         <table className="w-full text-left text-sm border-collapse table-fixed">
                           <thead>
                             <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
-                              <th className="p-4 w-[18%]">{t('donorInfoLabel')}</th>
-                              <th className="p-4 w-[10%]">{t('bloodGroup')}</th>
-                              <th className="p-4 w-[15%]">{t('phone')}</th>
-                              <th className="p-4 w-[18%]">{t('areaUnionLabel')}</th>
-                              <th className="p-4 w-[14%]">{t('availabilityLabel')}</th>
-                              <th className="p-4 w-[14%]">{t('lastDonation')}</th>
-                              <th className="p-4 w-[11%] text-center">{t('actionsLabel')}</th>
+                              <th className="p-4 w-[16%]">{t('donorInfoLabel')}</th>
+                              <th className="p-4 w-[9%]">{t('bloodGroup')}</th>
+                              <th className="p-4 w-[13%]">{t('phone')}</th>
+                              <th className="p-4 w-[16%]">{t('areaUnionLabel')}</th>
+                              <th className="p-4 w-[13%]">{t('availabilityLabel')}</th>
+                              <th className="p-4 w-[11%]">{t('timesDonatedHeader')}</th>
+                              <th className="p-4 w-[12%]">{t('lastDonation')}</th>
+                              <th className="p-4 w-[10%] text-center">{t('actionsLabel')}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
                             {paginatedDonors.map((donor) => {
-                              const daysSince = calculateDaysSince(donor.last_donation_date);
+                              const normalizedDonor = normalizeDonor(donor);
+                              const daysSince = calculateDaysSince(normalizedDonor.last_donation_date);
                               const isCooldownActive = daysSince < 90;
                               const daysRemaining = 90 - daysSince;
 
@@ -389,7 +393,7 @@ export default function Home() {
                               let statusText = t('available');
                               let statusIcon = CheckCircle2;
 
-                              if (!donor.is_available) {
+                              if (!normalizedDonor.is_available) {
                                 statusColor = 'text-rose-500 bg-rose-500/10 dark:bg-rose-500/15 border-rose-500/20';
                                 statusText = t('notAvailable');
                                 statusIcon = AlertTriangle;
@@ -399,42 +403,39 @@ export default function Home() {
                                 statusIcon = Clock;
                               }
 
-                              const badge = getDonorBadge(donor.total_donations);
+                              const badge = getDonorBadge(normalizedDonor.total_donations);
                               const StatusIcon = statusIcon;
 
-                              const cleanPhone = donor.phone.trim();
+                              const cleanPhone = normalizedDonor.phone.trim();
                               const waPhone = cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone;
                               const waMessage = encodeURIComponent(
-                                `Assalamu Alaikum ${donor.name}, we found your contact on Bloodify247. We urgently need ${donor.blood_group} blood. Are you available to donate?`
+                                `Assalamu Alaikum ${normalizedDonor.name}, we found your contact on Bloodify247. We urgently need ${normalizedDonor.blood_group} blood. Are you available to donate?`
                               );
 
                               return (
-                                <tr key={donor.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                                <tr key={normalizedDonor.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
                                   <td className="p-4">
                                     <div className="flex flex-col gap-1 truncate overflow-hidden">
                                       <span className="font-extrabold text-slate-900 dark:text-white block truncate">
-                                        {donor.name}
+                                        {normalizedDonor.name}
                                       </span>
                                       <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide w-fit ${badge.color}`}>
-                                        {badge.label === 'New Donor' && t('donorBadgeNew')}
-                                        {badge.label === 'Normal Donor' && t('donorBadgeNormal')}
-                                        {badge.label === 'Active Donor' && t('donorBadgeActive')}
-                                        {badge.label === 'Hero Donor' && t('donorBadgeHero')}
+                                        {getDonorBadgeLabel(badge.label, t)}
                                       </span>
                                     </div>
                                   </td>
                                   <td className="p-4">
                                     <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-red-500 text-white font-black text-base shadow-sm">
-                                      {donor.blood_group}
+                                      {normalizedDonor.blood_group}
                                     </span>
                                   </td>
                                   <td className="p-4 text-slate-600 dark:text-zinc-400 font-semibold truncate overflow-hidden">
-                                    {revealedContacts[donor.id] ? donor.phone : maskPhone(donor.phone)}
+                                    {revealedContacts[normalizedDonor.id] ? normalizedDonor.phone : maskPhone(normalizedDonor.phone)}
                                   </td>
-                                  <td className="p-4 text-slate-600 dark:text-zinc-400 truncate overflow-hidden" title={donor.area}>
+                                  <td className="p-4 text-slate-600 dark:text-zinc-400 truncate overflow-hidden" title={normalizedDonor.area}>
                                     <span className="flex items-center gap-1">
                                       <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
-                                      <span className="truncate">{donor.area}</span>
+                                      <span className="truncate">{normalizedDonor.area}</span>
                                     </span>
                                   </td>
                                   <td className="p-4">
@@ -443,25 +444,26 @@ export default function Home() {
                                       <span className="truncate">{statusText}</span>
                                     </span>
                                   </td>
+                                  <td className="p-4">
+                                    <span className="inline-flex items-center justify-center min-w-[2.5rem] px-2.5 py-1 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 font-black text-sm border border-red-500/15">
+                                      {normalizedDonor.total_donations}
+                                    </span>
+                                    <span className="block text-[10px] font-semibold text-slate-400 dark:text-zinc-500 mt-1">
+                                      {t('timesUnit', { count: normalizedDonor.total_donations })}
+                                    </span>
+                                  </td>
                                   <td className="p-4 text-xs text-slate-500 dark:text-zinc-400">
-                                    <div className="flex flex-col gap-0.5">
-                                      <span className="font-semibold text-slate-800 dark:text-zinc-200 truncate">
-                                        {donor.last_donation_date 
-                                          ? new Date(donor.last_donation_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-                                          : t('never')
-                                        }
-                                      </span>
-                                      {donor.total_donations > 0 && (
-                                        <span className="text-[10px] font-semibold text-slate-450 text-red-500">
-                                          {t('totalDonationsText', { count: donor.total_donations })}
-                                        </span>
-                                      )}
-                                    </div>
+                                    <span className="font-semibold text-slate-800 dark:text-zinc-200 truncate block">
+                                      {normalizedDonor.last_donation_date 
+                                        ? new Date(normalizedDonor.last_donation_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                                        : t('never')
+                                      }
+                                    </span>
                                   </td>
                                   <td className="p-4 text-center">
-                                    {!revealedContacts[donor.id] ? (
+                                    {!revealedContacts[normalizedDonor.id] ? (
                                       <button
-                                        onClick={() => setRevealedContacts(prev => ({ ...prev, [donor.id]: true }))}
+                                        onClick={() => setRevealedContacts(prev => ({ ...prev, [normalizedDonor.id]: true }))}
                                         className="px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-[10px] font-bold shadow-sm transition-all cursor-pointer"
                                         title={t('showContact')}
                                       >
@@ -470,7 +472,7 @@ export default function Home() {
                                     ) : (
                                       <div className="flex gap-1.5 justify-center flex-wrap">
                                         <a
-                                          href={`tel:${donor.phone}`}
+                                          href={`tel:${normalizedDonor.phone}`}
                                           className="p-2 bg-red-500 hover:bg-red-650 text-white rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
                                           title="Call Donor"
                                         >
@@ -498,7 +500,8 @@ export default function Home() {
                     {/* MOBILE VIEW: Card Stack */}
                     <div className="block md:hidden space-y-4">
                       {paginatedDonors.map((donor) => {
-                        const daysSince = calculateDaysSince(donor.last_donation_date);
+                        const normalizedDonor = normalizeDonor(donor);
+                        const daysSince = calculateDaysSince(normalizedDonor.last_donation_date);
                         const isCooldownActive = daysSince < 90;
                         const daysRemaining = 90 - daysSince;
 
@@ -506,7 +509,7 @@ export default function Home() {
                         let statusText = t('available');
                         let statusIcon = CheckCircle2;
 
-                        if (!donor.is_available) {
+                        if (!normalizedDonor.is_available) {
                           statusColor = 'text-rose-500 bg-rose-500/10 dark:bg-rose-500/15 border-rose-500/20';
                           statusText = t('unavailableManual');
                           statusIcon = AlertTriangle;
@@ -516,41 +519,43 @@ export default function Home() {
                           statusIcon = Clock;
                         }
 
-                        const badge = getDonorBadge(donor.total_donations);
+                        const badge = getDonorBadge(normalizedDonor.total_donations);
                         const StatusIcon = statusIcon;
 
-                        const cleanPhone = donor.phone.trim();
+                        const cleanPhone = normalizedDonor.phone.trim();
                         const waPhone = cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone;
                         const waMessage = encodeURIComponent(
-                          `Assalamu Alaikum ${donor.name}, we found your contact on Bloodify247. We urgently need ${donor.blood_group} blood. Are you available to donate?`
+                          `Assalamu Alaikum ${normalizedDonor.name}, we found your contact on Bloodify247. We urgently need ${normalizedDonor.blood_group} blood. Are you available to donate?`
                         );
 
                         return (
                           <div 
-                            key={donor.id}
+                            key={normalizedDonor.id}
                             className="glass-panel border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl p-5 space-y-4 shadow-sm hover:border-red-500/35 transition-all duration-300"
                           >
                             <div className="flex justify-between items-start gap-4">
                               <div className="flex gap-3 items-center">
                                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-red-500 text-white font-black text-xl shadow-md">
-                                  {donor.blood_group}
+                                  {normalizedDonor.blood_group}
                                 </span>
                                 <div>
                                   <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight">
-                                    {donor.name}
+                                    {normalizedDonor.name}
                                   </h4>
                                   <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-semibold flex items-center gap-1 mt-0.5">
                                     <MapPin className="w-3.5 h-3.5 text-red-500/50" />
-                                    {donor.area}
+                                    {normalizedDonor.area}
                                   </span>
                                 </div>
                               </div>
-                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide ${badge.color}`}>
-                                {badge.label === 'New Donor' && t('donorBadgeNew')}
-                                {badge.label === 'Normal Donor' && t('donorBadgeNormal')}
-                                {badge.label === 'Active Donor' && t('donorBadgeActive')}
-                                {badge.label === 'Hero Donor' && t('donorBadgeHero')}
-                              </span>
+                              <div className="flex flex-col items-end gap-1.5">
+                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide ${badge.color}`}>
+                                  {getDonorBadgeLabel(badge.label, t)}
+                                </span>
+                                <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 font-black text-sm border border-red-500/15">
+                                  {normalizedDonor.total_donations}
+                                </span>
+                              </div>
                             </div>
 
                             <div className="space-y-2.5">
@@ -559,7 +564,7 @@ export default function Home() {
                                 {statusText}
                               </div>
 
-                              {isCooldownActive && donor.is_available && (
+                              {isCooldownActive && normalizedDonor.is_available && (
                                 <div className="space-y-1">
                                   <div className="flex justify-between text-[10px] text-slate-400 dark:text-zinc-500 font-medium">
                                     <span>{t('cooldownProgress')}</span>
@@ -578,20 +583,20 @@ export default function Home() {
                                 <div>
                                   <span>{t('phone')}:</span>
                                   <strong className="text-slate-700 dark:text-zinc-300 block font-bold mt-0.5">
-                                    {revealedContacts[donor.id] ? donor.phone : maskPhone(donor.phone)}
+                                    {revealedContacts[normalizedDonor.id] ? normalizedDonor.phone : maskPhone(normalizedDonor.phone)}
                                   </strong>
                                 </div>
                                 <div>
-                                  <span>{t('totalDonationsCount')}:</span>
+                                  <span>{t('timesDonatedHeader')}:</span>
                                   <strong className="text-slate-700 dark:text-zinc-300 block font-bold mt-0.5">
-                                    {t('totalDonationsText', { count: donor.total_donations })}
+                                    {t('timesUnit', { count: normalizedDonor.total_donations })}
                                   </strong>
                                 </div>
                                 <div className="col-span-2">
                                   <span>{t('lastDonation')}:</span>
                                   <strong className="text-slate-700 dark:text-zinc-300 block font-bold mt-0.5">
-                                    {donor.last_donation_date 
-                                      ? new Date(donor.last_donation_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                                    {normalizedDonor.last_donation_date 
+                                      ? new Date(normalizedDonor.last_donation_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                                       : t('never')
                                     }
                                   </strong>
@@ -600,9 +605,9 @@ export default function Home() {
                             </div>
 
                             <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-zinc-900">
-                              {!revealedContacts[donor.id] ? (
+                              {!revealedContacts[normalizedDonor.id] ? (
                                 <button
-                                  onClick={() => setRevealedContacts(prev => ({ ...prev, [donor.id]: true }))}
+                                  onClick={() => setRevealedContacts(prev => ({ ...prev, [normalizedDonor.id]: true }))}
                                   className="w-full flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-sm cursor-pointer"
                                 >
                                   <Phone className="w-3.5 h-3.5" />
@@ -611,7 +616,7 @@ export default function Home() {
                               ) : (
                                 <>
                                   <a
-                                    href={`tel:${donor.phone}`}
+                                    href={`tel:${normalizedDonor.phone}`}
                                     className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-650 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-sm"
                                   >
                                     <Phone className="w-3.5 h-3.5" />

@@ -7,8 +7,21 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const resolveTotalDonations = (data: {
+  total_donations?: number | string | null;
+  last_donation_date?: string | null;
+}) => {
+  const raw = data.total_donations;
+  if (raw !== undefined && raw !== null && raw !== "") {
+    const parsed = Number.parseInt(String(raw), 10);
+    if (!Number.isNaN(parsed)) {
+      return Math.min(Math.max(parsed, 0), 999);
+    }
+  }
+  return data.last_donation_date ? 1 : 0;
+};
+
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -16,30 +29,27 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const clientIp = req.headers.get("cf-connecting-ip") || 
-                     req.headers.get("x-forwarded-for")?.split(",")[0].trim() || 
-                     "127.0.0.1";
+
+    const clientIp = req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+      "127.0.0.1";
 
     const { donorData, honeypot } = await req.json();
 
-    // 1. Honeypot check (Invisible bot trap)
     if (honeypot && honeypot.trim() !== "") {
-      console.warn(`[BOT BLOCKED] Honeypot triggered from IP: ${clientIp}`);
       await supabase.from("rate_limit_logs").insert([{
         ip_address: clientIp,
         request_type: "donor_registration",
         status: "blocked",
-        reason: "honeypot_triggered"
+        reason: "honeypot_triggered",
       }]);
       return new Response(JSON.stringify({ error: { message: "Verification failed. Bot detected." } }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 2. Rate limiting check (Max 3 requests per minute per IP)
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const { count, error: countErr } = await supabase
       .from("rate_limit_logs")
@@ -47,43 +57,35 @@ serve(async (req) => {
       .eq("ip_address", clientIp)
       .gt("created_at", oneMinuteAgo);
 
-    if (countErr) {
-      console.error("Error checking rate limit logs:", countErr);
-    } else if (count !== null && count >= 3) {
-      console.warn(`[RATE LIMIT BLOCKED] IP: ${clientIp} exceeded request threshold.`);
+    if (!countErr && count !== null && count >= 3) {
       await supabase.from("rate_limit_logs").insert([{
         ip_address: clientIp,
         request_type: "donor_registration",
         status: "blocked",
-        reason: "rate_limit"
+        reason: "rate_limit",
       }]);
       return new Response(JSON.stringify({ error: { message: "Too many attempts, please try again in a minute." } }), {
         status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 3. Strict phone validation
     const phoneRegex = /^01[3-9]\d{8}$/;
-    if (!donorData.phone || !phoneRegex.test(donorData.phone)) {
-      console.warn(`[VALIDATION BLOCKED] Invalid phone format from IP: ${clientIp}. Phone: ${donorData.phone}`);
+    if (!donorData?.phone || !phoneRegex.test(donorData.phone)) {
       await supabase.from("rate_limit_logs").insert([{
         ip_address: clientIp,
         request_type: "donor_registration",
         status: "blocked",
-        reason: "invalid_phone"
+        reason: "invalid_phone",
       }]);
       return new Response(JSON.stringify({ error: { message: "Invalid phone number. Must be a valid 11-digit Bangladeshi number starting with 013-019." } }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 5. Artificial security delay (500–1000ms) to throttle rapid script requests
-    const delayMs = Math.floor(Math.random() * 500) + 500;
-    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    await new Promise((resolve) => setTimeout(resolve, Math.floor(Math.random() * 500) + 500));
 
-    // 5. DB Check if phone is already registered
     const { data: existingDonor } = await supabase
       .from("donors")
       .select("phone")
@@ -91,68 +93,84 @@ serve(async (req) => {
       .maybeSingle();
 
     if (existingDonor) {
-      await supabase.from("rate_limit_logs").insert([{
-        ip_address: clientIp,
-        request_type: "donor_registration",
-        status: "blocked",
-        reason: "phone_already_exists"
-      }]);
       return new Response(JSON.stringify({ error: { message: `Phone number ${donorData.phone} is already registered.` } }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 6. Insert the donor
-    const newDonor = {
-      name: donorData.name,
-      phone: donorData.phone,
-      blood_group: donorData.blood_group,
-      area: donorData.area,
-      last_donation_date: donorData.last_donation_date || null,
-      is_available: donorData.is_available ?? true,
-      password: donorData.password || "123456",
-      total_donations: donorData.last_donation_date ? 1 : 0
-    };
+    const resolvedTotalDonations = resolveTotalDonations(donorData);
 
-    const { data, error } = await supabase
+    // Insert donor row. Do NOT insert donation_history here — that was resetting
+    // total_donations to 1 via DB triggers. Cooldown uses donors.last_donation_date.
+    const { data: inserted, error } = await supabase
       .from("donors")
-      .insert([newDonor])
+      .insert([{
+        name: donorData.name,
+        phone: donorData.phone,
+        blood_group: donorData.blood_group,
+        area: donorData.area,
+        last_donation_date: donorData.last_donation_date || null,
+        is_available: donorData.is_available ?? true,
+        password: donorData.password || "123456",
+        total_donations: resolvedTotalDonations,
+      }])
       .select()
       .single();
 
-    if (error) {
+    if (error || !inserted) {
       console.error("Database insert error:", error);
       return new Response(JSON.stringify({ error: { message: "Database registration failed." } }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 7. If last donation date is provided, log it in the donation history
-    if (data && newDonor.last_donation_date) {
+    // Force-save self-reported total via RPC (survives generated columns / triggers)
+    const { error: rpcError } = await supabase.rpc("set_donor_total_donations", {
+      p_donor_id: inserted.id,
+      p_total: resolvedTotalDonations,
+    });
+
+    if (rpcError) {
+      console.warn("RPC set_donor_total_donations failed, falling back to update:", rpcError.message);
       await supabase
-        .from("donation_history")
-        .insert([{ donor_id: data.id, donation_date: newDonor.last_donation_date }]);
+        .from("donors")
+        .update({ total_donations: resolvedTotalDonations })
+        .eq("id", inserted.id);
     }
 
-    // Log the successful attempt
+    const { data: finalDonor, error: fetchError } = await supabase
+      .from("donors")
+      .select("*")
+      .eq("id", inserted.id)
+      .single();
+
+    if (fetchError) {
+      console.error("Failed to fetch final donor:", fetchError);
+    }
+
     await supabase.from("rate_limit_logs").insert([{
       ip_address: clientIp,
       request_type: "donor_registration",
-      status: "allowed"
+      status: "allowed",
     }]);
 
-    return new Response(JSON.stringify({ data, error: null }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    const donor = finalDonor ?? { ...inserted, total_donations: resolvedTotalDonations };
 
+    return new Response(JSON.stringify({
+      data: donor,
+      error: null,
+      saved_total_donations: resolvedTotalDonations,
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err) {
     console.error("Server error:", err);
     return new Response(JSON.stringify({ error: { message: "An unexpected server error occurred." } }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

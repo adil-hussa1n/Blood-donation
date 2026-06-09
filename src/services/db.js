@@ -45,6 +45,17 @@ const generateUUID = () => {
 };
 
 // Seed initial data for Demo Mode
+const resolveRegistrationTotalDonations = (donorData) => {
+  const raw = donorData.total_donations;
+  if (raw !== undefined && raw !== null && raw !== '') {
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isNaN(parsed)) {
+      return Math.min(Math.max(parsed, 0), 999);
+    }
+  }
+  return donorData.last_donation_date ? 1 : 0;
+};
+
 const initDemoDB = () => {
   if (!localStorage.getItem('bb_donors')) {
     const mockDonors = [
@@ -226,6 +237,7 @@ export const dbService = {
         return { data: null, error: { message: `Phone number ${donorData.phone} is already registered.` } };
       }
 
+      const donationCount = resolveRegistrationTotalDonations(donorData);
       const newDonor = {
         id: generateUUID(),
         name: donorData.name,
@@ -234,7 +246,8 @@ export const dbService = {
         area: donorData.area,
         last_donation_date: donorData.last_donation_date || null,
         is_available: donorData.is_available ?? true,
-        total_donations: donorData.last_donation_date ? 1 : 0,
+        total_donations: donationCount,
+        lifetime_donation_count: donationCount,
         password: donorData.password || '123456',
         created_at: new Date().toISOString()
       };
@@ -242,23 +255,46 @@ export const dbService = {
       donors.unshift(newDonor);
       localStorage.setItem('bb_donors', JSON.stringify(donors));
 
-      if (newDonor.last_donation_date) {
-        const history = JSON.parse(localStorage.getItem('bb_donation_history') || '[]');
-        history.push({
-          id: generateUUID(),
-          donor_id: newDonor.id,
-          donation_date: newDonor.last_donation_date
-        });
-        localStorage.setItem('bb_donation_history', JSON.stringify(history));
-      }
-
       return { data: newDonor, error: null };
     } else {
-      // Invoke secure insert Edge Function
-      const { data, error } = await supabase.functions.invoke('secure-insert-donor', {
-        body: { donorData, honeypot }
+      const lifetimeCount = resolveRegistrationTotalDonations(donorData);
+
+      // Prefer SQL RPC (works without redeploying edge functions)
+      const { data: rpcDonor, error: rpcError } = await supabase.rpc('register_donor_secure', {
+        p_name: donorData.name,
+        p_phone: donorData.phone,
+        p_blood_group: donorData.blood_group,
+        p_area: donorData.area,
+        p_last_donation_date: donorData.last_donation_date || null,
+        p_is_available: donorData.is_available ?? true,
+        p_password: donorData.password || '123456',
+        p_lifetime_count: lifetimeCount,
+        p_honeypot: honeypot || '',
       });
-      return { data, error: await normalizeFunctionError(error) };
+
+      if (!rpcError && rpcDonor) {
+        const donor = typeof rpcDonor === 'string' ? JSON.parse(rpcDonor) : rpcDonor;
+        return { data: donor, error: null };
+      }
+
+      if (rpcError) {
+        const rpcMessage = rpcError.message || rpcError.details || 'Registration failed.';
+        const rpcMissing = rpcMessage.includes('register_donor_secure') &&
+          (rpcMessage.includes('does not exist') || rpcMessage.includes('Could not find'));
+        if (!rpcMissing) {
+          return { data: null, error: { message: rpcMessage } };
+        }
+      }
+
+      const { data: responseBody, error } = await supabase.functions.invoke('secure-insert-donor', {
+        body: { donorData: { ...donorData, total_donations: lifetimeCount }, honeypot }
+      });
+      const normalizedError = await normalizeFunctionError(error);
+      if (normalizedError) {
+        return { data: null, error: normalizedError };
+      }
+      const donor = responseBody?.data ?? responseBody;
+      return { data: donor, error: null };
     }
   },
 
@@ -407,7 +443,9 @@ export const dbService = {
         return new Date(current.donation_date) > new Date(latest) ? current.donation_date : latest;
       }, null);
 
-      donors[donorIndex].total_donations = donorEvents.length;
+      const newCount = ((donors[donorIndex].lifetime_donation_count ?? donors[donorIndex].total_donations) || 0) + 1;
+      donors[donorIndex].total_donations = newCount;
+      donors[donorIndex].lifetime_donation_count = newCount;
       donors[donorIndex].last_donation_date = latestDate;
       donors[donorIndex].is_available = false;
 
@@ -415,7 +453,26 @@ export const dbService = {
 
       return { data: newEvent, error: null };
     } else {
-      // Invoke secure update Edge Function
+      const { data: rpcDonor, error: rpcError } = await supabase.rpc('log_donation_secure', {
+        p_donor_id: donorId,
+        p_donation_date: donationDate,
+        p_password: password,
+      });
+
+      if (!rpcError && rpcDonor) {
+        const donor = typeof rpcDonor === 'string' ? JSON.parse(rpcDonor) : rpcDonor;
+        return { data: donor, error: null };
+      }
+
+      if (rpcError) {
+        const rpcMessage = rpcError.message || rpcError.details || 'Failed to log donation.';
+        const rpcMissing = rpcMessage.includes('log_donation_secure') &&
+          (rpcMessage.includes('does not exist') || rpcMessage.includes('Could not find'));
+        if (!rpcMissing) {
+          return { data: null, error: { message: rpcMessage } };
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke('secure-update-donor', {
         body: { action: 'add_donation', id: donorId, password, payload: { donation_date: donationDate } }
       });

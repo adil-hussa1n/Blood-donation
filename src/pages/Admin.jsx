@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Shield, Key, Eye, EyeOff, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, User, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useApp, BLOOD_GROUPS } from '../context/AppContext';
+import { useApp, BLOOD_GROUPS, normalizeDonor } from '../context/AppContext';
 
 export default function Admin() {
   const { 
@@ -413,7 +413,12 @@ export default function Admin() {
                                 <span className="truncate">{donor.area}</span>
                               </span>
                             </td>
-                            <td className="p-4 font-semibold">{t('timesUnit', { count: donor.total_donations })}</td>
+                            <td className="p-4 font-semibold">
+                              <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 font-black text-sm border border-red-500/15 mr-2">
+                                {normalizeDonor(donor).total_donations}
+                              </span>
+                              {t('timesUnit', { count: normalizeDonor(donor).total_donations })}
+                            </td>
                             <td className="p-4 text-center">
                               <button
                                 onClick={() => startDeleteConfirm(donor.id, 'donor')}
@@ -453,7 +458,7 @@ export default function Admin() {
                             <span className="font-medium">{donor.area}</span>
                           </span>
                           <span className="font-bold bg-slate-100 dark:bg-zinc-800/60 px-2 py-0.5 rounded-md text-[11px]">
-                            {t('timesUnit', { count: donor.total_donations })}
+                            {t('timesUnit', { count: normalizeDonor(donor).total_donations })}
                           </span>
                         </div>
 

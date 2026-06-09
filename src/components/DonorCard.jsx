@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Phone, Calendar, MapPin, CheckCircle, Clock, AlertTriangle, MessageCircle, Heart } from 'lucide-react';
-import { calculateDaysSince, getDonorBadge, useApp } from '../context/AppContext';
+import { calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, useApp } from '../context/AppContext';
 
 export default function DonorCard({ donor, onUpdateAvailability }) {
   const { t } = useApp();
   const [showContact, setShowContact] = useState(false);
+  const normalizedDonor = normalizeDonor(donor);
 
-  const daysSince = calculateDaysSince(donor.last_donation_date);
+  const daysSince = calculateDaysSince(normalizedDonor.last_donation_date);
   const isCooldownActive = daysSince < 90;
   const daysRemaining = 90 - daysSince;
 
@@ -17,7 +18,7 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
   let statusBg = 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800/30';
   let statusIcon = CheckCircle;
 
-  if (!donor.is_available) {
+  if (!normalizedDonor.is_available) {
     statusColor = 'bg-rose-500';
     statusText = 'Unavailable (Manually Set)';
     statusTextShort = 'Unavailable';
@@ -32,10 +33,10 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
   }
 
   // Get Priority Badge
-  const badge = getDonorBadge(donor.total_donations);
+  const badge = getDonorBadge(normalizedDonor.total_donations);
 
   // Parse phone number for WhatsApp URL (e.g. 01712345678 -> 8801712345678)
-  const cleanPhone = donor.phone.trim();
+  const cleanPhone = normalizedDonor.phone.trim();
   const waPhone = cleanPhone.startsWith('0') 
     ? '88' + cleanPhone 
     : cleanPhone.startsWith('+') 
@@ -43,7 +44,7 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
       : cleanPhone;
 
   const waMessage = encodeURIComponent(
-    `Assalamu Alaikum ${donor.name}, we found your contact on Bloodify247. We urgently need ${donor.blood_group} blood. Are you available to donate?`
+    `Assalamu Alaikum ${normalizedDonor.name}, we found your contact on Bloodify247. We urgently need ${normalizedDonor.blood_group} blood. Are you available to donate?`
   );
   
   const StatusIcon = statusIcon;
@@ -52,7 +53,7 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
   return (
     <div className="glass-panel glass-panel-hover rounded-2xl overflow-hidden relative border transition-all duration-300 group flex flex-col justify-between">
       {/* Visual background blob for hero status */}
-      {donor.total_donations >= 6 && (
+      {normalizedDonor.total_donations >= 6 && (
         <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 dark:bg-red-500/10 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none" />
       )}
 
@@ -61,22 +62,22 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
         <div className="flex items-center gap-3">
           {/* Blood Group Badge */}
           <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-red-500 text-white font-extrabold text-2xl shadow-md shadow-red-500/20">
-            {donor.blood_group}
+            {normalizedDonor.blood_group}
           </div>
           <div>
             <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">
-              {donor.name}
+              {normalizedDonor.name}
             </h3>
             <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
               <MapPin className="w-3.5 h-3.5 text-red-500/70" />
-              <span>{donor.area}</span>
+              <span>{normalizedDonor.area}</span>
             </div>
           </div>
         </div>
 
         {/* Priority Badge */}
         <span className={`px-2.5 py-1 rounded-full text-xs font-medium tracking-wide ${badge.color}`}>
-          {badge.label}
+          {getDonorBadgeLabel(badge.label, t)}
         </span>
       </div>
 
@@ -90,11 +91,11 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
         </div>
 
         {/* Cooldown progress bar */}
-        {isCooldownActive && donor.is_available && (
+        {isCooldownActive && normalizedDonor.is_available && (
           <div className="space-y-1 mt-2">
             <div className="flex justify-between text-[11px] text-slate-400 dark:text-zinc-500">
-              <span>Cooldown Progress</span>
-              <span>{Math.round(((90 - daysRemaining) / 90) * 100)}% ({daysRemaining} days left)</span>
+              <span>{t('cooldownProgress')}</span>
+              <span>{Math.round(((90 - daysRemaining) / 90) * 100)}% ({t('daysLeft', { days: daysRemaining })})</span>
             </div>
             <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
               <div 
@@ -108,7 +109,7 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
         <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-slate-200/50 dark:border-zinc-800/50 text-xs text-slate-500 dark:text-zinc-400">
           <div className="flex justify-between">
             <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-red-500/60" /> Phone:
+              <Phone className="w-3.5 h-3.5 text-red-500/60" /> {t('phone')}:
             </span>
             <span className="font-semibold text-slate-800 dark:text-zinc-200">
               {showContact ? cleanPhone : maskedPhone}
@@ -116,21 +117,21 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
           </div>
           <div className="flex justify-between">
             <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-red-500/60" /> Last Donation:
+              <Calendar className="w-3.5 h-3.5 text-red-500/60" /> {t('lastDonation')}:
             </span>
             <span className="font-medium text-slate-800 dark:text-zinc-200">
-              {donor.last_donation_date 
-                ? new Date(donor.last_donation_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-                : 'Never Donated'
+              {normalizedDonor.last_donation_date 
+                ? new Date(normalizedDonor.last_donation_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                : t('never')
               }
             </span>
           </div>
           <div className="flex justify-between">
             <span className="flex items-center gap-1">
-              <Heart className="w-3.5 h-3.5 text-red-500/60" /> Total Donations:
+              <Heart className="w-3.5 h-3.5 text-red-500/60" /> {t('timesDonatedHeader')}:
             </span>
             <span className="font-semibold text-slate-800 dark:text-zinc-200">
-              {donor.total_donations} time{donor.total_donations === 1 ? '' : 's'}
+              {t('timesUnit', { count: normalizedDonor.total_donations })}
             </span>
           </div>
         </div>
@@ -149,7 +150,7 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
         ) : (
           <>
             <a
-              href={`tel:${donor.phone}`}
+              href={`tel:${normalizedDonor.phone}`}
               className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-650 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200"
             >
               <Phone className="w-3.5 h-3.5" />

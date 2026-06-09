@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Sparkles, Languages } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -6,7 +6,19 @@ import { useApp } from '../context/AppContext';
 export default function Layout({ children }) {
   const { theme, toggleTheme, isAdmin, logoutAdmin, isDemoMode, language, setLanguage, t } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuAnimKey, setMobileMenuAnimKey] = useState(0);
   const location = useLocation();
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen((prev) => {
+      if (!prev) setMobileMenuAnimKey((key) => key + 1);
+      return !prev;
+    });
+  };
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   // Obfuscated navigation - Admin panel is accessed only by going to /adil manually
   const navigation = [
@@ -45,7 +57,7 @@ export default function Layout({ children }) {
                 <span className="font-extrabold text-sm md:text-base leading-tight tracking-tight text-slate-900 dark:text-white group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">
                   Bloodify247
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-red-500 dark:text-red-400">
+                <span className="text-[11px] font-bold tracking-wider text-red-500 dark:text-red-400">
                   By GraffixInnovation
                 </span>
               </div>
@@ -117,20 +129,34 @@ export default function Layout({ children }) {
 
               {/* Hamburger Menu */}
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2.5 rounded-xl text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-all duration-200 border border-slate-200/50 dark:border-zinc-800/50"
+                onClick={toggleMobileMenu}
+                className="md:hidden relative p-2.5 rounded-xl text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-colors duration-200 border border-slate-200/50 dark:border-zinc-800/50 cursor-pointer"
+                aria-expanded={mobileMenuOpen}
+                aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
               >
-                {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                <Menu
+                  className={`w-4 h-4 mobile-menu-icon absolute inset-0 m-auto ${
+                    mobileMenuOpen ? 'mobile-menu-icon--menu-hidden' : 'mobile-menu-icon--menu'
+                  }`}
+                />
+                <X
+                  className={`w-4 h-4 mobile-menu-icon absolute inset-0 m-auto ${
+                    mobileMenuOpen ? 'mobile-menu-icon--close-visible' : 'mobile-menu-icon--close'
+                  }`}
+                />
               </button>
             </div>
           </div>
         </div>
 
         {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden px-4 pt-2 pb-4 border-t border-slate-200/50 dark:border-zinc-800/50 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md">
-            <div className="space-y-1">
-              {navigation.map((item) => {
+        <div
+          className={`md:hidden mobile-nav-shell ${mobileMenuOpen ? 'mobile-nav-shell--open' : ''}`}
+          aria-hidden={!mobileMenuOpen}
+        >
+          <div className="mobile-nav-dropdown">
+            <div key={mobileMenuAnimKey} className="mobile-nav-dropdown__inner space-y-1">
+              {navigation.map((item, index) => {
                 const Icon = item.icon;
                 const active = isActive(item.path);
                 return (
@@ -138,7 +164,9 @@ export default function Layout({ children }) {
                     key={item.nameKey}
                     to={item.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 ${
+                    style={{ animationDelay: mobileMenuOpen ? `${100 + index * 45}ms` : '0ms' }}
+                    tabIndex={mobileMenuOpen ? 0 : -1}
+                    className={`mobile-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors duration-200 ${
                       active
                         ? 'bg-red-500 text-white shadow-md'
                         : 'text-slate-600 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-zinc-900'
@@ -153,7 +181,9 @@ export default function Layout({ children }) {
                 <Link
                   to="/adil"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all ${
+                  style={{ animationDelay: mobileMenuOpen ? `${100 + navigation.length * 45}ms` : '0ms' }}
+                  tabIndex={mobileMenuOpen ? 0 : -1}
+                  className={`mobile-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors duration-200 ${
                     isActive('/adil') ? 'bg-red-500 text-white' : 'text-rose-500'
                   }`}
                 >
@@ -167,7 +197,9 @@ export default function Layout({ children }) {
                     logoutAdmin();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium border border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-200"
+                  style={{ animationDelay: mobileMenuOpen ? `${100 + (navigation.length + 1) * 45}ms` : '0ms' }}
+                  tabIndex={mobileMenuOpen ? 0 : -1}
+                  className="mobile-nav-item w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium border border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors duration-200 cursor-pointer"
                 >
                   <Shield className="w-5 h-5" />
                   {t('logoutAdmin')}
@@ -175,7 +207,7 @@ export default function Layout({ children }) {
               )}
             </div>
           </div>
-        )}
+        </div>
       </header>
 
       {/* Main Body */}
