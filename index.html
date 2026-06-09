@@ -31,15 +31,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
 
-    <!-- Google Fonts: loaded via <link> instead of CSS @import for non-blocking render -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" />
+    <!-- Google Fonts: preload asynchronously so first paint is not blocked on mobile networks -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" />
+    </noscript>
     
     <!-- Theme check initialization to prevent flashes on reload -->
     <script>
       (function() {
-        var theme = 'dark';
+        var theme = 'light';
         try {
-          theme = localStorage.getItem('theme') || 'dark';
+          theme = localStorage.getItem('theme') || 'light';
         } catch (e) {}
         if (theme === 'dark') {
           document.documentElement.classList.add('dark');
@@ -51,7 +54,7 @@
   </head>
   <body>
     <div id="root">
-      <!-- Static preloader to display instantly during bundle download (eliminates white screen) -->
+      <!-- Lightweight static shell shown only while the JS bundle downloads -->
       <div class="static-preloader" style="
         position: fixed;
         inset: 0;
@@ -60,36 +63,10 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        overflow: hidden;
         font-family: system-ui, -apple-system, sans-serif;
-        transition: background-color 0.3s ease;
+        background: #fafafa;
+        color: #18181b;
       ">
-        <!-- Decorative background glows -->
-        <div style="
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 320px;
-          height: 320px;
-          background-color: rgba(239, 68, 68, 0.1);
-          border-radius: 50%;
-          filter: blur(100px);
-          pointer-events: none;
-        "></div>
-        <div style="
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 192px;
-          height: 192px;
-          background-color: rgba(244, 63, 94, 0.1);
-          border-radius: 50%;
-          filter: blur(60px);
-          pointer-events: none;
-        "></div>
-
         <div style="
           display: flex;
           flex-direction: column;
@@ -97,58 +74,38 @@
           max-width: 384px;
           padding: 0 24px;
           text-align: center;
-          z-index: 10;
         ">
-          <!-- Pulsing logo container -->
           <div style="
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 96px;
-            height: 96px;
-            margin-bottom: 32px;
+            width: 72px;
+            height: 72px;
+            margin-bottom: 20px;
           ">
-            <!-- Ping ripple -->
-            <div class="static-ping" style="
-              position: absolute;
-              inset: -4px;
-              border-radius: 50%;
-              background-color: rgba(239, 68, 68, 0.3);
-            "></div>
-            <!-- Pulse ripple -->
-            <div class="static-pulse" style="
-              position: absolute;
-              inset: -16px;
-              border-radius: 50%;
-              background-color: rgba(239, 68, 68, 0.1);
-            "></div>
-            <!-- Heart Container -->
             <div style="
-              position: relative;
               display: flex;
               align-items: center;
               justify-content: center;
-              width: 80px;
-              height: 80px;
-              border-radius: 24px;
+              width: 64px;
+              height: 64px;
+              border-radius: 20px;
               background: linear-gradient(135deg, #ef4444, #f43f5e);
-              box-shadow: 0 25px 50px -12px rgba(239, 68, 68, 0.3);
+              box-shadow: 0 18px 36px -18px rgba(239, 68, 68, 0.45);
             ">
-              <!-- Custom ECG Droplet Logo -->
-              <svg class="static-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" style="width: 44px; height: 44px;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" style="width: 38px; height: 38px;">
                 <path d="M50 12C50 12 22 45 22 65C22 80.46 34.54 93 50 93C65.46 93 78 80.46 78 65C78 45 50 12 50 12Z" fill="#ffffff" />
                 <path d="M32 65h10l4-18 5 32 4-22 4 8h9" stroke="#ef4444" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </div>
           </div>
 
-          <!-- App Title -->
-          <div style="margin-bottom: 16px;">
+          <div>
             <h1 style="
-              font-size: 30px;
+              font-size: 26px;
               font-weight: 900;
-              letter-spacing: -0.025em;
+              letter-spacing: 0;
               margin: 0 0 8px 0;
               display: flex;
               align-items: center;
@@ -162,7 +119,7 @@
               ">Bloodify</span>
               <span class="static-title-blood" style="font-weight: 800; transition: color 0.3s ease;">247</span>
             </h1>
-            <p class="static-pulse-text" style="
+            <p style="
               font-size: 12px;
               font-weight: 700;
               color: rgba(239, 68, 68, 0.8);
@@ -173,117 +130,22 @@
               <a href="https://www.graffixinnovation.com/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">A project of GraffixInnovation</a>
             </p>
           </div>
-
-          <!-- Loading Bar -->
-          <div style="width: 192px; margin-top: 16px;">
-            <div class="static-loading-bar-track" style="
-              height: 3px;
-              width: 100%;
-              border-radius: 9999px;
-              overflow: hidden;
-              position: relative;
-              transition: background-color 0.3s ease;
-            ">
-              <div class="static-loading-bar" style="
-                height: 100%;
-                width: 50%;
-                background: linear-gradient(to right, #ef4444, #f43f5e);
-                border-radius: 9999px;
-                position: absolute;
-                top: 0;
-              "></div>
-            </div>
-            <div class="static-connecting-text" style="
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 6px;
-              margin-top: 12px;
-              font-size: 11px;
-              font-weight: 700;
-              letter-spacing: 0.05em;
-              text-transform: uppercase;
-              transition: color 0.3s ease;
-            ">
-              <span class="static-dot-pulse" style="
-                width: 6px;
-                height: 6px;
-                border-radius: 50%;
-                background-color: #ef4444;
-              "></span>
-              Connecting to database...
-            </div>
-          </div>
         </div>
       </div>
 
       <style>
-        /* Light mode defaults (White theme) */
         body {
           background-color: #fafafa !important;
           margin: 0;
         }
-        .static-preloader {
-          background-color: #fafafa !important;
-        }
         .static-title-blood {
           color: #18181b !important;
         }
-        .static-connecting-text {
-          color: #71717a !important;
-        }
-        .static-loading-bar-track {
-          background-color: #e4e4e7 !important;
-        }
-
-        /* Dark mode overrides (Black theme) */
-        .dark body {
-          background-color: #09090b !important;
-        }
         .dark .static-preloader {
-          background-color: #09090b !important;
+          background-color: #fafafa !important;
         }
         .dark .static-title-blood {
-          color: #f4f4f5 !important;
-        }
-        .dark .static-connecting-text {
-          color: #a1a1aa !important;
-        }
-        .dark .static-loading-bar-track {
-          background-color: #27272a !important;
-        }
-
-        @keyframes staticPing {
-          0% { transform: scale(1); opacity: 0.75; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
-        @keyframes staticPulse {
-          0%, 100% { transform: scale(1); opacity: 0.5; }
-          50% { transform: scale(1.1); opacity: 0.8; }
-        }
-        @keyframes staticBounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
-        }
-        @keyframes staticBar {
-          0% { left: -100%; width: 50%; }
-          50% { left: 25%; width: 70%; }
-          100% { left: 100%; width: 50%; }
-        }
-        .static-ping {
-          animation: staticPing 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-        .static-pulse, .static-dot-pulse {
-          animation: staticPulse 1.5s ease-in-out infinite;
-        }
-        .static-pulse-text {
-          animation: staticPulse 2s ease-in-out infinite;
-        }
-        .static-bounce {
-          animation: staticBounce 0.6s ease-in-out infinite;
-        }
-        .static-loading-bar {
-          animation: staticBar 1.5s ease-in-out infinite;
+          color: #18181b !important;
         }
       </style>
     </div>

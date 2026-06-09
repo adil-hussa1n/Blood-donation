@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { Heart, Sparkles } from 'lucide-react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { dbService } from '../services/db';
 import { supabase, isDemoMode } from '../services/supabase';
 
@@ -613,14 +612,13 @@ export const AppProvider = ({ children }) => {
     }
   });
 
-  const [initialFetchDone, setInitialFetchDone] = useState(false);
   const [error, setError] = useState(null);
 
-  // Set default theme to 'dark'
+  // Set default theme to light for a faster, less jarring first paint on mobile.
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('theme');
     if (saved) return saved;
-    return 'dark';
+    return 'light';
   });
 
   const [language, setLanguage] = useState(() => {
@@ -754,39 +752,15 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Enforce a minimum loading timer for the preloader on startup
+  // Load data after the first app shell renders. Cached content appears immediately;
+  // first-time visitors see page skeletons instead of a full-screen blocking loader.
   useEffect(() => {
-    const startTime = Date.now();
     const hasCachedData = donors.length > 0 || emergencyRequests.length > 0;
+    const refreshTimer = window.setTimeout(() => {
+      refreshData(hasCachedData);
+    }, 0);
 
-    if (hasCachedData) {
-      // Trigger a silent background refresh to update stale cache
-      refreshData(true);
-
-      // Resolve the preloader after a brief aesthetic intro delay (1.2 seconds)
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = 1200 - elapsedTime;
-      if (remainingTime > 0) {
-        setTimeout(() => {
-          setInitialFetchDone(true);
-        }, remainingTime);
-      } else {
-        setInitialFetchDone(true);
-      }
-    } else {
-      // No cache available (first load) - block on database fetch
-      refreshData(false).then(() => {
-        const elapsedTime = Date.now() - startTime;
-        const remainingTime = 2500 - elapsedTime; // slightly shorter for snappier first load
-        if (remainingTime > 0) {
-          setTimeout(() => {
-            setInitialFetchDone(true);
-          }, remainingTime);
-        } else {
-          setInitialFetchDone(true);
-        }
-      });
-    }
+    return () => window.clearTimeout(refreshTimer);
   }, []);
 
   const lastClickCoords = useRef({ x: 0, y: 0 });
@@ -979,67 +953,6 @@ export const AppProvider = ({ children }) => {
     setEmergencyRequests(prev => prev.filter(r => r.id !== id));
     return { success: true };
   };
-
-  // Render preloader screen during initial fetch
-  if (!initialFetchDone) {
-    return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 dark:bg-zinc-950 transition-colors duration-300 overflow-hidden">
-        {/* Soft decorative background glows */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-red-600/10 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-rose-500/10 rounded-full blur-[60px] pointer-events-none" />
-
-        <div className="flex flex-col items-center max-w-sm px-6 text-center space-y-8 animate-fade-in relative z-10">
-
-          {/* Pulsing Central Logo with Ripple Rings */}
-          <div className="relative flex items-center justify-center w-24 h-24">
-            {/* Pulsing ripples */}
-            <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping opacity-75 duration-1000" />
-            <div className="absolute -inset-4 rounded-full bg-red-500/10 animate-pulse opacity-50 duration-700" />
-
-            {/* The main logo container */}
-            <div className="relative flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-2xl shadow-red-500/30 scale-105 hover:scale-110 transition-transform duration-300">
-              <svg className="w-11 h-11 animate-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-                <path d="M50 12C50 12 22 45 22 65C22 80.46 34.54 93 50 93C65.46 93 78 80.46 78 65C78 45 50 12 50 12Z" fill="#ffffff" />
-                <path d="M32 65h10l4-18 5 32 4-22 4 8h9" stroke="#ef4444" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-              <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-yellow-300 animate-pulse" />
-            </div>
-          </div>
-
-          {/* Typography */}
-          <div className="space-y-3">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-              <span className="bg-gradient-to-r from-red-500 to-rose-400 bg-clip-text text-transparent">
-                Bloodify
-              </span>{' '}
-              <span className="text-slate-900 dark:text-zinc-100 font-extrabold">247</span>
-            </h1>
-            <p className="text-xs font-bold text-rose-500/80 uppercase tracking-[0.2em] animate-pulse">
-              <a
-                href="https://www.graffixinnovation.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-rose-400 transition-colors"
-              >
-                A project of GraffixInnovation
-              </a>
-            </p>
-          </div>
-
-          {/* Elegant customized progress line */}
-          <div className="w-48 space-y-3 pt-4">
-            <div className="h-[3px] w-full bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden relative">
-              <div className="h-full w-1/2 bg-gradient-to-r from-red-500 to-rose-500 rounded-full absolute top-0 animate-[loading-bar_1.5s_infinite_ease-in-out]" />
-            </div>
-            <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 dark:text-zinc-400 font-bold tracking-wider uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-              Connecting to database...
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <AppContext.Provider
