@@ -382,50 +382,94 @@ export default function Admin() {
             ) : (
               <>
                 <div className="animate-fade-in">
-                <table className="w-full text-left text-sm border-collapse table-fixed">
-                  <thead>
-                    <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
-                      <th className="p-4 w-[22%]">{t('nameHeader')}</th>
-                      <th className="p-4 w-[12%]">{t('bloodGroupHeader')}</th>
-                      <th className="p-4 w-[18%]">{t('phoneHeader')}</th>
-                      <th className="p-4 w-[22%]">{t('areaHeader')}</th>
-                      <th className="p-4 w-[14%]">{t('donationsHeader')}</th>
-                      <th className="p-4 w-[12%] text-center">{t('actionsHeader')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse table-fixed">
+                      <thead>
+                        <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                          <th className="p-4 w-[22%]">{t('nameHeader')}</th>
+                          <th className="p-4 w-[12%]">{t('bloodGroupHeader')}</th>
+                          <th className="p-4 w-[18%]">{t('phoneHeader')}</th>
+                          <th className="p-4 w-[22%]">{t('areaHeader')}</th>
+                          <th className="p-4 w-[14%]">{t('donationsHeader')}</th>
+                          <th className="p-4 w-[12%] text-center">{t('actionsHeader')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                        {paginatedDonors.map((donor) => (
+                          <tr key={donor.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                            <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={donor.name}>
+                              {donor.name}
+                            </td>
+                            <td className="p-4">
+                              <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-2 py-0.5 rounded-md text-xs">
+                                {donor.blood_group}
+                              </span>
+                            </td>
+                            <td className="p-4 truncate overflow-hidden">{donor.phone}</td>
+                            <td className="p-4 truncate overflow-hidden" title={donor.area}>
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
+                                <span className="truncate">{donor.area}</span>
+                              </span>
+                            </td>
+                            <td className="p-4 font-semibold">{t('timesUnit', { count: donor.total_donations })}</td>
+                            <td className="p-4 text-center">
+                              <button
+                                onClick={() => startDeleteConfirm(donor.id, 'donor')}
+                                className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all cursor-pointer"
+                                title="Delete fake/spam donor"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Stack Card View */}
+                  <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
                     {paginatedDonors.map((donor) => (
-                      <tr key={donor.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
-                        <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={donor.name}>
-                          {donor.name}
-                        </td>
-                        <td className="p-4">
-                          <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-2 py-0.5 rounded-md text-xs">
+                      <div key={donor.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div className="text-left space-y-1">
+                            <span className="font-extrabold text-slate-900 dark:text-white text-base block">
+                              {donor.name}
+                            </span>
+                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                              {donor.phone}
+                            </span>
+                          </div>
+                          <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-3 py-1 rounded-lg text-xs">
                             {donor.blood_group}
                           </span>
-                        </td>
-                        <td className="p-4 truncate overflow-hidden">{donor.phone}</td>
-                        <td className="p-4 truncate overflow-hidden" title={donor.area}>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-xs text-slate-650 dark:text-zinc-300 pt-1">
                           <span className="flex items-center gap-1">
                             <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
-                            <span className="truncate">{donor.area}</span>
+                            <span className="font-medium">{donor.area}</span>
                           </span>
-                        </td>
-                        <td className="p-4 font-semibold">{t('timesUnit', { count: donor.total_donations })}</td>
-                        <td className="p-4 text-center">
+                          <span className="font-bold bg-slate-100 dark:bg-zinc-800/60 px-2 py-0.5 rounded-md text-[11px]">
+                            {t('timesUnit', { count: donor.total_donations })}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-end pt-1">
                           <button
                             onClick={() => startDeleteConfirm(donor.id, 'donor')}
-                            className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all"
-                            title="Delete fake/spam donor"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
+                            {t('deleteDonorAction')}
                           </button>
-                        </td>
-                      </tr>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </div>
+                </div>
               {/* Pagination Controls */}
               {totalDonorPages > 1 && (
                 <div className="flex justify-between items-center p-5 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
@@ -470,47 +514,88 @@ export default function Admin() {
             ) : (
               <>
                 <div className="animate-fade-in">
-                <table className="w-full text-left text-sm border-collapse table-fixed">
-                  <thead>
-                    <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
-                      <th className="p-4 w-[12%]">{t('bloodNeededHeader')}</th>
-                      <th className="p-4 w-[22%]">{t('hospitalAreaHeader')}</th>
-                      <th className="p-4 w-[16%]">{t('contactPhoneHeader')}</th>
-                      <th className="p-4 w-[24%]">{t('noteDetailsHeader')}</th>
-                      <th className="p-4 w-[14%]">{t('postedDateHeader')}</th>
-                      <th className="p-4 w-[12%] text-center">{t('actionsHeader')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse table-fixed">
+                      <thead>
+                        <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                          <th className="p-4 w-[12%]">{t('bloodNeededHeader')}</th>
+                          <th className="p-4 w-[22%]">{t('hospitalAreaHeader')}</th>
+                          <th className="p-4 w-[16%]">{t('contactPhoneHeader')}</th>
+                          <th className="p-4 w-[24%]">{t('noteDetailsHeader')}</th>
+                          <th className="p-4 w-[14%]">{t('postedDateHeader')}</th>
+                          <th className="p-4 w-[12%] text-center">{t('actionsHeader')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                        {paginatedEmergencies.map((req) => (
+                          <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                            <td className="p-4">
+                              <span className="bg-red-500 text-white font-extrabold px-2.5 py-0.5 rounded-lg text-xs">
+                                {req.blood_group}
+                              </span>
+                            </td>
+                            <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={req.area}>{req.area}</td>
+                            <td className="p-4 truncate overflow-hidden">{req.contact}</td>
+                            <td className="p-4 truncate overflow-hidden" title={req.note}>
+                              {req.note || t('noDescription')}
+                            </td>
+                            <td className="p-4 text-xs text-slate-400 dark:text-zinc-500">
+                              {new Date(req.created_at).toLocaleString()}
+                            </td>
+                            <td className="p-4 text-center">
+                              <button
+                                onClick={() => startDeleteConfirm(req.id, 'emergency')}
+                                className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all cursor-pointer"
+                                title="Delete emergency request"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Stack Card View */}
+                  <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
                     {paginatedEmergencies.map((req) => (
-                      <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
-                        <td className="p-4">
-                          <span className="bg-red-500 text-white font-extrabold px-2.5 py-0.5 rounded-lg text-xs">
+                      <div key={req.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div className="text-left space-y-1">
+                            <span className="font-extrabold text-slate-900 dark:text-white text-base block">
+                              {req.area}
+                            </span>
+                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                              {req.contact}
+                            </span>
+                          </div>
+                          <span className="bg-red-500 text-white font-black px-3 py-1 rounded-lg text-xs">
                             {req.blood_group}
                           </span>
-                        </td>
-                        <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={req.area}>{req.area}</td>
-                        <td className="p-4 truncate overflow-hidden">{req.contact}</td>
-                        <td className="p-4 truncate overflow-hidden" title={req.note}>
-                          {req.note || t('noDescription')}
-                        </td>
-                        <td className="p-4 text-xs text-slate-400 dark:text-zinc-500">
-                          {new Date(req.created_at).toLocaleString()}
-                        </td>
-                        <td className="p-4 text-center">
+                        </div>
+
+                        {req.note && (
+                          <p className="text-xs text-slate-650 dark:text-zinc-350 bg-slate-50 dark:bg-zinc-900/40 p-2.5 rounded-xl border border-slate-200/20 dark:border-zinc-800/30 text-left leading-normal">
+                            {req.note}
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-zinc-500 pt-1">
+                          <span>{new Date(req.created_at).toLocaleString()}</span>
                           <button
                             onClick={() => startDeleteConfirm(req.id, 'emergency')}
-                            className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all"
-                            title="Delete emergency request"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
+                            {t('deleteRequest')}
                           </button>
-                        </td>
-                      </tr>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </div>
+                </div>
               {/* Pagination Controls */}
               {totalEmergencyPages > 1 && (
                 <div className="flex justify-between items-center p-5 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">

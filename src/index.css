@@ -19,7 +19,9 @@
 }
 
 @utility glass-panel {
-  @apply bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-slate-200/50 dark:border-zinc-800/50 shadow-sm;
+  @apply bg-white/80 dark:bg-zinc-950/85 border border-slate-200/50 dark:border-zinc-900/50 shadow-sm;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 @utility glass-panel-hover {

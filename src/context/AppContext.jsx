@@ -3,6 +3,61 @@ import { Heart, Sparkles } from 'lucide-react';
 import { dbService } from '../services/db';
 import { supabase, isDemoMode } from '../services/supabase';
 
+// Safe storage wrappers to prevent crashes in private browsing / security-conscious browsers
+const localStorage = (() => {
+  const memoryStorage = {};
+  return {
+    getItem(key) {
+      try {
+        return window.localStorage.getItem(key);
+      } catch (e) {
+        return memoryStorage[key] || null;
+      }
+    },
+    setItem(key, value) {
+      try {
+        window.localStorage.setItem(key, value);
+      } catch (e) {
+        memoryStorage[key] = String(value);
+      }
+    },
+    removeItem(key) {
+      try {
+        window.localStorage.removeItem(key);
+      } catch (e) {
+        delete memoryStorage[key];
+      }
+    }
+  };
+})();
+
+const sessionStorage = (() => {
+  const memoryStorage = {};
+  return {
+    getItem(key) {
+      try {
+        return window.sessionStorage.getItem(key);
+      } catch (e) {
+        return memoryStorage[key] || null;
+      }
+    },
+    setItem(key, value) {
+      try {
+        window.sessionStorage.setItem(key, value);
+      } catch (e) {
+        memoryStorage[key] = String(value);
+      }
+    },
+    removeItem(key) {
+      try {
+        window.sessionStorage.removeItem(key);
+      } catch (e) {
+        delete memoryStorage[key];
+      }
+    }
+  };
+})();
+
 const AppContext = createContext(undefined);
 
 export const AREAS = [

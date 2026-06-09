@@ -1,5 +1,40 @@
 import { supabase, isDemoMode } from './supabase';
 
+// Safe localStorage wrapper to prevent crashes in private browsing modes where storage is blocked
+const localStorage = (() => {
+  const memoryStorage = {};
+  return {
+    getItem(key) {
+      try {
+        return window.localStorage.getItem(key);
+      } catch (e) {
+        return memoryStorage[key] || null;
+      }
+    },
+    setItem(key, value) {
+      try {
+        window.localStorage.setItem(key, value);
+      } catch (e) {
+        memoryStorage[key] = String(value);
+      }
+    },
+    removeItem(key) {
+      try {
+        window.localStorage.removeItem(key);
+      } catch (e) {
+        delete memoryStorage[key];
+      }
+    },
+    clear() {
+      try {
+        window.localStorage.clear();
+      } catch (e) {
+        for (const k in memoryStorage) delete memoryStorage[k];
+      }
+    }
+  };
+})();
+
 // Helper to generate UUIDs in demo mode
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
