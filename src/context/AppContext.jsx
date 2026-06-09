@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Heart, Sparkles } from 'lucide-react';
 import { dbService } from '../services/db';
-import { isDemoMode } from '../services/supabase';
+import { supabase, isDemoMode } from '../services/supabase';
 
 const AppContext = createContext(undefined);
 
@@ -29,7 +29,7 @@ export const TRANSLATIONS = {
     emergencyRequests: 'Emergency Requests',
     adminDashboard: 'Admin Dashboard',
     logoutAdmin: 'Logout Admin',
-    
+
     // Hero & Search
     findDonors: 'Find Blood Donors',
     findDonorsDesc: 'Search active donors near you in Beanibazar local areas.',
@@ -46,13 +46,13 @@ export const TRANSLATIONS = {
     status: 'Status',
     call: 'Call',
     whatsapp: 'WhatsApp',
-    
+
     // Quick Stats
     totalRegistered: 'Total Registered',
     availableNow: 'Available Now',
     emergencyActive: 'Emergency Posts',
     activeDonors: 'Active Donors',
-    
+
     // Register Page
     managementPortal: 'Donor Management Portal',
     portalDesc: 'Register as a new donor or manage your profile and update your donation history securely.',
@@ -66,7 +66,7 @@ export const TRANSLATIONS = {
     setAvailable: 'Set Available to Donate',
     availableDesc: 'Toggle to appear available on searches',
     completeRegistration: 'Complete Registration',
-    
+
     // Profile Update Section
     findProfile: 'Find Your Profile',
     enterPassword: 'Password',
@@ -80,7 +80,7 @@ export const TRANSLATIONS = {
     totalDonationsCount: 'Total Donations',
     times: 'times',
     never: 'Never',
-    
+
     // Emergency Page
     emergencyTitle: 'Emergency Blood Requests',
     emergencyDesc: 'If you or your family needs blood urgently in Beanibazar, post an emergency request here.',
@@ -99,7 +99,7 @@ export const TRANSLATIONS = {
     actions: 'Actions',
     deleteRequest: 'Delete Request',
     enterDeletionPassword: 'Enter Deletion Password',
-    
+
     // Admin Page
     adminTitle: 'Administrator Console',
     adminDesc: 'Secure moderator panel for managing database listings and requests.',
@@ -110,7 +110,7 @@ export const TRANSLATIONS = {
     manageDonorsList: 'Registered Donors Directory',
     bloodStock: 'Blood Stock status by groups',
     deleteDonorAction: 'Delete Donor',
-    
+
     // Footers
     developedBy: 'Design & Developed By',
     dedicatedTo: 'Dedicated to saving lives in Beanibazar, Sylhet, Bangladesh.',
@@ -151,7 +151,7 @@ export const TRANSLATIONS = {
     passwordPlaceholder: 'Enter account password or choose a password...',
     recoveryPasswordPlaceholder: 'Enter new password...',
     notePlaceholder: 'Details like surgery reason, amount needed, timing, etc...',
-    donorNamePlaceholder: 'e.g. Faisal Ahmed',
+    donorNamePlaceholder: 'e.g. ADIL HUSSAIN',
     phonePlaceholder: 'e.g. 01712345678',
     choosePasswordPlaceholder: 'Choose password to update profile later...',
     enterPasswordPlaceholder: 'Enter password...',
@@ -271,7 +271,7 @@ export const TRANSLATIONS = {
     emergencyRequests: 'জরুরি রক্তের অনুরোধ',
     adminDashboard: 'অ্যাডমিন ড্যাশবোর্ড',
     logoutAdmin: 'লগআউট অ্যাডমিন',
-    
+
     // Hero & Search
     findDonors: 'রক্তদাতা অনুসন্ধান',
     findDonorsDesc: 'বিয়ানীবাজারের স্থানীয় এলাকায় আপনার নিকটবর্তী সক্রিয় রক্তদাতাদের খুঁজুন।',
@@ -288,13 +288,13 @@ export const TRANSLATIONS = {
     status: 'অবস্থা',
     call: 'কল করুন',
     whatsapp: 'হোয়াটসঅ্যাপ',
-    
+
     // Quick Stats
     totalRegistered: 'মোট নিবন্ধিত',
     availableNow: 'বর্তমানে প্রস্তুত',
     emergencyActive: 'জরুরি অনুরোধসমূহ',
     activeDonors: 'সক্রিয় রক্তদাতা',
-    
+
     // Register Page
     managementPortal: 'রক্তদাতা ব্যবস্থাপনা পোর্টাল',
     portalDesc: 'নতুন রক্তদাতা হিসেবে নিবন্ধন করুন বা আপনার প্রোফাইল ও রক্তদানের তথ্য আপডেট করুন।',
@@ -308,7 +308,7 @@ export const TRANSLATIONS = {
     setAvailable: 'রক্তদানে প্রস্তুত থাকুন',
     availableDesc: 'অনুসন্ধানে আপনার নাম দেখাতে টিক দিন',
     completeRegistration: 'নিবন্ধন সম্পন্ন করুন',
-    
+
     // Profile Update Section
     findProfile: 'আপনার প্রোফাইল খুঁজুন',
     enterPassword: 'পাসওয়ার্ড',
@@ -322,7 +322,7 @@ export const TRANSLATIONS = {
     totalDonationsCount: 'মোট রক্তদান',
     times: 'বার',
     never: 'কখনো নয়',
-    
+
     // Emergency Page
     emergencyTitle: 'জরুরি রক্তের অনুরোধসমূহ',
     emergencyDesc: 'যদি আপনার বা আপনার পরিবারের বিয়ানীবাজারে জরুরি রক্তের প্রয়োজন হয়, এখানে অনুরোধ পোস্ট করুন।',
@@ -341,7 +341,7 @@ export const TRANSLATIONS = {
     actions: 'অ্যাকশন',
     deleteRequest: 'অনুরোধ মুছে ফেলুন',
     enterDeletionPassword: 'মুছে ফেলার পাসওয়ার্ড লিখুন',
-    
+
     // Footers
     developedBy: 'ডিজাইন ও ডেভেলপমেন্টে',
     dedicatedTo: 'বিয়ানীবাজার, সিলেট, বাংলাদেশে জীবন বাঁচাতে নিবেদিত।',
@@ -501,10 +501,10 @@ export const calculateDaysSince = (dateString) => {
   if (!dateString) return Infinity;
   const lastDate = new Date(dateString);
   const today = new Date();
-  
+
   lastDate.setHours(0, 0, 0, 0);
   today.setHours(0, 0, 0, 0);
-  
+
   const diffTime = today.getTime() - lastDate.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
@@ -531,7 +531,7 @@ export const AppProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [initialFetchDone, setInitialFetchDone] = useState(false);
   const [error, setError] = useState(null);
-  
+
   // Set default theme to 'dark'
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('theme');
@@ -574,6 +574,17 @@ export const AppProvider = ({ children }) => {
     if (!silent) setLoading(true);
     setError(null);
     try {
+      if (!isDemoMode && supabase) {
+        try {
+          await Promise.all([
+            supabase.rpc('reset_expired_cooldowns'),
+            supabase.rpc('prune_expired_emergencies')
+          ]);
+        } catch (e) {
+          console.error("Database maintenance RPC error:", e);
+        }
+      }
+
       const donorsRes = await dbService.getDonors();
       const requestsRes = await dbService.getEmergencyRequests();
 
@@ -581,32 +592,34 @@ export const AppProvider = ({ children }) => {
       if (requestsRes.error) throw new Error(requestsRes.error.message);
 
       let fetchedDonors = donorsRes.data || [];
-      const fetchedRequests = requestsRes.data || [];
+      let fetchedRequests = requestsRes.data || [];
 
-      // 1. Auto-Availability Reset
-      const updatedDonorsPromises = fetchedDonors.map(async (donor) => {
-        const days = calculateDaysSince(donor.last_donation_date);
-        if (days >= 90 && !donor.is_available) {
-          dbService.updateDonorAvailability(donor.id, true);
-          return { ...donor, is_available: true };
-        }
-        return donor;
-      });
-      fetchedDonors = await Promise.all(updatedDonorsPromises);
+      if (isDemoMode) {
+        // Fallback maintenance for demo mode (local storage)
+        const updatedDonorsPromises = fetchedDonors.map(async (donor) => {
+          const days = calculateDaysSince(donor.last_donation_date);
+          if (days >= 90 && !donor.is_available) {
+            dbService.updateDonorAvailability(donor.id, true);
+            return { ...donor, is_available: true };
+          }
+          return donor;
+        });
+        fetchedDonors = await Promise.all(updatedDonorsPromises);
 
-      // 2. Auto-Prune Emergency Requests
-      const activeRequests = [];
-      for (const req of fetchedRequests) {
-        const hours = calculateHoursSince(req.created_at);
-        if (hours >= 24) {
-          dbService.deleteEmergencyRequest(req.id);
-        } else {
-          activeRequests.push(req);
+        const activeRequests = [];
+        for (const req of fetchedRequests) {
+          const hours = calculateHoursSince(req.created_at);
+          if (hours >= 24) {
+            dbService.deleteEmergencyRequest(req.id);
+          } else {
+            activeRequests.push(req);
+          }
         }
+        fetchedRequests = activeRequests;
       }
 
       setDonors(fetchedDonors);
-      setEmergencyRequests(activeRequests);
+      setEmergencyRequests(fetchedRequests);
     } catch (err) {
       console.error("Error fetching data:", err);
       setError(err.message || "Something went wrong while loading data.");
@@ -618,11 +631,11 @@ export const AppProvider = ({ children }) => {
   // Enforce a minimum 3 seconds loading timer for the preloader on startup
   useEffect(() => {
     const startTime = Date.now();
-    
+
     refreshData().then(() => {
       const elapsedTime = Date.now() - startTime;
       const remainingTime = 3000 - elapsedTime;
-      
+
       if (remainingTime > 0) {
         setTimeout(() => {
           setInitialFetchDone(true);
@@ -633,15 +646,71 @@ export const AppProvider = ({ children }) => {
     });
   }, []);
 
+  const lastClickCoords = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleGlobalClick = (e) => {
+      lastClickCoords.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('click', handleGlobalClick, { capture: true });
+    return () => window.removeEventListener('click', handleGlobalClick, { capture: true });
+  }, []);
+
   const toggleTheme = () => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!document.startViewTransition || isReducedMotion) {
+      setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+      return;
+    }
+
+    const { x, y } = lastClickCoords.current;
+    const endRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+
+    document.documentElement.classList.add('theme-transitioning');
+    const transition = document.startViewTransition(() => {
+      setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    });
+
+    transition.ready.then(() => {
+      document.documentElement.animate(
+        [
+          {
+            clipPath: `circle(0px at ${x}px ${y}px)`,
+          },
+          {
+            clipPath: `circle(${endRadius}px at ${x}px ${y}px)`,
+          },
+        ],
+        {
+          duration: 450,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          pseudoElement: '::view-transition-new(root)',
+        }
+      );
+    });
+
+    transition.finished.finally(() => {
+      document.documentElement.classList.remove('theme-transitioning');
+    });
   };
+
+  const [adminCredentials, setAdminCredentials] = useState(() => {
+    const savedUser = sessionStorage.getItem('adminUser');
+    const savedPass = sessionStorage.getItem('adminPass');
+    return savedUser && savedPass ? { username: savedUser, password: savedPass } : null;
+  });
 
   const loginAdmin = async (username, password) => {
     setError(null);
     const res = await dbService.verifyAdminCredentials(username, password);
     if (res.success) {
       setIsAdmin(true);
+      setAdminCredentials({ username, password });
+      sessionStorage.setItem('adminUser', username);
+      sessionStorage.setItem('adminPass', password);
       localStorage.setItem('isAdmin', 'true');
       return true;
     } else {
@@ -652,6 +721,9 @@ export const AppProvider = ({ children }) => {
 
   const logoutAdmin = () => {
     setIsAdmin(false);
+    setAdminCredentials(null);
+    sessionStorage.removeItem('adminUser');
+    sessionStorage.removeItem('adminPass');
     localStorage.removeItem('isAdmin');
   };
 
@@ -680,9 +752,9 @@ export const AppProvider = ({ children }) => {
     return { success: true };
   };
 
-  const registerDonor = async (donorData) => {
+  const registerDonor = async (donorData, turnstileToken, honeypot) => {
     setError(null);
-    const { data, error } = await dbService.registerDonor(donorData);
+    const { data, error } = await dbService.registerDonor(donorData, turnstileToken, honeypot);
     if (error) {
       setError(error.message);
       return { success: false, error };
@@ -691,9 +763,9 @@ export const AppProvider = ({ children }) => {
     return { success: true, data };
   };
 
-  const updateDonorAvailability = async (id, isAvailable) => {
+  const updateDonorAvailability = async (id, isAvailable, password) => {
     setError(null);
-    const { data, error } = await dbService.updateDonorAvailability(id, isAvailable);
+    const { data, error } = await dbService.updateDonorAvailability(id, isAvailable, password);
     if (error) {
       setError(error.message);
       return { success: false, error };
@@ -702,9 +774,9 @@ export const AppProvider = ({ children }) => {
     return { success: true, data };
   };
 
-  const updateDonorProfile = async (id, profileData) => {
+  const updateDonorProfile = async (id, profileData, password) => {
     setError(null);
-    const { data, error } = await dbService.updateDonorProfile(id, profileData);
+    const { data, error } = await dbService.updateDonorProfile(id, profileData, password);
     if (error) {
       setError(error.message);
       return { success: false, error };
@@ -713,9 +785,9 @@ export const AppProvider = ({ children }) => {
     return { success: true, data };
   };
 
-  const addDonationHistory = async (donorId, donationDate) => {
+  const addDonationHistory = async (donorId, donationDate, password) => {
     setError(null);
-    const { data, error } = await dbService.addDonationEvent(donorId, donationDate);
+    const { data, error } = await dbService.addDonationEvent(donorId, donationDate, password);
     if (error) {
       setError(error.message);
       return { success: false, error };
@@ -730,7 +802,9 @@ export const AppProvider = ({ children }) => {
       return { success: false, error: "Unauthorized" };
     }
     setError(null);
-    const { success, error } = await dbService.deleteDonor(id);
+    const adminUser = adminCredentials?.username || '';
+    const adminPass = adminCredentials?.password || '';
+    const { success, error } = await dbService.deleteDonor(id, adminUser, adminPass);
     if (error) {
       setError(error.message);
       return { success: false, error };
@@ -739,9 +813,9 @@ export const AppProvider = ({ children }) => {
     return { success: true };
   };
 
-  const createEmergencyRequest = async (requestData) => {
+  const createEmergencyRequest = async (requestData, turnstileToken, honeypot) => {
     setError(null);
-    const { data, error } = await dbService.createEmergencyRequest(requestData);
+    const { data, error } = await dbService.createEmergencyRequest(requestData, turnstileToken, honeypot);
     if (error) {
       setError(error.message);
       return { success: false, error };
@@ -750,9 +824,11 @@ export const AppProvider = ({ children }) => {
     return { success: true, data };
   };
 
-  const deleteEmergencyRequest = async (id) => {
+  const deleteEmergencyRequest = async (id, userPasscode) => {
     setError(null);
-    const { success, error } = await dbService.deleteEmergencyRequest(id);
+    const adminUser = adminCredentials?.username || '';
+    const adminPass = adminCredentials?.password || '';
+    const { success, error } = await dbService.deleteEmergencyRequest(id, adminUser, adminPass, userPasscode);
     if (error) {
       setError(error.message);
       return { success: false, error };
@@ -770,13 +846,13 @@ export const AppProvider = ({ children }) => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-rose-500/10 rounded-full blur-[60px] pointer-events-none" />
 
         <div className="flex flex-col items-center max-w-sm px-6 text-center space-y-8 animate-fade-in relative z-10">
-          
+
           {/* Pulsing Central Logo with Ripple Rings */}
           <div className="relative flex items-center justify-center w-24 h-24">
             {/* Pulsing ripples */}
             <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping opacity-75 duration-1000" />
             <div className="absolute -inset-4 rounded-full bg-red-500/10 animate-pulse opacity-50 duration-700" />
-            
+
             {/* The main logo container */}
             <div className="relative flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-2xl shadow-red-500/30 scale-105 hover:scale-110 transition-transform duration-300">
               <Heart className="w-10 h-10 fill-current animate-bounce" />

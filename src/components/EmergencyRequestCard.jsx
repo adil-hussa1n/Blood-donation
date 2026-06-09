@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Phone, MapPin, MessageCircle, AlertCircle, Clock, Calendar } from 'lucide-react';
 
 const formatTimeAgo = (dateString) => {
@@ -24,6 +24,7 @@ const formatTimeAgo = (dateString) => {
 };
 
 export default function EmergencyRequestCard({ request, onDelete, showAdminActions }) {
+  const [showContact, setShowContact] = useState(false);
   const timeAgo = formatTimeAgo(request.created_at);
   const isRecent = new Date().getTime() - new Date(request.created_at).getTime() < 24 * 60 * 60 * 1000;
 
@@ -38,6 +39,8 @@ export default function EmergencyRequestCard({ request, onDelete, showAdminActio
   const waMessage = encodeURIComponent(
     `Assalamu Alaikum, I saw your emergency request for ${request.blood_group} blood at ${request.area} on Beanibazar Blood Donation Platform. I want to help.`
   );
+
+  const maskedPhone = cleanPhone.slice(0, 5) + '*****' + cleanPhone.slice(-1);
 
   return (
     <div className={`glass-panel rounded-2xl overflow-hidden border transition-all duration-300 relative ${
@@ -75,7 +78,7 @@ export default function EmergencyRequestCard({ request, onDelete, showAdminActio
                   Emergency {request.blood_group} Required
                 </h4>
                 {isRecent && (
-                  <span className="bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                  <span className="bg-red-500/10 text-red-650 dark:text-red-450 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">
                     Recent
                   </span>
                 )}
@@ -104,33 +107,45 @@ export default function EmergencyRequestCard({ request, onDelete, showAdminActio
         {/* Contact Info */}
         <div className="text-xs text-slate-500 dark:text-zinc-400 mb-4 flex items-center gap-1.5">
           <AlertCircle className="w-4 h-4 text-red-500/60" />
-          <span>Contact Number: <strong className="text-slate-700 dark:text-zinc-300 font-semibold">{request.contact}</strong></span>
+          <span>Contact Number: <strong className="text-slate-700 dark:text-zinc-300 font-semibold">{showContact ? cleanPhone : maskedPhone}</strong></span>
         </div>
 
         {/* Buttons / Actions */}
         <div className="flex gap-2">
-          <a
-            href={`tel:${request.contact}`}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200"
-          >
-            <Phone className="w-3.5 h-3.5" />
-            Call Now
-          </a>
-          
-          <a
-            href={`https://wa.me/${waPhone}?text=${waMessage}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-[0.98] transition-all duration-200"
-          >
-            <MessageCircle className="w-3.5 h-3.5" />
-            WhatsApp
-          </a>
+          {!showContact ? (
+            <button
+              onClick={() => setShowContact(true)}
+              className="w-full flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200 cursor-pointer"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              Show Contact
+            </button>
+          ) : (
+            <>
+              <a
+                href={`tel:${request.contact}`}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                Call Now
+              </a>
+              
+              <a
+                href={`https://wa.me/${waPhone}?text=${waMessage}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-[0.98] transition-all duration-200"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                WhatsApp
+              </a>
+            </>
+          )}
 
           {showAdminActions && onDelete && (
             <button
               onClick={() => onDelete(request.id)}
-              className="bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 dark:text-rose-300 p-2 rounded-xl transition-colors"
+              className="bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 dark:text-rose-300 p-2 rounded-xl transition-colors text-xs font-bold"
               title="Delete request"
             >
               Delete

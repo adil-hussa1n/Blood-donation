@@ -1,16 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Phone, Calendar, MapPin, CheckCircle, Clock, AlertTriangle, MessageCircle, Heart } from 'lucide-react';
 import { calculateDaysSince, getDonorBadge } from '../context/AppContext';
 
 export default function DonorCard({ donor, onUpdateAvailability }) {
+  const [showContact, setShowContact] = useState(false);
+
   const daysSince = calculateDaysSince(donor.last_donation_date);
   const isCooldownActive = daysSince < 90;
   const daysRemaining = 90 - daysSince;
 
   // Determine availability status
-  // Green -> Available: is_available is true AND cooldown has elapsed
-  // Yellow -> Waiting: cooldown is active
-  // Red -> Unavailable: is_available is false (manually turned off)
   let statusColor = 'bg-emerald-500';
   let statusText = 'Available to Donate';
   let statusTextShort = 'Available';
@@ -47,6 +46,7 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
   );
   
   const StatusIcon = statusIcon;
+  const maskedPhone = cleanPhone.slice(0, 5) + '*****' + cleanPhone.slice(-1);
 
   return (
     <div className="glass-panel glass-panel-hover rounded-2xl overflow-hidden relative border transition-all duration-300 group flex flex-col justify-between">
@@ -107,6 +107,14 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
         <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-slate-200/50 dark:border-zinc-800/50 text-xs text-slate-500 dark:text-zinc-400">
           <div className="flex justify-between">
             <span className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-red-500/60" /> Phone:
+            </span>
+            <span className="font-semibold text-slate-800 dark:text-zinc-200">
+              {showContact ? cleanPhone : maskedPhone}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-red-500/60" /> Last Donation:
             </span>
             <span className="font-medium text-slate-800 dark:text-zinc-200">
@@ -129,22 +137,34 @@ export default function DonorCard({ donor, onUpdateAvailability }) {
 
       {/* Action Buttons */}
       <div className="p-4 bg-slate-50/50 dark:bg-zinc-900/40 border-t border-slate-200/50 dark:border-zinc-800/50 flex gap-2 rounded-b-2xl">
-        <a
-          href={`tel:${donor.phone}`}
-          className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200"
-        >
-          <Phone className="w-3.5 h-3.5" />
-          Call Now
-        </a>
-        <a
-          href={`https://wa.me/${waPhone}?text=${waMessage}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-[0.98] transition-all duration-200"
-        >
-          <MessageCircle className="w-3.5 h-3.5" />
-          WhatsApp
-        </a>
+        {!showContact ? (
+          <button
+            onClick={() => setShowContact(true)}
+            className="w-full flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 text-white py-2.5 px-3 rounded-xl text-xs font-bold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200 cursor-pointer"
+          >
+            <Phone className="w-3.5 h-3.5" />
+            Show Contact
+          </button>
+        ) : (
+          <>
+            <a
+              href={`tel:${donor.phone}`}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-650 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              Call Now
+            </a>
+            <a
+              href={`https://wa.me/${waPhone}?text=${waMessage}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-[0.98] transition-all duration-200"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              WhatsApp
+            </a>
+          </>
+        )}
       </div>
     </div>
   );

@@ -28,7 +28,7 @@ export default function Layout({ children }) {
       )}
 
       {/* Main Header */}
-      <header className="sticky top-0 z-40 w-full glass-panel border-b transition-all duration-300 backdrop-blur-md">
+      <header className="sticky top-0 z-40 w-full glass-panel border-b transition-all duration-300 backdrop-blur-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             
@@ -176,27 +176,27 @@ export default function Layout({ children }) {
       </header>
 
       {/* Main Body */}
-      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+      <main className="flex-grow max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8 animate-fade-in">
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="w-full py-8 mt-12 glass-panel border-t border-slate-200/50 dark:border-zinc-800/50 text-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex flex-col items-center md:items-start gap-1.5">
+      <footer className="w-full py-5 sm:py-8 mt-6 sm:mt-12 glass-panel border-t border-slate-200/50 dark:border-zinc-800/50 text-center" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+          <div className="flex flex-col items-center md:items-start gap-1">
             <div className="flex items-center gap-2">
-              <Heart className="w-4 h-4 text-red-500 fill-current animate-pulse" />
-              <span className="text-sm font-extrabold text-slate-800 dark:text-white">
+              <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 fill-current animate-pulse" />
+              <span className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white">
                 © {new Date().getFullYear()} Beanibazar Blood Platform
               </span>
             </div>
-            <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold tracking-wide">
+            <span className="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-400 font-semibold tracking-wide">
               Design & Developed By <strong className="text-red-500 dark:text-red-400">GraffixInnovation</strong>
             </span>
           </div>
-          <div className="text-xs text-slate-400 dark:text-zinc-500 flex flex-col items-center md:items-end gap-1">
+          <div className="text-[10px] sm:text-xs text-slate-400 dark:text-zinc-500 flex flex-col items-center md:items-end gap-1">
             <span>Dedicated to saving lives in Beanibazar, Sylhet, Bangladesh.</span>
-            <span className="font-extrabold text-red-500 dark:text-red-400 uppercase tracking-widest text-[9px] bg-red-500/5 dark:bg-red-500/10 px-2.5 py-0.5 rounded-full border border-red-500/10">
+            <span className="font-extrabold text-red-500 dark:text-red-400 uppercase tracking-widest text-[8px] sm:text-[9px] bg-red-500/5 dark:bg-red-500/10 px-2 sm:px-2.5 py-0.5 rounded-full border border-red-500/10">
               A project of GraffixInnovation
             </span>
           </div>

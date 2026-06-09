@@ -31,6 +31,62 @@ export default function Emergency() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Security elements
+  const [honeypot, setHoneypot] = useState('');
+  const [formLoadTime, setFormLoadTime] = useState(Date.now());
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileReady, setTurnstileReady] = useState(false);
+  const turnstileRef = React.useRef(null);
+  const widgetIdRef = React.useRef(null);
+
+  useEffect(() => {
+    setFormLoadTime(Date.now());
+  }, []);
+
+  useEffect(() => {
+    const checkTurnstile = () => {
+      if (window.turnstile) {
+        setTurnstileReady(true);
+      } else {
+        setTimeout(checkTurnstile, 200);
+      }
+    };
+    checkTurnstile();
+  }, []);
+
+  useEffect(() => {
+    if (!turnstileReady || !turnstileRef.current) return;
+    
+    let widgetId = null;
+    try {
+      widgetId = window.turnstile.render(turnstileRef.current, {
+        sitekey: import.meta.env.VITE_TURNSTILE_SITEKEY || "1x00000000000000000000AA",
+        size: 'invisible',
+        callback: (token) => {
+          setTurnstileToken(token);
+        },
+        'expired-callback': () => {
+          setTurnstileToken('');
+          if (widgetId) window.turnstile.reset(widgetId);
+        },
+        'error-callback': () => {
+          setTurnstileToken('');
+        }
+      });
+      widgetIdRef.current = widgetId;
+    } catch (err) {
+      console.error("Turnstile render error:", err);
+    }
+
+    return () => {
+      if (widgetId && window.turnstile) {
+        try {
+          window.turnstile.remove(widgetId);
+        } catch (e) {}
+      }
+    };
+  }, [turnstileReady]);
+
   // Password visibility for creation
   const [showCreatePassword, setShowCreatePassword] = useState(false);
   
@@ -47,10 +103,26 @@ export default function Emergency() {
     setSuccessMsg('');
     setErrorMsg('');
 
+    // 1. Bot check: Honeypot
+    if (honeypot.trim() !== '') {
+      setErrorMsg("Verification failed. Bot detected.");
+      setFormLoading(false);
+      return;
+    }
+
+    // 2. Bot check: Time elapsed
+    const timeElapsed = Date.now() - formLoadTime;
+    if (timeElapsed < 2000) {
+      setErrorMsg("Submission too fast. Please wait.");
+      setFormLoading(false);
+      return;
+    }
+
     // Phone validation
     const contactTrimmed = contact.trim();
-    if (!/^\d{10,15}$/.test(contactTrimmed.replace('+', ''))) {
-      setErrorMsg(t('invalidContactError'));
+    const phoneRegex = /^01[3-9]\d{8}$/;
+    if (!phoneRegex.test(contactTrimmed)) {
+      setErrorMsg("Invalid phone number. Must be a valid 11-digit Bangladeshi number starting with 013-019.");
       setFormLoading(false);
       return;
     }
@@ -87,15 +159,24 @@ export default function Emergency() {
     };
 
     try {
-      const res = await createEmergencyRequest(requestData);
+      const res = await createEmergencyRequest(requestData, turnstileToken, honeypot);
       if (res.success) {
         setSuccessMsg(t('postSuccessMsg', { bloodGroup }));
         // Reset form inputs
         setContact('');
         setNote('');
         setPasscode('');
+        setHoneypot('');
+        setTurnstileToken('');
+        if (window.turnstile && widgetIdRef.current) {
+          window.turnstile.reset(widgetIdRef.current);
+        }
+        setFormLoadTime(Date.now()); // reset open timer
       } else {
         setErrorMsg(res.error.message || t('postErrorMsg'));
+        if (window.turnstile && widgetIdRef.current) {
+          window.turnstile.reset(widgetIdRef.current);
+        }
       }
     } catch (err) {
       setErrorMsg(t('unexpectedError'));
@@ -150,7 +231,7 @@ export default function Emergency() {
         }
       }
 
-      const res = await deleteEmergencyRequest(deletingRequest.id);
+      const res = await deleteEmergencyRequest(deletingRequest.id, enteredPasscode);
       if (res.success) {
         closeDeleteModal();
         setSuccessMsg(t('deleteSuccess'));
@@ -172,8 +253,8 @@ export default function Emergency() {
       
       {/* Delete Confirmation Modal Overlay */}
       {deletingRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-zinc-950/80 backdrop-blur-sm animate-fade-in">
-          <div className="glass-panel w-full max-w-md rounded-3xl p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 animate-scale-up relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 dark:bg-zinc-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="glass-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 animate-scale-up relative">
             <button 
               onClick={closeDeleteModal}
               className="absolute right-4 top-4 p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
@@ -258,11 +339,11 @@ export default function Emergency() {
 
       {/* Page Header */}
       <div className="text-center space-y-2 max-w-xl mx-auto">
-        <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white flex items-center justify-center gap-2">
-          <Flame className="w-8 h-8 text-red-500 fill-current animate-pulse" />
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white flex items-center justify-center gap-2">
+          <Flame className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 fill-current animate-pulse" />
           {t('emergencyTitle')}
         </h2>
-        <p className="text-sm text-slate-500 dark:text-zinc-400 font-medium">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 font-medium">
           {t('emergencyDesc')}
         </p>
       </div>
@@ -289,7 +370,7 @@ export default function Emergency() {
         <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
           <form 
             onSubmit={handlePostRequest} 
-            className="glass-panel rounded-3xl p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-5 text-left"
+            className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-5 text-left"
           >
             <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
               <div className="w-8 h-8 rounded-lg bg-red-500 text-white flex items-center justify-center">
@@ -393,6 +474,21 @@ export default function Emergency() {
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white resize-none"
               />
             </div>
+
+            {/* Honeypot Field */}
+            <div className="absolute opacity-0 w-0 h-0 pointer-events-none" aria-hidden="true">
+              <input
+                type="text"
+                name="website"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
+
+            {/* Cloudflare Turnstile Container */}
+            <div ref={turnstileRef} className="my-2 flex justify-center"></div>
 
             <button
               type="submit"

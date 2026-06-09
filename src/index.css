@@ -1,5 +1,6 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+/* Google Fonts moved to index.html <link> for non-blocking load */
 
 @variant dark (&:where(.dark, .dark *));
 
@@ -38,9 +39,15 @@
   }
 }
 
+/* ===========================
+   BASE STYLES
+   =========================== */
+
 html {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   scroll-behavior: smooth;
+  /* Use dynamic viewport height for proper mobile browser chrome handling */
+  height: 100%;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -48,13 +55,86 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 body {
-  @apply bg-slate-50 text-slate-800 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-300 antialiased overflow-x-hidden min-h-screen;
+  @apply bg-slate-50 text-slate-800 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-300 antialiased overflow-x-hidden;
+  min-height: 100dvh; /* dynamic viewport height — handles Safari/Chrome mobile chrome */
+  /* Safe area padding for notch / Dynamic Island / pill devices */
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
-/* Custom premium scrollbar */
+/* ===========================
+   MOBILE BROWSER OPTIMIZATIONS
+   =========================== */
+
+/* Remove tap highlight on all mobile browsers (Safari, Chrome, Opera Mini) */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent double-tap zoom on interactive elements — improves perceived speed */
+a, button, [role="button"], input, select, textarea, label {
+  touch-action: manipulation;
+}
+
+/* iOS Safari: prevent auto-zoom on input focus (triggers at <16px font-size) */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  /* But let our existing text-sm (14px) work for non-iOS via feature query */
+}
+
+/* For all mobile: ensure inputs don't trigger zoom */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="date"],
+  input[type="email"],
+  input[type="number"],
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
+/* Momentum scrolling for overflow containers (Safari) */
+.overflow-x-auto,
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* GPU acceleration hint for backdrop-blur elements (reduces jank on mobile) */
+.glass-panel,
+[class*="backdrop-blur"] {
+  will-change: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* ===========================
+   ACCESSIBILITY: REDUCED MOTION
+   =========================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===========================
+   PREMIUM SCROLLBAR
+   =========================== */
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -64,6 +144,18 @@ body {
 ::-webkit-scrollbar-thumb {
   @apply bg-slate-300 dark:bg-zinc-800 rounded-full hover:bg-red-500 dark:hover:bg-red-600 transition-colors;
 }
+
+/* Mobile: hide scrollbar for cleaner look but keep scrollable */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+}
+
+/* ===========================
+   ANIMATIONS
+   =========================== */
 
 @keyframes loading-bar {
   0% {
@@ -78,4 +170,57 @@ body {
     left: 100%;
     width: 50%;
   }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@utility animate-fade-in {
+  animation: fadeIn 0.4s ease-out both;
+}
+
+@utility animate-scale-up {
+  animation: scaleUp 0.3s ease-out both;
+}
+
+@utility animate-slide-up {
+  animation: slideUp 0.4s ease-out both;
+}
+
+/* ===========================
+   VIEW TRANSITION CUSTOMIZATIONS
+   =========================== */
+
+/* Disable default cross-fade animations on document root */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Ensure the new theme snapshot draws on top of the old one */
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+/* Prevent Tailwind transition color delay from capturing half-state colors during snapshots */
+.theme-transitioning,
+.theme-transitioning * {
+  transition: none !important;
+  animation-duration: 0s !important;
 }

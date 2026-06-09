@@ -163,7 +163,7 @@ export const dbService = {
     }
   },
 
-  async registerDonor(donorData) {
+  async registerDonor(donorData, turnstileToken, honeypot) {
     if (isDemoMode) {
       await delay();
       const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
@@ -201,44 +201,15 @@ export const dbService = {
 
       return { data: newDonor, error: null };
     } else {
-      const { data: existing } = await supabase
-        .from('donors')
-        .select('phone')
-        .eq('phone', donorData.phone)
-        .maybeSingle();
-
-      if (existing) {
-        return { data: null, error: { message: `Phone number ${donorData.phone} is already registered.` } };
-      }
-
-      const newDonor = {
-        name: donorData.name,
-        phone: donorData.phone,
-        blood_group: donorData.blood_group,
-        area: donorData.area,
-        last_donation_date: donorData.last_donation_date || null,
-        is_available: donorData.is_available ?? true,
-        password: donorData.password || '123456',
-        total_donations: donorData.last_donation_date ? 1 : 0
-      };
-
-      const { data, error } = await supabase
-        .from('donors')
-        .insert([newDonor])
-        .select()
-        .single();
-
-      if (!error && data && newDonor.last_donation_date) {
-        await supabase
-          .from('donation_history')
-          .insert([{ donor_id: data.id, donation_date: newDonor.last_donation_date }]);
-      }
-
+      // Invoke secure insert Edge Function
+      const { data, error } = await supabase.functions.invoke('secure-insert-donor', {
+        body: { donorData, turnstileToken, honeypot }
+      });
       return { data, error };
     }
   },
 
-  async updateDonorAvailability(id, is_available) {
+  async updateDonorAvailability(id, is_available, password) {
     if (isDemoMode) {
       await delay();
       const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
@@ -250,17 +221,15 @@ export const dbService = {
       }
       return { data: null, error: { message: 'Donor not found' } };
     } else {
-      const { data, error } = await supabase
-        .from('donors')
-        .update({ is_available })
-        .eq('id', id)
-        .select()
-        .single();
+      // Invoke secure update Edge Function
+      const { data, error } = await supabase.functions.invoke('secure-update-donor', {
+        body: { action: 'update_availability', id, password, payload: { is_available } }
+      });
       return { data, error };
     }
   },
 
-  async updateDonorProfile(id, profileData) {
+  async updateDonorProfile(id, profileData, password) {
     if (isDemoMode) {
       await delay();
       const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
@@ -282,30 +251,15 @@ export const dbService = {
       }
       return { data: null, error: { message: 'Donor not found' } };
     } else {
-      if (profileData.phone) {
-        const { data: dupCheck } = await supabase
-          .from('donors')
-          .select('id')
-          .eq('phone', profileData.phone)
-          .neq('id', id)
-          .maybeSingle();
-
-        if (dupCheck) {
-          return { data: null, error: { message: `Phone number ${profileData.phone} is already registered by another user.` } };
-        }
-      }
-
-      const { data, error } = await supabase
-        .from('donors')
-        .update(profileData)
-        .eq('id', id)
-        .select()
-        .single();
+      // Invoke secure update Edge Function
+      const { data, error } = await supabase.functions.invoke('secure-update-donor', {
+        body: { action: 'update_profile', id, password, payload: profileData }
+      });
       return { data, error };
     }
   },
 
-  async deleteDonor(id) {
+  async deleteDonor(id, adminUsername, adminPassword) {
     if (isDemoMode) {
       await delay();
       let donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
@@ -318,10 +272,10 @@ export const dbService = {
 
       return { success: true, error: null };
     } else {
-      const { error } = await supabase
-        .from('donors')
-        .delete()
-        .eq('id', id);
+      // Invoke secure delete Edge Function
+      const { data, error } = await supabase.functions.invoke('secure-delete-record', {
+        body: { type: 'donor', id, adminUsername, adminPassword }
+      });
       return { success: !error, error };
     }
   },
@@ -343,23 +297,11 @@ export const dbService = {
       }
       return { success: false, error: { message: 'Verification failed. No donor matched the provided Name, Phone, and Blood Group.' } };
     } else {
-      const { data: donor, error: fetchErr } = await supabase
-        .from('donors')
-        .select('id')
-        .eq('name', name.trim())
-        .eq('phone', phone.trim())
-        .eq('blood_group', blood_group)
-        .maybeSingle();
-
-      if (fetchErr) return { success: false, error: fetchErr };
-      if (!donor) return { success: false, error: { message: 'Verification failed. No donor matched the provided Name, Phone, and Blood Group.' } };
-
-      const { error: updateErr } = await supabase
-        .from('donors')
-        .update({ password: new_password })
-        .eq('id', donor.id);
-
-      return { success: !updateErr, error: updateErr };
+      // Invoke secure update Edge Function
+      const { data, error } = await supabase.functions.invoke('secure-update-donor', {
+        body: { action: 'reset_password', name, phone, blood_group, new_password }
+      });
+      return { success: !error, error };
     }
   },
 
@@ -384,7 +326,7 @@ export const dbService = {
     }
   },
 
-  async addDonationEvent(donorId, donationDate) {
+  async addDonationEvent(donorId, donationDate, password) {
     if (isDemoMode) {
       await delay();
       const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
@@ -418,37 +360,11 @@ export const dbService = {
 
       return { data: newEvent, error: null };
     } else {
-      const { data, error } = await supabase
-        .from('donation_history')
-        .insert([{ donor_id: donorId, donation_date: donationDate }])
-        .select()
-        .single();
-
-      if (error) return { data: null, error };
-
-      const { data: events } = await supabase
-        .from('donation_history')
-        .select('donation_date')
-        .eq('donor_id', donorId);
-
-      if (events && events.length > 0) {
-        const total = events.length;
-        const latest = events.reduce((latestDate, current) => {
-          if (!latestDate) return current.donation_date;
-          return new Date(current.donation_date) > new Date(latestDate) ? current.donation_date : latestDate;
-        }, null);
-
-        await supabase
-          .from('donors')
-          .update({
-            total_donations: total,
-            last_donation_date: latest,
-            is_available: false
-          })
-          .eq('id', donorId);
-      }
-
-      return { data, error: null };
+      // Invoke secure update Edge Function
+      const { data, error } = await supabase.functions.invoke('secure-update-donor', {
+        body: { action: 'add_donation', id: donorId, password, payload: { donation_date: donationDate } }
+      });
+      return { data, error };
     }
   },
 
@@ -470,7 +386,7 @@ export const dbService = {
     }
   },
 
-  async createEmergencyRequest(requestData) {
+  async createEmergencyRequest(requestData, turnstileToken, honeypot) {
     if (isDemoMode) {
       await delay();
       const requests = JSON.parse(localStorage.getItem('bb_emergency_requests') || '[]');
@@ -492,38 +408,15 @@ export const dbService = {
       localStorage.setItem('bb_emergency_requests', JSON.stringify(requests));
       return { data: newRequest, error: null };
     } else {
-      let finalPasscode = requestData.passcode || '1234';
-      try {
-        const { data: donor } = await supabase
-          .from('donors')
-          .select('password')
-          .eq('phone', requestData.contact.trim())
-          .maybeSingle();
-        if (donor && donor.password) {
-          finalPasscode = donor.password;
-        }
-      } catch (err) {
-        console.error("Error fetching donor password for emergency request:", err);
-      }
-
-      const newRequest = {
-        blood_group: requestData.blood_group,
-        area: requestData.area,
-        contact: requestData.contact,
-        note: requestData.note || '',
-        passcode: finalPasscode
-      };
-
-      const { data, error } = await supabase
-        .from('emergency_requests')
-        .insert([newRequest])
-        .select()
-        .single();
+      // Invoke secure insert Edge Function
+      const { data, error } = await supabase.functions.invoke('secure-insert-emergency', {
+        body: { requestData, turnstileToken, honeypot }
+      });
       return { data, error };
     }
   },
 
-  async deleteEmergencyRequest(id) {
+  async deleteEmergencyRequest(id, adminUsername, adminPassword, userPasscode) {
     if (isDemoMode) {
       await delay();
       let requests = JSON.parse(localStorage.getItem('bb_emergency_requests') || '[]');
@@ -531,10 +424,10 @@ export const dbService = {
       localStorage.setItem('bb_emergency_requests', JSON.stringify(requests));
       return { success: true, error: null };
     } else {
-      const { error } = await supabase
-        .from('emergency_requests')
-        .delete()
-        .eq('id', id);
+      // Invoke secure delete Edge Function
+      const { data, error } = await supabase.functions.invoke('secure-delete-record', {
+        body: { type: 'emergency', id, adminUsername, adminPassword, userPasscode }
+      });
       return { success: !error, error };
     }
   },
@@ -557,12 +450,11 @@ export const dbService = {
       return { success: !!match || isHardcodedMatch, error: (match || isHardcodedMatch) ? null : { message: 'Invalid Admin credentials.' } };
     } else {
       try {
-        const { data, error } = await supabase
-          .from('admins')
-          .select('*')
-          .eq('username', username.trim())
-          .eq('password', password)
-          .maybeSingle();
+        // Securely verify admin credentials via RPC instead of select *
+        const { data, error } = await supabase.rpc('verify_admin', {
+          p_username: username.trim(),
+          p_password: password
+        });
 
         if (!error && data) {
           return { success: true, error: null };

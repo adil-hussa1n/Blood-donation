@@ -16,6 +16,15 @@ export default function Home() {
   const [localBloodGroup, setLocalBloodGroup] = useState('');
   const [localArea, setLocalArea] = useState('');
   const [localSearchQuery, setLocalSearchQuery] = useState('');
+  
+  // Security: track revealed contact numbers
+  const [revealedContacts, setRevealedContacts] = useState({});
+
+  const maskPhone = (phone) => {
+    if (!phone) return '';
+    const p = phone.trim();
+    return p.slice(0, 5) + '*****' + p.slice(-1);
+  };
 
   // Form submission / search trigger
   const handleSearchSubmit = (e) => {
@@ -81,7 +90,7 @@ export default function Home() {
   return (
     <div className="space-y-8">
       {/* Hero Section */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-red-600 to-rose-700 dark:from-red-950 dark:to-zinc-950 text-white p-8 md:p-12 shadow-xl shadow-red-500/10">
+      <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-br from-red-600 to-rose-700 dark:from-red-950 dark:to-zinc-950 text-white p-5 sm:p-8 md:p-12 shadow-xl shadow-red-500/10">
         <div className="absolute right-0 top-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
         <div className="absolute left-1/3 bottom-0 w-64 h-64 bg-red-400/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
 
@@ -91,25 +100,25 @@ export default function Home() {
             {t('empoweringCommunity')}
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-black tracking-tight leading-tight">
             {language === 'en' ? 'Every Blood Donor is a ' : 'প্রতিটি রক্তদাতাই একজন '}<span className="text-rose-200 dark:text-red-400">{t('lifesaverWord')}</span>
           </h1>
           
-          <p className="text-base md:text-lg text-slate-100 dark:text-zinc-300 font-medium leading-relaxed max-w-2xl">
+          <p className="text-sm sm:text-base md:text-lg text-slate-100 dark:text-zinc-300 font-medium leading-relaxed max-w-2xl">
             {t('heroDescText')}
           </p>
 
-          <div className="flex flex-wrap gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 pt-2">
             <Link
               to="/register"
-              className="bg-white hover:bg-slate-50 text-red-600 font-bold px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all duration-200 flex items-center gap-2"
+              className="w-full sm:w-auto bg-white hover:bg-slate-50 text-red-600 font-bold px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               <PlusCircle className="w-5 h-5" />
               {t('registerAsDonorButton')}
             </Link>
             <Link
               to="/emergency"
-              className="bg-red-500/20 hover:bg-red-500/30 text-white border border-white/20 font-bold px-6 py-3 rounded-2xl backdrop-blur-sm active:scale-[0.98] transition-all duration-200 flex items-center gap-2"
+              className="w-full sm:w-auto bg-red-500/20 hover:bg-red-500/30 text-white border border-white/20 font-bold px-6 py-3 rounded-2xl backdrop-blur-sm active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               <Flame className="w-5 h-5 text-red-300 fill-current animate-pulse" />
               {t('postRequestButton')}
@@ -251,25 +260,39 @@ export default function Home() {
                           {req.area.split(' ')[0]}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-600 dark:text-zinc-300 line-clamp-2 mb-3 font-semibold">
+                      <p className="text-xs text-slate-600 dark:text-zinc-300 line-clamp-2 mb-2 font-semibold">
                         {req.note || t('noDescriptionProvided')}
                       </p>
+                      <span className="text-[11px] text-slate-550 dark:text-zinc-450 block mb-3 font-semibold">
+                        Contact: {revealedContacts[req.id] ? req.contact : maskPhone(req.contact)}
+                      </span>
                     </div>
                     <div className="flex gap-2">
-                      <a 
-                        href={`tel:${req.contact}`} 
-                        className="text-[10px] bg-red-500 hover:bg-red-650 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-colors shadow-sm"
-                      >
-                        {t('call')}
-                      </a>
-                      <a 
-                        href={`https://wa.me/${req.contact.startsWith('0') ? '88' + req.contact : req.contact}`} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-colors shadow-sm"
-                      >
-                        {t('whatsapp')}
-                      </a>
+                      {!revealedContacts[req.id] ? (
+                        <button
+                          onClick={() => setRevealedContacts(prev => ({ ...prev, [req.id]: true }))}
+                          className="text-[10px] bg-red-500 hover:bg-red-600 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-all shadow-sm cursor-pointer"
+                        >
+                          Show Contact
+                        </button>
+                      ) : (
+                        <>
+                          <a 
+                            href={`tel:${req.contact}`} 
+                            className="text-[10px] bg-red-500 hover:bg-red-650 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-colors shadow-sm"
+                          >
+                            {t('call')}
+                          </a>
+                          <a 
+                            href={`https://wa.me/${req.contact.startsWith('0') ? '88' + req.contact : req.contact}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-colors shadow-sm"
+                          >
+                            {t('whatsapp')}
+                          </a>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -405,7 +428,9 @@ export default function Home() {
                                       {donor.blood_group}
                                     </span>
                                   </td>
-                                  <td className="p-4 text-slate-600 dark:text-zinc-400 font-semibold truncate overflow-hidden">{donor.phone}</td>
+                                  <td className="p-4 text-slate-600 dark:text-zinc-400 font-semibold truncate overflow-hidden">
+                                    {revealedContacts[donor.id] ? donor.phone : maskPhone(donor.phone)}
+                                  </td>
                                   <td className="p-4 text-slate-600 dark:text-zinc-400 truncate overflow-hidden" title={donor.area}>
                                     <span className="flex items-center gap-1">
                                       <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
@@ -433,25 +458,35 @@ export default function Home() {
                                       )}
                                     </div>
                                   </td>
-                                  <td className="p-4">
-                                    <div className="flex gap-1.5 justify-center flex-wrap">
-                                      <a
-                                        href={`tel:${donor.phone}`}
-                                        className="p-2 bg-red-500 hover:bg-red-650 text-white rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
-                                        title="Call Donor"
+                                  <td className="p-4 text-center">
+                                    {!revealedContacts[donor.id] ? (
+                                      <button
+                                        onClick={() => setRevealedContacts(prev => ({ ...prev, [donor.id]: true }))}
+                                        className="px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-[10px] font-bold shadow-sm transition-all cursor-pointer"
+                                        title="Show Contact"
                                       >
-                                        <Phone className="w-4 h-4" />
-                                      </a>
-                                      <a
-                                        href={`https://wa.me/${waPhone}?text=${waMessage}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
-                                        title="WhatsApp Message"
-                                      >
-                                        <MessageCircle className="w-4 h-4" />
-                                      </a>
-                                    </div>
+                                        Show
+                                      </button>
+                                    ) : (
+                                      <div className="flex gap-1.5 justify-center flex-wrap">
+                                        <a
+                                          href={`tel:${donor.phone}`}
+                                          className="p-2 bg-red-500 hover:bg-red-650 text-white rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
+                                          title="Call Donor"
+                                        >
+                                          <Phone className="w-4 h-4" />
+                                        </a>
+                                        <a
+                                          href={`https://wa.me/${waPhone}?text=${waMessage}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
+                                          title="WhatsApp Message"
+                                        >
+                                          <MessageCircle className="w-4 h-4" />
+                                        </a>
+                                      </div>
+                                    )}
                                   </td>
                                 </tr>
                               );
@@ -541,12 +576,9 @@ export default function Home() {
 
                               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-zinc-900 text-[11px] text-slate-400 dark:text-zinc-500">
                                 <div>
-                                  <span>{t('lastDonation')}:</span>
+                                  <span>{t('phone')}:</span>
                                   <strong className="text-slate-700 dark:text-zinc-300 block font-bold mt-0.5">
-                                    {donor.last_donation_date 
-                                      ? new Date(donor.last_donation_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                                      : t('never')
-                                    }
+                                    {revealedContacts[donor.id] ? donor.phone : maskPhone(donor.phone)}
                                   </strong>
                                 </div>
                                 <div>
@@ -555,26 +587,47 @@ export default function Home() {
                                     {t('totalDonationsText', { count: donor.total_donations })}
                                   </strong>
                                 </div>
+                                <div className="col-span-2">
+                                  <span>{t('lastDonation')}:</span>
+                                  <strong className="text-slate-700 dark:text-zinc-300 block font-bold mt-0.5">
+                                    {donor.last_donation_date 
+                                      ? new Date(donor.last_donation_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                                      : t('never')
+                                    }
+                                  </strong>
+                                </div>
                               </div>
                             </div>
 
                             <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-zinc-900">
-                              <a
-                                href={`tel:${donor.phone}`}
-                                className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-650 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-sm"
-                              >
-                                <Phone className="w-3.5 h-3.5" />
-                                {t('call')}
-                              </a>
-                              <a
-                                href={`https://wa.me/${waPhone}?text=${waMessage}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-650 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-sm"
-                              >
-                                <MessageCircle className="w-3.5 h-3.5" />
-                                {t('whatsapp')}
-                              </a>
+                              {!revealedContacts[donor.id] ? (
+                                <button
+                                  onClick={() => setRevealedContacts(prev => ({ ...prev, [donor.id]: true }))}
+                                  className="w-full flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-sm cursor-pointer"
+                                >
+                                  <Phone className="w-3.5 h-3.5" />
+                                  Show Contact
+                                </button>
+                              ) : (
+                                <>
+                                  <a
+                                    href={`tel:${donor.phone}`}
+                                    className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-650 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-sm"
+                                  >
+                                    <Phone className="w-3.5 h-3.5" />
+                                    {t('call')}
+                                  </a>
+                                  <a
+                                    href={`https://wa.me/${waPhone}?text=${waMessage}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-650 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-sm"
+                                  >
+                                    <MessageCircle className="w-3.5 h-3.5" />
+                                    {t('whatsapp')}
+                                  </a>
+                                </>
+                              )}
                             </div>
                           </div>
                         );

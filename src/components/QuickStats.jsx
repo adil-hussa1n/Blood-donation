@@ -47,13 +47,13 @@ export default function QuickStats({ donors, emergencyRequests }) {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
           <div 
             key={stat.label} 
-            className="glass-panel rounded-3xl p-5 border border-slate-200/50 dark:border-zinc-800/50 relative overflow-hidden group hover:border-red-500/20 dark:hover:border-red-500/30 hover:-translate-y-1 hover:shadow-lg hover:shadow-red-500/5 transition-all duration-300"
+            className="glass-panel rounded-2xl sm:rounded-3xl p-3 sm:p-5 border border-slate-200/50 dark:border-zinc-800/50 relative overflow-hidden group hover:border-red-500/20 dark:hover:border-red-500/30 hover:-translate-y-1 hover:shadow-lg hover:shadow-red-500/5 transition-all duration-300"
           >
             {/* Hover background highlight */}
             <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent dark:from-red-500/5 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -63,16 +63,16 @@ export default function QuickStats({ donors, emergencyRequests }) {
                 <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest block">
                   {stat.label}
                 </span>
-                <span className="text-3xl font-black text-slate-900 dark:text-white block tracking-tight">
+                <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white block tracking-tight">
                   {stat.value}
                 </span>
               </div>
-              <div className={`p-3 rounded-2xl border ${stat.color} flex items-center justify-center shrink-0 shadow-sm`}>
-                <Icon className="w-5 h-5" />
+              <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border ${stat.color} flex items-center justify-center shrink-0 shadow-sm`}>
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             </div>
             
-            <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-3 relative z-10 font-semibold text-left">
+            <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-zinc-500 mt-2 sm:mt-3 relative z-10 font-semibold text-left leading-tight">
               {stat.description}
             </p>
           </div>

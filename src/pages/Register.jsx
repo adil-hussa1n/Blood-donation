@@ -19,6 +19,62 @@ export default function Register() {
   const [showSearchPassword, setShowSearchPassword] = useState(false);
   const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
 
+  // Security elements
+  const [honeypot, setHoneypot] = useState('');
+  const [formLoadTime, setFormLoadTime] = useState(Date.now());
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileReady, setTurnstileReady] = useState(false);
+  const turnstileRef = React.useRef(null);
+  const widgetIdRef = React.useRef(null);
+
+  useEffect(() => {
+    setFormLoadTime(Date.now());
+  }, [activeTab]);
+
+  useEffect(() => {
+    const checkTurnstile = () => {
+      if (window.turnstile) {
+        setTurnstileReady(true);
+      } else {
+        setTimeout(checkTurnstile, 200);
+      }
+    };
+    checkTurnstile();
+  }, []);
+
+  useEffect(() => {
+    if (!turnstileReady || !turnstileRef.current || activeTab !== 'register') return;
+    
+    let widgetId = null;
+    try {
+      widgetId = window.turnstile.render(turnstileRef.current, {
+        sitekey: import.meta.env.VITE_TURNSTILE_SITEKEY || "1x00000000000000000000AA",
+        size: 'invisible',
+        callback: (token) => {
+          setTurnstileToken(token);
+        },
+        'expired-callback': () => {
+          setTurnstileToken('');
+          if (widgetId) window.turnstile.reset(widgetId);
+        },
+        'error-callback': () => {
+          setTurnstileToken('');
+        }
+      });
+      widgetIdRef.current = widgetId;
+    } catch (err) {
+      console.error("Turnstile render error:", err);
+    }
+
+    return () => {
+      if (widgetId && window.turnstile) {
+        try {
+          window.turnstile.remove(widgetId);
+        } catch (e) {}
+      }
+    };
+  }, [turnstileReady, activeTab]);
+
   // Toggle recovery mode
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
@@ -82,9 +138,26 @@ export default function Register() {
     setSuccessMsg('');
     setErrorMsg('');
 
+    // 1. Bot check: Honeypot
+    if (honeypot.trim() !== '') {
+      setErrorMsg("Verification failed. Bot detected.");
+      setFormLoading(false);
+      return;
+    }
+
+    // 2. Bot check: Time elapsed
+    const timeElapsed = Date.now() - formLoadTime;
+    if (timeElapsed < 2000) {
+      setErrorMsg("Submission too fast. Please wait.");
+      setFormLoading(false);
+      return;
+    }
+
     const phoneTrimmed = regPhone.trim();
-    if (!/^\d{10,15}$/.test(phoneTrimmed.replace('+', ''))) {
-      setErrorMsg(t('invalidPhoneError'));
+    // Validate phone number format strictly
+    const phoneRegex = /^01[3-9]\d{8}$/;
+    if (!phoneRegex.test(phoneTrimmed)) {
+      setErrorMsg("Invalid phone number. Must be a valid 11-digit Bangladeshi number starting with 013-019.");
       setFormLoading(false);
       return;
     }
@@ -106,7 +179,7 @@ export default function Register() {
     };
 
     try {
-      const res = await registerDonor(donorData);
+      const res = await registerDonor(donorData, turnstileToken, honeypot);
       if (res.success) {
         setSuccessMsg(t('regSuccessMsg', { name: regName }));
         setRegName('');
@@ -114,8 +187,16 @@ export default function Register() {
         setRegLastDonationDate('');
         setRegAvailable(true);
         setRegPassword('');
+        setHoneypot('');
+        setTurnstileToken('');
+        if (window.turnstile && widgetIdRef.current) {
+          window.turnstile.reset(widgetIdRef.current);
+        }
       } else {
         setErrorMsg(res.error.message || t('registrationFailed'));
+        if (window.turnstile && widgetIdRef.current) {
+          window.turnstile.reset(widgetIdRef.current);
+        }
       }
     } catch (err) {
       setErrorMsg(t('unexpectedError'));
@@ -187,7 +268,7 @@ export default function Register() {
         is_available: editAvailable
       };
 
-      const res = await updateDonorProfile(foundDonor.id, profileData);
+      const res = await updateDonorProfile(foundDonor.id, profileData, searchPassword);
       if (res.success) {
         setSuccessMsg(t('profileUpdateSuccess'));
         setFoundDonor({
@@ -213,7 +294,7 @@ export default function Register() {
     setErrorMsg('');
 
     try {
-      const res = await addDonationHistory(foundDonor.id, newDonationDate);
+      const res = await addDonationHistory(foundDonor.id, newDonationDate, searchPassword);
       if (res.success) {
         setSuccessMsg(t('donationLoggedSuccess'));
         
@@ -293,10 +374,10 @@ export default function Register() {
       
       {/* Title */}
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
           {t('managementPortal')}
         </h2>
-        <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-lg mx-auto">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 max-w-lg mx-auto">
           {t('portalDesc')}
         </p>
       </div>
@@ -325,7 +406,7 @@ export default function Register() {
             setErrorMsg('');
             setShowForgotPassword(false);
           }}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
             activeTab === 'register'
               ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-sm'
               : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
@@ -340,7 +421,7 @@ export default function Register() {
             setSuccessMsg('');
             setErrorMsg('');
           }}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
             activeTab === 'update'
               ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-sm'
               : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
@@ -360,7 +441,7 @@ export default function Register() {
         {activeTab === 'register' && (
           <form 
             onSubmit={handleRegister} 
-            className="md:col-span-8 md:col-start-3 glass-panel rounded-3xl p-6 md:p-8 border border-slate-200/50 dark:border-zinc-800/50 space-y-6"
+            className="md:col-span-8 md:col-start-3 glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-slate-200/50 dark:border-zinc-800/50 space-y-5 sm:space-y-6"
           >
             <div className="flex items-center gap-2 pb-4 border-b border-slate-200/50 dark:border-zinc-800/50">
               <div className="w-8 h-8 rounded-lg bg-red-500 text-white flex items-center justify-center">
@@ -497,8 +578,23 @@ export default function Register() {
                     </span>
                   </div>
                 </label>
-              </div>
             </div>
+          </div>
+
+            {/* Honeypot Field */}
+            <div className="absolute opacity-0 w-0 h-0 pointer-events-none" aria-hidden="true">
+              <input
+                type="text"
+                name="website"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
+
+            {/* Cloudflare Turnstile Container */}
+            <div ref={turnstileRef} className="my-2 flex justify-center"></div>
 
             <button
               type="submit"
@@ -522,7 +618,7 @@ export default function Register() {
                 /* Normal Profile Lookup */
                 <form 
                   onSubmit={handleLookup} 
-                  className="glass-panel rounded-3xl p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4"
+                  className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4"
                 >
                   <div className="flex items-center gap-2 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
                     <div className="w-8 h-8 rounded-lg bg-red-500 text-white flex items-center justify-center">
@@ -601,7 +697,7 @@ export default function Register() {
                 /* Password Recovery Form */
                 <form 
                   onSubmit={handlePasswordRecovery} 
-                  className="glass-panel rounded-3xl p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 animate-scale-up"
+                  className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 animate-scale-up"
                 >
                   <div className="flex items-center gap-2 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
                     <button 
@@ -710,11 +806,11 @@ export default function Register() {
 
               {/* Profile summary card when found */}
               {foundDonor && (
-                <div className="glass-panel border-red-500/20 rounded-3xl p-5 border relative overflow-hidden space-y-4 animate-slide-up">
+                <div className="glass-panel border-red-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-5 border relative overflow-hidden space-y-3 sm:space-y-4 animate-slide-up">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full blur-xl -mr-6 -mt-6" />
                   
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-red-500 text-white font-black text-xl flex items-center justify-center shadow-md">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500 text-white font-black text-lg sm:text-xl flex items-center justify-center shadow-md">
                       {foundDonor.blood_group}
                     </div>
                     <div>
@@ -754,7 +850,7 @@ export default function Register() {
                 {/* 1. Log Donation Event Form */}
                 <form 
                   onSubmit={handleAddDonation}
-                  className="glass-panel rounded-3xl p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 font-semibold text-xs"
+                  className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 font-semibold text-xs"
                 >
                   <div className="flex items-center gap-2 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center">
@@ -794,7 +890,7 @@ export default function Register() {
                 {/* 2. Edit Profile Form */}
                 <form 
                   onSubmit={handleUpdateProfile}
-                  className="glass-panel rounded-3xl p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4"
+                  className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4"
                 >
                   <div className="flex items-center gap-2 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
                     <div className="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center">
@@ -864,7 +960,7 @@ export default function Register() {
                 </form>
 
                 {/* 3. Donation History Log Table */}
-                <div className="glass-panel rounded-3xl p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-3">
+                <div className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-3">
                   <h4 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                     <History className="w-4 h-4 text-slate-400" /> {t('donationHistoryTitle')}
                   </h4>
