@@ -34,13 +34,16 @@ export default function Layout({ children }) {
             
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-red-500 text-white shadow-lg shadow-red-500/20 group-hover:scale-105 transition-all duration-300">
-                <Heart className="w-6 h-6 fill-current animate-pulse" />
+              <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/20 group-hover:scale-105 transition-all duration-300">
+                <svg className="w-6 h-6 animate-pulse" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+                  <path d="M50 12C50 12 22 45 22 65C22 80.46 34.54 93 50 93C65.46 93 78 80.46 78 65C78 45 50 12 50 12Z" fill="#ffffff" />
+                  <path d="M32 65h10l4-18 5 32 4-22 4 8h9" stroke="#ef4444" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
                 <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-yellow-300" />
               </div>
               <div className="flex flex-col text-left">
                 <span className="font-extrabold text-sm md:text-base leading-tight tracking-tight text-slate-900 dark:text-white group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">
-                  Beanibazar Blood
+                  Bloodify247
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-red-500 dark:text-red-400">
                   By GraffixInnovation
@@ -187,18 +190,31 @@ export default function Layout({ children }) {
             <div className="flex items-center gap-2">
               <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 fill-current animate-pulse" />
               <span className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white">
-                © {new Date().getFullYear()} Beanibazar Blood Platform
+                © {new Date().getFullYear()} Bloodify247
               </span>
             </div>
             <span className="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-400 font-semibold tracking-wide">
-              Design & Developed By <strong className="text-red-500 dark:text-red-400">GraffixInnovation</strong>
+              Design & Developed By{' '}
+              <a
+                href="https://www.graffixinnovation.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:underline transition-all font-bold"
+              >
+                GraffixInnovation
+              </a>
             </span>
           </div>
           <div className="text-[10px] sm:text-xs text-slate-400 dark:text-zinc-500 flex flex-col items-center md:items-end gap-1">
             <span>Dedicated to saving lives in Beanibazar, Sylhet, Bangladesh.</span>
-            <span className="font-extrabold text-red-500 dark:text-red-400 uppercase tracking-widest text-[8px] sm:text-[9px] bg-red-500/5 dark:bg-red-500/10 px-2 sm:px-2.5 py-0.5 rounded-full border border-red-500/10">
+            <a
+              href="https://www.graffixinnovation.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-extrabold text-red-500 dark:text-red-400 uppercase tracking-widest text-[8px] sm:text-[9px] bg-red-500/5 dark:bg-red-500/10 hover:bg-red-500/10 dark:hover:bg-red-500/20 px-2 sm:px-2.5 py-0.5 rounded-full border border-red-500/10 hover:border-red-500/20 transition-all"
+            >
               A project of GraffixInnovation
-            </span>
+            </a>
           </div>
         </div>
       </footer>

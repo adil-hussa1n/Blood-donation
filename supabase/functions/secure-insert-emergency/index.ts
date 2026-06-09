@@ -16,14 +16,13 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    const turnstileSecretKey = Deno.env.get("TURNSTILE_SECRET_KEY") || "";
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const clientIp = req.headers.get("cf-connecting-ip") || 
                      req.headers.get("x-forwarded-for")?.split(",")[0].trim() || 
                      "127.0.0.1";
 
-    const { requestData, turnstileToken, honeypot } = await req.json();
+    const { requestData, honeypot } = await req.json();
 
     // 1. Honeypot check
     if (honeypot && honeypot.trim() !== "") {
@@ -64,63 +63,7 @@ serve(async (req) => {
       });
     }
 
-    // 3. CAPTCHA verification
-    if (!turnstileToken) {
-      await supabase.from("rate_limit_logs").insert([{
-        ip_address: clientIp,
-        request_type: "emergency_request",
-        status: "blocked",
-        reason: "captcha_missing"
-      }]);
-      return new Response(JSON.stringify({ error: { message: "Verification failed. CAPTCHA is missing." } }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    const isTestToken = turnstileToken === "XXXX.DUMMY.TOKEN.XXXX" || turnstileToken.startsWith("1x00000000000000000000AA");
-    let turnstileSuccess = false;
-
-    if (isTestToken) {
-      turnstileSuccess = true;
-    } else {
-      try {
-        const verifyBody = new URLSearchParams({
-          secret: turnstileSecretKey,
-          response: turnstileToken,
-          remoteip: clientIp,
-        });
-
-        const turnstileRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-          method: "POST",
-          body: verifyBody,
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        });
-
-        const turnstileJson = await turnstileRes.json();
-        turnstileSuccess = turnstileJson.success;
-      } catch (err) {
-        console.error("Turnstile verification error:", err);
-      }
-    }
-
-    if (!turnstileSuccess) {
-      console.warn(`[CAPTCHA BLOCKED] Turnstile validation failed for IP: ${clientIp}`);
-      await supabase.from("rate_limit_logs").insert([{
-        ip_address: clientIp,
-        request_type: "emergency_request",
-        status: "blocked",
-        reason: "captcha_failed"
-      }]);
-      return new Response(JSON.stringify({ error: { message: "Verification failed. Please reload and try again." } }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    // 4. Strict contact phone validation
+    // 3. Strict contact phone validation
     const phoneRegex = /^01[3-9]\d{8}$/;
     if (!requestData.contact || !phoneRegex.test(requestData.contact)) {
       console.warn(`[VALIDATION BLOCKED] Invalid contact phone format from IP: ${clientIp}. Contact: ${requestData.contact}`);
@@ -136,11 +79,11 @@ serve(async (req) => {
       });
     }
 
-    // 5. Artificial security delay
+    // 4. Artificial security delay
     const delayMs = Math.floor(Math.random() * 500) + 500;
     await new Promise((resolve) => setTimeout(resolve, delayMs));
 
-    // 6. Check if the contact phone belongs to a registered donor
+    // 5. Check if the contact phone belongs to a registered donor
     let finalPasscode = requestData.passcode || "1234";
     const { data: donor } = await supabase
       .from("donors")
@@ -167,7 +110,7 @@ serve(async (req) => {
       finalPasscode = donor.password;
     }
 
-    // 7. Insert the emergency request
+    // 6. Insert the emergency request
     const newRequest = {
       blood_group: requestData.blood_group,
       area: requestData.area,

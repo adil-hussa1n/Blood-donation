@@ -160,6 +160,24 @@ if (isDemoMode) {
 
 const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
 
+const normalizeFunctionError = async (error) => {
+  if (!error) return null;
+
+  let message = error.message || 'Request failed.';
+  const response = error.context;
+
+  if (response && typeof response.clone === 'function') {
+    try {
+      const payload = await response.clone().json();
+      message = payload?.error?.message || payload?.message || message;
+    } catch (err) {
+      // Keep Supabase's original message when the function response is not JSON.
+    }
+  }
+
+  return { ...error, message };
+};
+
 export const dbService = {
   // ==========================================
   // DONORS
@@ -198,7 +216,7 @@ export const dbService = {
     }
   },
 
-  async registerDonor(donorData, turnstileToken, honeypot) {
+  async registerDonor(donorData, honeypot) {
     if (isDemoMode) {
       await delay();
       const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
@@ -238,9 +256,9 @@ export const dbService = {
     } else {
       // Invoke secure insert Edge Function
       const { data, error } = await supabase.functions.invoke('secure-insert-donor', {
-        body: { donorData, turnstileToken, honeypot }
+        body: { donorData, honeypot }
       });
-      return { data, error };
+      return { data, error: await normalizeFunctionError(error) };
     }
   },
 
@@ -260,7 +278,7 @@ export const dbService = {
       const { data, error } = await supabase.functions.invoke('secure-update-donor', {
         body: { action: 'update_availability', id, password, payload: { is_available } }
       });
-      return { data, error };
+      return { data, error: await normalizeFunctionError(error) };
     }
   },
 
@@ -290,7 +308,7 @@ export const dbService = {
       const { data, error } = await supabase.functions.invoke('secure-update-donor', {
         body: { action: 'update_profile', id, password, payload: profileData }
       });
-      return { data, error };
+      return { data, error: await normalizeFunctionError(error) };
     }
   },
 
@@ -308,10 +326,11 @@ export const dbService = {
       return { success: true, error: null };
     } else {
       // Invoke secure delete Edge Function
-      const { data, error } = await supabase.functions.invoke('secure-delete-record', {
+      const { error } = await supabase.functions.invoke('secure-delete-record', {
         body: { type: 'donor', id, adminUsername, adminPassword }
       });
-      return { success: !error, error };
+      const normalizedError = await normalizeFunctionError(error);
+      return { success: !normalizedError, error: normalizedError };
     }
   },
 
@@ -333,10 +352,11 @@ export const dbService = {
       return { success: false, error: { message: 'Verification failed. No donor matched the provided Name, Phone, and Blood Group.' } };
     } else {
       // Invoke secure update Edge Function
-      const { data, error } = await supabase.functions.invoke('secure-update-donor', {
+      const { error } = await supabase.functions.invoke('secure-update-donor', {
         body: { action: 'reset_password', name, phone, blood_group, new_password }
       });
-      return { success: !error, error };
+      const normalizedError = await normalizeFunctionError(error);
+      return { success: !normalizedError, error: normalizedError };
     }
   },
 
@@ -399,7 +419,7 @@ export const dbService = {
       const { data, error } = await supabase.functions.invoke('secure-update-donor', {
         body: { action: 'add_donation', id: donorId, password, payload: { donation_date: donationDate } }
       });
-      return { data, error };
+      return { data, error: await normalizeFunctionError(error) };
     }
   },
 
@@ -421,7 +441,7 @@ export const dbService = {
     }
   },
 
-  async createEmergencyRequest(requestData, turnstileToken, honeypot) {
+  async createEmergencyRequest(requestData, honeypot) {
     if (isDemoMode) {
       await delay();
       const requests = JSON.parse(localStorage.getItem('bb_emergency_requests') || '[]');
@@ -445,9 +465,9 @@ export const dbService = {
     } else {
       // Invoke secure insert Edge Function
       const { data, error } = await supabase.functions.invoke('secure-insert-emergency', {
-        body: { requestData, turnstileToken, honeypot }
+        body: { requestData, honeypot }
       });
-      return { data, error };
+      return { data, error: await normalizeFunctionError(error) };
     }
   },
 
@@ -460,10 +480,11 @@ export const dbService = {
       return { success: true, error: null };
     } else {
       // Invoke secure delete Edge Function
-      const { data, error } = await supabase.functions.invoke('secure-delete-record', {
+      const { error } = await supabase.functions.invoke('secure-delete-record', {
         body: { type: 'emergency', id, adminUsername, adminPassword, userPasscode }
       });
-      return { success: !error, error };
+      const normalizedError = await normalizeFunctionError(error);
+      return { success: !normalizedError, error: normalizedError };
     }
   },
 

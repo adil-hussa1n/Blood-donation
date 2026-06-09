@@ -405,7 +405,7 @@ export default function Home() {
                               const cleanPhone = donor.phone.trim();
                               const waPhone = cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone;
                               const waMessage = encodeURIComponent(
-                                `Assalamu Alaikum ${donor.name}, we found your contact on Beanibazar Blood Donation Platform. We urgently need ${donor.blood_group} blood. Are you available to donate?`
+                                `Assalamu Alaikum ${donor.name}, we found your contact on Bloodify247. We urgently need ${donor.blood_group} blood. Are you available to donate?`
                               );
 
                               return (
@@ -522,7 +522,7 @@ export default function Home() {
                         const cleanPhone = donor.phone.trim();
                         const waPhone = cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone;
                         const waMessage = encodeURIComponent(
-                          `Assalamu Alaikum ${donor.name}, we found your contact on Beanibazar Blood Donation Platform. We urgently need ${donor.blood_group} blood. Are you available to donate?`
+                          `Assalamu Alaikum ${donor.name}, we found your contact on Bloodify247. We urgently need ${donor.blood_group} blood. Are you available to donate?`
                         );
 
                         return (

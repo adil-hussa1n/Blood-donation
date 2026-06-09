@@ -34,58 +34,10 @@ export default function Emergency() {
   // Security elements
   const [honeypot, setHoneypot] = useState('');
   const [formLoadTime, setFormLoadTime] = useState(Date.now());
-  const [turnstileToken, setTurnstileToken] = useState('');
-  const [turnstileReady, setTurnstileReady] = useState(false);
-  const turnstileRef = React.useRef(null);
-  const widgetIdRef = React.useRef(null);
 
   useEffect(() => {
     setFormLoadTime(Date.now());
   }, []);
-
-  useEffect(() => {
-    const checkTurnstile = () => {
-      if (window.turnstile) {
-        setTurnstileReady(true);
-      } else {
-        setTimeout(checkTurnstile, 200);
-      }
-    };
-    checkTurnstile();
-  }, []);
-
-  useEffect(() => {
-    if (!turnstileReady || !turnstileRef.current) return;
-    
-    let widgetId = null;
-    try {
-      widgetId = window.turnstile.render(turnstileRef.current, {
-        sitekey: import.meta.env.VITE_TURNSTILE_SITEKEY || "1x00000000000000000000AA",
-        size: 'invisible',
-        callback: (token) => {
-          setTurnstileToken(token);
-        },
-        'expired-callback': () => {
-          setTurnstileToken('');
-          if (widgetId) window.turnstile.reset(widgetId);
-        },
-        'error-callback': () => {
-          setTurnstileToken('');
-        }
-      });
-      widgetIdRef.current = widgetId;
-    } catch (err) {
-      console.error("Turnstile render error:", err);
-    }
-
-    return () => {
-      if (widgetId && window.turnstile) {
-        try {
-          window.turnstile.remove(widgetId);
-        } catch (e) {}
-      }
-    };
-  }, [turnstileReady]);
 
   // Password visibility for creation
   const [showCreatePassword, setShowCreatePassword] = useState(false);
@@ -159,7 +111,7 @@ export default function Emergency() {
     };
 
     try {
-      const res = await createEmergencyRequest(requestData, turnstileToken, honeypot);
+      const res = await createEmergencyRequest(requestData, honeypot);
       if (res.success) {
         setSuccessMsg(t('postSuccessMsg', { bloodGroup }));
         // Reset form inputs
@@ -167,16 +119,9 @@ export default function Emergency() {
         setNote('');
         setPasscode('');
         setHoneypot('');
-        setTurnstileToken('');
-        if (window.turnstile && widgetIdRef.current) {
-          window.turnstile.reset(widgetIdRef.current);
-        }
         setFormLoadTime(Date.now()); // reset open timer
       } else {
         setErrorMsg(res.error.message || t('postErrorMsg'));
-        if (window.turnstile && widgetIdRef.current) {
-          window.turnstile.reset(widgetIdRef.current);
-        }
       }
     } catch (err) {
       setErrorMsg(t('unexpectedError'));
@@ -487,9 +432,6 @@ export default function Emergency() {
               />
             </div>
 
-            {/* Cloudflare Turnstile Container */}
-            <div ref={turnstileRef} className="my-2 flex justify-center"></div>
-
             <button
               type="submit"
               disabled={formLoading}
@@ -560,7 +502,7 @@ export default function Emergency() {
                         const cleanPhone = req.contact.trim();
                         const waPhone = cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone;
                         const waMessage = encodeURIComponent(
-                          `Assalamu Alaikum, I saw your emergency request for ${req.blood_group} blood at ${req.area} on Beanibazar Blood Donation Platform. I want to help.`
+                          `Assalamu Alaikum, I saw your emergency request for ${req.blood_group} blood at ${req.area} on Bloodify247. I want to help.`
                         );
 
                         return (
@@ -642,7 +584,7 @@ export default function Emergency() {
                   const cleanPhone = req.contact.trim();
                   const waPhone = cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone;
                   const waMessage = encodeURIComponent(
-                    `Assalamu Alaikum, I saw your emergency request for ${req.blood_group} blood at ${req.area} on Beanibazar Blood Donation Platform. I want to help.`
+                    `Assalamu Alaikum, I saw your emergency request for ${req.blood_group} blood at ${req.area} on Bloodify247. I want to help.`
                   );
 
                   return (

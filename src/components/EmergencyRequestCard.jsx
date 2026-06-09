@@ -40,7 +40,7 @@ export default function EmergencyRequestCard({ request, onDelete, showAdminActio
       : cleanPhone;
 
   const waMessage = encodeURIComponent(
-    `Assalamu Alaikum, I saw your emergency request for ${request.blood_group} blood at ${request.area} on Beanibazar Blood Donation Platform. I want to help.`
+    `Assalamu Alaikum, I saw your emergency request for ${request.blood_group} blood at ${request.area} on Bloodify247. I want to help.`
   );
 
   const maskedPhone = cleanPhone.slice(0, 5) + '*****' + cleanPhone.slice(-1);

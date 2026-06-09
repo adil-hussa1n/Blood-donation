@@ -895,9 +895,9 @@ export const AppProvider = ({ children }) => {
     return { success: true };
   };
 
-  const registerDonor = async (donorData, turnstileToken, honeypot) => {
+  const registerDonor = async (donorData, honeypot) => {
     setError(null);
-    const { data, error } = await dbService.registerDonor(donorData, turnstileToken, honeypot);
+    const { data, error } = await dbService.registerDonor(donorData, honeypot);
     if (error) {
       setError(error.message);
       return { success: false, error };
@@ -956,9 +956,9 @@ export const AppProvider = ({ children }) => {
     return { success: true };
   };
 
-  const createEmergencyRequest = async (requestData, turnstileToken, honeypot) => {
+  const createEmergencyRequest = async (requestData, honeypot) => {
     setError(null);
-    const { data, error } = await dbService.createEmergencyRequest(requestData, turnstileToken, honeypot);
+    const { data, error } = await dbService.createEmergencyRequest(requestData, honeypot);
     if (error) {
       setError(error.message);
       return { success: false, error };
@@ -998,7 +998,10 @@ export const AppProvider = ({ children }) => {
 
             {/* The main logo container */}
             <div className="relative flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-2xl shadow-red-500/30 scale-105 hover:scale-110 transition-transform duration-300">
-              <Heart className="w-10 h-10 fill-current animate-bounce" />
+              <svg className="w-11 h-11 animate-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+                <path d="M50 12C50 12 22 45 22 65C22 80.46 34.54 93 50 93C65.46 93 78 80.46 78 65C78 45 50 12 50 12Z" fill="#ffffff" />
+                <path d="M32 65h10l4-18 5 32 4-22 4 8h9" stroke="#ef4444" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
               <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-yellow-300 animate-pulse" />
             </div>
           </div>
@@ -1007,12 +1010,19 @@ export const AppProvider = ({ children }) => {
           <div className="space-y-3">
             <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
               <span className="bg-gradient-to-r from-red-500 to-rose-400 bg-clip-text text-transparent">
-                Beanibazar
+                Bloodify
               </span>{' '}
-              <span className="text-slate-900 dark:text-zinc-100 font-extrabold">Blood</span>
+              <span className="text-slate-900 dark:text-zinc-100 font-extrabold">247</span>
             </h1>
             <p className="text-xs font-bold text-rose-500/80 uppercase tracking-[0.2em] animate-pulse">
-              A project of GraffixInnovation
+              <a
+                href="https://www.graffixinnovation.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-rose-400 transition-colors"
+              >
+                A project of GraffixInnovation
+              </a>
             </p>
           </div>
 

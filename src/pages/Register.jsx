@@ -22,58 +22,10 @@ export default function Register() {
   // Security elements
   const [honeypot, setHoneypot] = useState('');
   const [formLoadTime, setFormLoadTime] = useState(Date.now());
-  const [turnstileToken, setTurnstileToken] = useState('');
-  const [turnstileReady, setTurnstileReady] = useState(false);
-  const turnstileRef = React.useRef(null);
-  const widgetIdRef = React.useRef(null);
 
   useEffect(() => {
     setFormLoadTime(Date.now());
   }, [activeTab]);
-
-  useEffect(() => {
-    const checkTurnstile = () => {
-      if (window.turnstile) {
-        setTurnstileReady(true);
-      } else {
-        setTimeout(checkTurnstile, 200);
-      }
-    };
-    checkTurnstile();
-  }, []);
-
-  useEffect(() => {
-    if (!turnstileReady || !turnstileRef.current || activeTab !== 'register') return;
-    
-    let widgetId = null;
-    try {
-      widgetId = window.turnstile.render(turnstileRef.current, {
-        sitekey: import.meta.env.VITE_TURNSTILE_SITEKEY || "1x00000000000000000000AA",
-        size: 'invisible',
-        callback: (token) => {
-          setTurnstileToken(token);
-        },
-        'expired-callback': () => {
-          setTurnstileToken('');
-          if (widgetId) window.turnstile.reset(widgetId);
-        },
-        'error-callback': () => {
-          setTurnstileToken('');
-        }
-      });
-      widgetIdRef.current = widgetId;
-    } catch (err) {
-      console.error("Turnstile render error:", err);
-    }
-
-    return () => {
-      if (widgetId && window.turnstile) {
-        try {
-          window.turnstile.remove(widgetId);
-        } catch (e) {}
-      }
-    };
-  }, [turnstileReady, activeTab]);
 
   // Toggle recovery mode
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -179,7 +131,7 @@ export default function Register() {
     };
 
     try {
-      const res = await registerDonor(donorData, turnstileToken, honeypot);
+      const res = await registerDonor(donorData, honeypot);
       if (res.success) {
         setSuccessMsg(t('regSuccessMsg', { name: regName }));
         setRegName('');
@@ -188,15 +140,8 @@ export default function Register() {
         setRegAvailable(true);
         setRegPassword('');
         setHoneypot('');
-        setTurnstileToken('');
-        if (window.turnstile && widgetIdRef.current) {
-          window.turnstile.reset(widgetIdRef.current);
-        }
       } else {
         setErrorMsg(res.error.message || t('registrationFailed'));
-        if (window.turnstile && widgetIdRef.current) {
-          window.turnstile.reset(widgetIdRef.current);
-        }
       }
     } catch (err) {
       setErrorMsg(t('unexpectedError'));
@@ -592,9 +537,6 @@ export default function Register() {
                 autoComplete="off"
               />
             </div>
-
-            {/* Cloudflare Turnstile Container */}
-            <div ref={turnstileRef} className="my-2 flex justify-center"></div>
 
             <button
               type="submit"

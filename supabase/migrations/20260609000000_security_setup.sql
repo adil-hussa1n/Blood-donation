@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS rate_limit_logs (
     ip_address text NOT NULL,
     request_type text NOT NULL, -- 'donor_registration', 'emergency_request', 'donor_update', 'admin_action'
     status text NOT NULL,       -- 'allowed', 'blocked'
-    reason text,                -- 'rate_limit', 'captcha_failed', 'invalid_phone', 'auth_failed', 'honeypot_triggered', 'too_fast'
+    reason text,                -- 'rate_limit', 'invalid_phone', 'auth_failed', 'honeypot_triggered', 'too_fast'
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
