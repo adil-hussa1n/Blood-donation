@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Flame, AlertTriangle, CheckCircle2, Megaphone, Phone, MapPin, ClipboardList, MessageCircle, Calendar, Trash2, Key, X, Clock, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useApp, AREAS, BLOOD_GROUPS, calculateHoursSince } from '../context/AppContext';
+import { useApp, AREAS, BLOOD_GROUPS, calculateHoursSince, getAreaLabel } from '../context/AppContext';
 import { dbService } from '../services/db';
 
 export default function Emergency() {
   const { emergencyRequests, createEmergencyRequest, deleteEmergencyRequest, loading, error, isAdmin, language, t } = useApp();
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const [feedBloodFilter, setFeedBloodFilter] = useState('');
 
@@ -35,14 +35,14 @@ export default function Emergency() {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredEmergencyRequests.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredEmergencyRequests, currentPage]);
-  
+
   // Form state
   const [bloodGroup, setBloodGroup] = useState('O+');
-  const [area, setArea] = useState('Beanibazar Sadar');
+  const [area, setArea] = useState('');
   const [contact, setContact] = useState('');
   const [note, setNote] = useState('');
   const [passcode, setPasscode] = useState(''); // Stores the general password
-  
+
   const [formLoading, setFormLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -57,7 +57,7 @@ export default function Emergency() {
 
   // Password visibility for creation
   const [showCreatePassword, setShowCreatePassword] = useState(false);
-  
+
   // Delete modal state
   const [deletingRequest, setDeletingRequest] = useState(null); // { id, passcode, group }
   const [enteredPasscode, setEnteredPasscode] = useState(''); // Stores password entered during delete
@@ -198,7 +198,7 @@ export default function Emergency() {
         setSuccessMsg(t('deleteSuccess'));
       } else {
         setDeleteError(
-          t('deleteErrorPrefix') + 
+          t('deleteErrorPrefix') +
           (res.error?.message || t('unknownError'))
         );
       }
@@ -211,12 +211,12 @@ export default function Emergency() {
 
   return (
     <div className="space-y-8 relative">
-      
+
       {/* Delete Confirmation Modal Overlay */}
       {deletingRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 dark:bg-zinc-950/80 backdrop-blur-sm animate-fade-in">
           <div className="glass-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 animate-scale-up relative">
-            <button 
+            <button
               onClick={closeDeleteModal}
               className="absolute right-4 top-4 p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
             >
@@ -236,7 +236,7 @@ export default function Emergency() {
               {t('deletingRequestText')}{' '}
               <strong className="text-slate-800 dark:text-zinc-200">{deletingRequest.blood_group}</strong>
               {' '}{t('bloodAtText')}{' '}
-              <strong className="text-slate-800 dark:text-zinc-200">{deletingRequest.area}</strong>.
+              <strong className="text-slate-800 dark:text-zinc-200">{getAreaLabel(deletingRequest.area, t)}</strong>.
             </p>
 
             {deleteError && (
@@ -326,11 +326,11 @@ export default function Emergency() {
 
       {/* Main Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-7xl mx-auto">
-        
+
         {/* Left: Request Form */}
         <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
-          <form 
-            onSubmit={handlePostRequest} 
+          <form
+            onSubmit={handlePostRequest}
             className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-5 text-left"
           >
             <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
@@ -494,11 +494,10 @@ export default function Emergency() {
                 <button
                   type="button"
                   onClick={() => setFeedBloodFilter('')}
-                  className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                    !feedBloodFilter
+                  className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${!feedBloodFilter
                       ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/10'
                       : 'border-slate-200 dark:border-zinc-800 hover:border-red-500 dark:hover:border-red-500/50 bg-slate-50/30 dark:bg-zinc-900/30 text-slate-700 dark:text-zinc-300'
-                  }`}
+                    }`}
                 >
                   {t('allBloodGroups')}
                   <span className="block text-[10px] font-semibold opacity-80 mt-0.5">
@@ -514,13 +513,12 @@ export default function Emergency() {
                       key={group}
                       onClick={() => setFeedBloodFilter(active ? '' : group)}
                       disabled={count === 0}
-                      className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${
-                        count === 0
+                      className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${count === 0
                           ? 'border-slate-100 dark:border-zinc-900 text-slate-300 dark:text-zinc-600 cursor-not-allowed opacity-60'
                           : active
                             ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/10 cursor-pointer'
                             : 'border-slate-200 dark:border-zinc-800 hover:border-red-500 dark:hover:border-red-500/50 bg-slate-50/30 dark:bg-zinc-900/30 text-slate-700 dark:text-zinc-300 cursor-pointer'
-                      }`}
+                        }`}
                     >
                       {group}
                       <span className={`block text-[10px] font-semibold mt-0.5 ${active ? 'opacity-90' : 'opacity-70'}`}>
@@ -581,96 +579,94 @@ export default function Emergency() {
             <>
               {/* DESKTOP VIEW: Data Table */}
               <div className="hidden md:block glass-panel border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm">
-                  <table className="w-full text-left text-sm border-collapse table-fixed">
-                    <thead>
-                      <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
-                        <th className="p-4 w-[12%]">{t('bloodNeededHeader')}</th>
-                        <th className="p-4 w-[20%]">{t('hospitalAreaHeader')}</th>
-                        <th className="p-4 w-[15%]">{t('contactPhoneHeader')}</th>
-                        <th className="p-4 w-[25%]">{t('noteDetailsHeader')}</th>
-                        <th className="p-4 w-[13%]">{t('postedDateHeader')}</th>
-                        <th className="p-4 w-[15%] text-center">{t('actionsHeader')}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
-                      {paginatedRequests.map((req) => {
-                        const createdDate = new Date(req.created_at);
-                        const hours = calculateHoursSince(req.created_at);
-                        const isRecent = hours < 12;
+                <table className="w-full text-left text-sm border-collapse table-fixed">
+                  <thead>
+                    <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                      <th className="p-4 w-[12%]">{t('bloodNeededHeader')}</th>
+                      <th className="p-4 w-[20%]">{t('hospitalAreaHeader')}</th>
+                      <th className="p-4 w-[15%]">{t('contactPhoneHeader')}</th>
+                      <th className="p-4 w-[25%]">{t('noteDetailsHeader')}</th>
+                      <th className="p-4 w-[13%]">{t('postedDateHeader')}</th>
+                      <th className="p-4 w-[15%] text-center">{t('actionsHeader')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                    {paginatedRequests.map((req) => {
+                      const createdDate = new Date(req.created_at);
+                      const hours = calculateHoursSince(req.created_at);
+                      const isRecent = hours < 12;
 
-                        const cleanPhone = req.contact.trim();
-                        const waPhone = cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone;
-                        const waMessage = encodeURIComponent(
-                          `Assalamu Alaikum, I saw your emergency request for ${req.blood_group} blood at ${req.area} on Bloodify247. I want to help.`
-                        );
+                      const cleanPhone = req.contact.trim();
+                      const waPhone = cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone;
+                      const waMessage = encodeURIComponent(
+                        `Assalamu Alaikum, I saw your emergency request for ${req.blood_group} blood at ${req.area} on Bloodify247. I want to help.`
+                      );
 
-                        return (
-                          <tr 
-                            key={req.id} 
-                            className={`hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors ${
-                              isRecent ? 'bg-red-500/5 dark:bg-red-500/5' : ''
+                      return (
+                        <tr
+                          key={req.id}
+                          className={`hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors ${isRecent ? 'bg-red-500/5 dark:bg-red-500/5' : ''
                             }`}
-                          >
-                            <td className="p-4">
-                              <span className={`inline-flex items-center justify-center w-10 h-10 rounded-xl font-black text-base shadow-sm relative ${
-                                isRecent 
-                                  ? 'bg-gradient-to-br from-red-500 to-rose-600 text-white' 
-                                  : 'bg-slate-700 text-white'
+                        >
+                          <td className="p-4">
+                            <span className={`inline-flex items-center justify-center w-10 h-10 rounded-xl font-black text-base shadow-sm relative ${isRecent
+                                ? 'bg-gradient-to-br from-red-500 to-rose-600 text-white'
+                                : 'bg-slate-700 text-white'
                               }`}>
-                                {req.blood_group}
-                                {isRecent && (
-                                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
-                                  </span>
-                                )}
-                              </span>
-                            </td>
-                            <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={req.area}>{req.area}</td>
-                            <td className="p-4 text-slate-600 dark:text-zinc-400 font-semibold truncate overflow-hidden">{req.contact}</td>
-                            <td className="p-4 truncate overflow-hidden text-xs font-semibold text-slate-600 dark:text-zinc-300" title={req.note}>
-                              {req.note || t('noDescription')}
-                            </td>
-                            <td className="p-4 text-xs text-slate-400 dark:text-zinc-500">
-                              {hours < 1 
-                                ? t('justNow') 
-                                : hours < 24 
-                                  ? t('hoursAgo', { hours: Math.floor(hours) }) 
-                                  : createdDate.toLocaleDateString()
-                              }
-                            </td>
-                            <td className="p-4">
-                              <div className="flex gap-1.5 justify-center flex-wrap">
-                                <a
-                                  href={`tel:${req.contact}`}
-                                  className="p-2 bg-red-500 hover:bg-red-650 text-white rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
-                                  title="Call Now"
-                                >
-                                  <Phone className="w-4 h-4" />
-                                </a>
-                                <a
-                                  href={`https://wa.me/${waPhone}?text=${waMessage}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-2 bg-emerald-500 hover:bg-emerald-650 text-white rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
-                                  title="WhatsApp Chat"
-                                >
-                                  <MessageCircle className="w-4 h-4" />
-                                </a>
-                                <button
-                                  onClick={() => openDeleteModal(req)}
-                                  className="p-2 bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                                  title={t('deleteRequest')}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                              {req.blood_group}
+                              {isRecent && (
+                                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                                </span>
+                              )}
+                            </span>
+                          </td>
+                          <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={getAreaLabel(req.area, t)}>{getAreaLabel(req.area, t)}</td>
+                          <td className="p-4 text-slate-600 dark:text-zinc-400 font-semibold truncate overflow-hidden">{req.contact}</td>
+                          <td className="p-4 truncate overflow-hidden text-xs font-semibold text-slate-600 dark:text-zinc-300" title={req.note}>
+                            {req.note || t('noDescription')}
+                          </td>
+                          <td className="p-4 text-xs text-slate-400 dark:text-zinc-500">
+                            {hours < 1
+                              ? t('justNow')
+                              : hours < 24
+                                ? t('hoursAgo', { hours: Math.floor(hours) })
+                                : createdDate.toLocaleDateString()
+                            }
+                          </td>
+                          <td className="p-4">
+                            <div className="flex gap-1.5 justify-center flex-wrap">
+                              <a
+                                href={`tel:${req.contact}`}
+                                className="p-2 bg-red-500 hover:bg-red-650 text-white rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
+                                title="Call Now"
+                              >
+                                <Phone className="w-4 h-4" />
+                              </a>
+                              <a
+                                href={`https://wa.me/${waPhone}?text=${waMessage}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 bg-emerald-500 hover:bg-emerald-650 text-white rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
+                                title="WhatsApp Chat"
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                              </a>
+                              <button
+                                onClick={() => openDeleteModal(req)}
+                                className="p-2 bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                title={t('deleteRequest')}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
 
               {/* MOBILE VIEW: Card Stack */}
@@ -687,11 +683,10 @@ export default function Emergency() {
                   );
 
                   return (
-                    <div 
+                    <div
                       key={req.id}
-                      className={`glass-panel border rounded-2xl p-5 space-y-4 shadow-sm hover:border-red-500/35 transition-all duration-300 relative overflow-hidden ${
-                        isRecent ? 'border-red-500/20 shadow-md shadow-red-500/5' : 'border-slate-200/50 dark:border-zinc-800/50'
-                      }`}
+                      className={`glass-panel border rounded-2xl p-5 space-y-4 shadow-sm hover:border-red-500/35 transition-all duration-300 relative overflow-hidden ${isRecent ? 'border-red-500/20 shadow-md shadow-red-500/5' : 'border-slate-200/50 dark:border-zinc-800/50'
+                        }`}
                     >
                       {isRecent && (
                         <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500" />
@@ -699,9 +694,8 @@ export default function Emergency() {
 
                       <div className="flex justify-between items-start gap-4">
                         <div className="flex gap-3 items-center">
-                          <span className={`inline-flex items-center justify-center w-12 h-12 rounded-xl font-black text-xl shadow-md relative ${
-                            isRecent ? 'bg-gradient-to-br from-red-500 to-rose-600 text-white' : 'bg-slate-700 text-white'
-                          }`}>
+                          <span className={`inline-flex items-center justify-center w-12 h-12 rounded-xl font-black text-xl shadow-md relative ${isRecent ? 'bg-gradient-to-br from-red-500 to-rose-600 text-white' : 'bg-slate-700 text-white'
+                            }`}>
                             {req.blood_group}
                             {isRecent && (
                               <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
@@ -716,17 +710,17 @@ export default function Emergency() {
                             </h4>
                             <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-semibold flex items-center gap-1 mt-0.5">
                               <MapPin className="w-3.5 h-3.5 text-red-500/50" />
-                              {req.area}
+                              {getAreaLabel(req.area, t)}
                             </span>
                           </div>
                         </div>
-                        
+
                         <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-bold flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {hours < 1 
-                            ? t('justNow') 
-                            : hours < 24 
-                              ? t('hoursAgo', { hours: Math.floor(hours) }) 
+                          {hours < 1
+                            ? t('justNow')
+                            : hours < 24
+                              ? t('hoursAgo', { hours: Math.floor(hours) })
                               : createdDate.toLocaleDateString()
                           }
                         </span>

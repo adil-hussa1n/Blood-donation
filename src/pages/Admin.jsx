@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Shield, Key, Eye, EyeOff, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, User, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useApp, BLOOD_GROUPS, normalizeDonor } from '../context/AppContext';
+import { useApp, BLOOD_GROUPS, normalizeDonor, getAreaLabel } from '../context/AppContext';
 
 export default function Admin() {
   const { 
@@ -407,10 +407,10 @@ export default function Admin() {
                               </span>
                             </td>
                             <td className="p-4 truncate overflow-hidden">{donor.phone}</td>
-                            <td className="p-4 truncate overflow-hidden" title={donor.area}>
+                            <td className="p-4 truncate overflow-hidden" title={getAreaLabel(donor.area, t)}>
                               <span className="flex items-center gap-1">
                                 <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
-                                <span className="truncate">{donor.area}</span>
+                                <span className="truncate">{getAreaLabel(donor.area, t)}</span>
                               </span>
                             </td>
                             <td className="p-4 font-semibold">
@@ -455,7 +455,7 @@ export default function Admin() {
                         <div className="flex items-center justify-between text-xs text-slate-650 dark:text-zinc-300 pt-1">
                           <span className="flex items-center gap-1">
                             <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
-                            <span className="font-medium">{donor.area}</span>
+                            <span className="font-medium">{getAreaLabel(donor.area, t)}</span>
                           </span>
                           <span className="font-bold bg-slate-100 dark:bg-zinc-800/60 px-2 py-0.5 rounded-md text-[11px]">
                             {t('timesUnit', { count: normalizeDonor(donor).total_donations })}
@@ -540,7 +540,7 @@ export default function Admin() {
                                 {req.blood_group}
                               </span>
                             </td>
-                            <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={req.area}>{req.area}</td>
+                            <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={getAreaLabel(req.area, t)}>{getAreaLabel(req.area, t)}</td>
                             <td className="p-4 truncate overflow-hidden">{req.contact}</td>
                             <td className="p-4 truncate overflow-hidden" title={req.note}>
                               {req.note || t('noDescription')}
@@ -570,7 +570,7 @@ export default function Admin() {
                         <div className="flex justify-between items-start">
                           <div className="text-left space-y-1">
                             <span className="font-extrabold text-slate-900 dark:text-white text-base block">
-                              {req.area}
+                              {getAreaLabel(req.area, t)}
                             </span>
                             <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
                               {req.contact}

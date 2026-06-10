@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Search, Save, History, Sparkles, Key, Eye, EyeOff, User, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useApp, AREAS, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor } from '../context/AppContext';
+import { useApp, AREAS, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
 import { dbService } from '../services/db';
 
 export default function Register() {
@@ -36,7 +36,7 @@ export default function Register() {
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regBloodGroup, setRegBloodGroup] = useState('O+');
-  const [regArea, setRegArea] = useState('Beanibazar Sadar');
+  const [regArea, setRegArea] = useState('Beanibazar Upazila');
   const [regLastDonationDate, setRegLastDonationDate] = useState('');
   const [regTotalDonations, setRegTotalDonations] = useState('');
   const [regAvailable, setRegAvailable] = useState(true);
@@ -501,7 +501,7 @@ export default function Register() {
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
                 >
                   {AREAS.map(a => (
-                    <option key={a} value={a}>{a}</option>
+                    <option key={a} value={a}>{getAreaLabel(a, t)}</option>
                   ))}
                 </select>
               </div>
@@ -803,7 +803,7 @@ export default function Register() {
                         <Sparkles className="w-3.5 h-3.5 text-yellow-500 fill-current animate-pulse" />
                       </h4>
                       <span className="text-xs text-slate-400 dark:text-zinc-500 font-semibold">
-                        {foundDonor.area} • {foundDonor.phone}
+                        {getAreaLabel(foundDonor.area, t)} • {foundDonor.phone}
                       </span>
                     </div>
                   </div>
@@ -920,7 +920,7 @@ export default function Register() {
                         className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white cursor-pointer"
                       >
                         {AREAS.map(a => (
-                          <option key={a} value={a}>{a}</option>
+                          <option key={a} value={a}>{getAreaLabel(a, t)}</option>
                         ))}
                       </select>
                     </div>

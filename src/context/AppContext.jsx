@@ -60,14 +60,14 @@ const sessionStorage = (() => {
 const AppContext = createContext(undefined);
 
 export const AREAS = [
-  'Beanibazar Sadar',
+  'Beanibazar Upazila',
   'Alinagar',
-  'Charikhada',
+  'Charkhai',
   'Dubag',
   'Kurar Bazar',
   'Lauta',
-  'Mullapur',
   'Mathiura',
+  'Mullapur',
   'Muria',
   'Sheola',
   'Tilpara'
@@ -211,7 +211,7 @@ export const TRANSLATIONS = {
     registeredPhoneLabel: 'Registered Phone Number',
 
     // Placeholders
-    hospitalPlaceholder: 'e.g. Beanibazar General Hospital',
+    hospitalPlaceholder: 'e.g. Beanibazar Upazila',
     passwordPlaceholder: 'Enter account password or choose a password...',
     recoveryPasswordPlaceholder: 'Enter new password...',
     notePlaceholder: 'Details like surgery reason, amount needed, timing, etc...',
@@ -327,7 +327,19 @@ export const TRANSLATIONS = {
     noteDetailsHeader: 'Note / Details',
     postedDateHeader: 'Posted Date',
     errorDeletingDonorPrefix: 'Error deleting donor: ',
-    errorDeletingRequestPrefix: 'Error deleting emergency request: '
+    errorDeletingRequestPrefix: 'Error deleting emergency request: ',
+    area_beanibazarupazila: 'Beanibazar Upazila',
+    area_beanibazarupazila_hospital: 'Beanibazar Upazila (General Hospital)',
+    area_alinagar: 'Alinagar',
+    area_charkhai: 'Charkhai',
+    area_dubag: 'Dubag',
+    area_kurarbazar: 'Kurar Bazar',
+    area_lauta: 'Lauta',
+    area_mathiura: 'Mathiura',
+    area_mullapur: 'Mullapur',
+    area_muria: 'Muria',
+    area_sheola: 'Sheola',
+    area_tilpara: 'Tilpara'
   },
   bn: {
     // Navigation
@@ -453,7 +465,7 @@ export const TRANSLATIONS = {
     registeredPhoneLabel: 'নিবন্ধিত ফোন নম্বর',
 
     // Placeholders
-    hospitalPlaceholder: 'যেমন: বিয়ানীবাজার জেনারেল হাসপাতাল',
+    hospitalPlaceholder: 'যেমন: বিয়ানীবাজার উপজেলা',
     passwordPlaceholder: 'অ্যাকাউন্টের পাসওয়ার্ড দিন বা নতুন পাসওয়ার্ড সেট করুন...',
     recoveryPasswordPlaceholder: 'নতুন পাসওয়ার্ড লিখুন...',
     notePlaceholder: 'অপারেশনের কারণ, কত ব্যাগ রক্ত লাগবে, সময় ইত্যাদি বিবরণ...',
@@ -569,7 +581,19 @@ export const TRANSLATIONS = {
     noteDetailsHeader: 'বিবরণ / নোট',
     postedDateHeader: 'পোস্টের তারিখ',
     errorDeletingDonorPrefix: 'রক্তদাতা মুছতে ত্রুটি: ',
-    errorDeletingRequestPrefix: 'জরুরি অনুরোধ মুছতে ত্রুটি: '
+    errorDeletingRequestPrefix: 'জরুরি অনুরোধ মুছতে ত্রুটি: ',
+    area_beanibazarupazila: 'বিয়ানীবাজার উপজেলা',
+    area_beanibazarupazila_hospital: 'বিয়ানীবাজার উপজেলা (জেনারেল হাসপাতাল)',
+    area_alinagar: 'আলীনগর',
+    area_charkhai: 'চরখাই',
+    area_dubag: 'দুবাগ',
+    area_kurarbazar: 'কুড়ার বাজার',
+    area_lauta: 'লাউতা',
+    area_mathiura: 'মাথিউরা',
+    area_mullapur: 'মোল্লাপুর',
+    area_muria: 'মুড়িয়া',
+    area_sheola: 'শেওলা',
+    area_tilpara: 'তিলপাড়া'
   }
 };
 
@@ -633,6 +657,24 @@ export const getDonorBadgeLabel = (badgeLabel, t) => {
     case 'Hero Donor': return t('donorBadgeHero');
     default: return badgeLabel;
   }
+};
+
+export const getAreaLabel = (area, t) => {
+  if (!area) return '';
+  // Check exact translation key
+  const key = 'area_' + area.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const translated = t(key);
+  if (translated !== key) return translated;
+  
+  // Custom check for general hospital mock data or any matching text containing Beanibazar Sadar/Upazila
+  if (area.includes('Beanibazar Upazila (General Hospital)')) {
+    return area.replace('Beanibazar Upazila (General Hospital)', t('area_beanibazarupazila_hospital') || 'Beanibazar Upazila (General Hospital)');
+  }
+  if (area.includes('Beanibazar Sadar (General Hospital)')) {
+    return area.replace('Beanibazar Sadar (General Hospital)', t('area_beanibazarupazila_hospital') || 'Beanibazar Upazila (General Hospital)');
+  }
+  
+  return area;
 };
 
 export const AppProvider = ({ children }) => {

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, Calendar, CheckCircle2, Clock, Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useApp, AREAS, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor } from '../context/AppContext';
+import { useApp, AREAS, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
 import QuickStats from '../components/QuickStats';
 
 export default function Home() {
@@ -188,7 +188,7 @@ export default function Home() {
                     <option value="">{t('allBeanibazarAreas')}</option>
                     {AREAS.map((area) => (
                       <option key={area} value={area}>
-                        {area}
+                        {getAreaLabel(area, t)}
                       </option>
                     ))}
                   </select>
@@ -259,7 +259,7 @@ export default function Home() {
                       <div className="flex justify-between items-start mb-2">
                         <span className="font-black text-red-500 text-lg leading-none">{req.blood_group}</span>
                         <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-semibold uppercase tracking-wider">
-                          {req.area.split(' ')[0]}
+                          {getAreaLabel(req.area, t).split(' ')[0]}
                         </span>
                       </div>
                       <p className="text-xs text-slate-600 dark:text-zinc-300 line-clamp-2 mb-2 font-semibold">
@@ -432,10 +432,10 @@ export default function Home() {
                                   <td className="p-4 text-slate-600 dark:text-zinc-400 font-semibold truncate overflow-hidden">
                                     {revealedContacts[normalizedDonor.id] ? normalizedDonor.phone : maskPhone(normalizedDonor.phone)}
                                   </td>
-                                  <td className="p-4 text-slate-600 dark:text-zinc-400 truncate overflow-hidden" title={normalizedDonor.area}>
+                                  <td className="p-4 text-slate-600 dark:text-zinc-400 truncate overflow-hidden" title={getAreaLabel(normalizedDonor.area, t)}>
                                     <span className="flex items-center gap-1">
                                       <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
-                                      <span className="truncate">{normalizedDonor.area}</span>
+                                      <span className="truncate">{getAreaLabel(normalizedDonor.area, t)}</span>
                                     </span>
                                   </td>
                                   <td className="p-4">
@@ -544,7 +544,7 @@ export default function Home() {
                                   </h4>
                                   <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-semibold flex items-center gap-1 mt-0.5">
                                     <MapPin className="w-3.5 h-3.5 text-red-500/50" />
-                                    {normalizedDonor.area}
+                                    {getAreaLabel(normalizedDonor.area, t)}
                                   </span>
                                 </div>
                               </div>

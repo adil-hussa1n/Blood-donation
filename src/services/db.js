@@ -57,104 +57,19 @@ const resolveRegistrationTotalDonations = (donorData) => {
 };
 
 const initDemoDB = () => {
+  if (!localStorage.getItem('bb_demo_cleared')) {
+    localStorage.removeItem('bb_donors');
+    localStorage.removeItem('bb_donation_history');
+    localStorage.removeItem('bb_emergency_requests');
+    localStorage.removeItem('bb_donors_cache');
+    localStorage.removeItem('bb_emergencies_cache');
+    localStorage.setItem('bb_demo_cleared', 'true');
+  }
+
   if (!localStorage.getItem('bb_donors')) {
-    const mockDonors = [
-      {
-        id: 'donor-1',
-        name: 'Rahat Ahmed',
-        phone: '01712345678',
-        blood_group: 'O+',
-        area: 'Beanibazar Sadar',
-        last_donation_date: '2026-05-15', // Cooldown active
-        is_available: true,
-        total_donations: 4, // Active Donor
-        password: 'password123',
-        created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'donor-2',
-        name: 'Sayed Chowdhury',
-        phone: '01898765432',
-        blood_group: 'A-',
-        area: 'Mathiura',
-        last_donation_date: '2026-02-01', // Cooldown elapsed
-        is_available: true,
-        total_donations: 8, // Hero Donor
-        password: 'password123',
-        created_at: new Date(Date.now() - 150 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'donor-3',
-        name: 'Tahmid Hussain',
-        phone: '01911223344',
-        blood_group: 'B+',
-        area: 'Mullapur',
-        last_donation_date: null, // Never donated
-        is_available: true,
-        total_donations: 0, // New Donor
-        password: 'password123',
-        created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'donor-4',
-        name: 'Kamrul Hasan',
-        phone: '01755667788',
-        blood_group: 'AB+',
-        area: 'Kurar Bazar',
-        last_donation_date: '2026-06-05', // Cooldown active
-        is_available: false, // Manually unavailable
-        total_donations: 2, // Normal Donor
-        password: 'password123',
-        created_at: new Date(Date.now() - 100 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'donor-5',
-        name: 'Fahmida Yeasmin',
-        phone: '01633445566',
-        blood_group: 'O-',
-        area: 'Alinagar',
-        last_donation_date: '2025-12-10', // Cooldown elapsed
-        is_available: true,
-        total_donations: 7, // Hero Donor
-        password: 'password123',
-        created_at: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    ];
-
-    const mockHistory = [
-      { id: 'h-1', donor_id: 'donor-1', donation_date: '2026-05-15' },
-      { id: 'h-2', donor_id: 'donor-1', donation_date: '2026-01-10' },
-      { id: 'h-3', donor_id: 'donor-2', donation_date: '2026-02-01' },
-      { id: 'h-4', donor_id: 'donor-2', donation_date: '2025-10-15' },
-      { id: 'h-5', donor_id: 'donor-2', donation_date: '2025-06-20' },
-      { id: 'h-6', donor_id: 'donor-4', donation_date: '2026-06-05' },
-      { id: 'h-7', donor_id: 'donor-5', donation_date: '2025-12-10' }
-    ];
-
-    const mockEmergencies = [
-      {
-        id: 'req-1',
-        blood_group: 'O-',
-        area: 'Beanibazar Sadar (General Hospital)',
-        contact: '01799887766',
-        note: 'Urgent surgery tomorrow morning. Need 2 bags of O- Negative blood.',
-        passcode: '1234',
-        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
-      },
-      {
-        id: 'req-2',
-        blood_group: 'A+',
-        area: 'Lauta',
-        contact: '01811223344',
-        note: 'Thalassemia patient, blood transfusion needed by this weekend.',
-        passcode: '1234',
-        created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
-      }
-    ];
-
-    localStorage.setItem('bb_donors', JSON.stringify(mockDonors));
-    localStorage.setItem('bb_donation_history', JSON.stringify(mockHistory));
-    localStorage.setItem('bb_emergency_requests', JSON.stringify(mockEmergencies));
+    localStorage.setItem('bb_donors', JSON.stringify([]));
+    localStorage.setItem('bb_donation_history', JSON.stringify([]));
+    localStorage.setItem('bb_emergency_requests', JSON.stringify([]));
   }
   
   if (!localStorage.getItem('bb_admins')) {
