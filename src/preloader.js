@@ -16,6 +16,7 @@ function hidePreloader(el) {
   window.setTimeout(() => {
     el.remove();
     document.body.classList.remove('preloader-active');
+    document.documentElement.classList.remove('preloader-html');
   }, PRELOADER_FADE_MS);
 }
 
