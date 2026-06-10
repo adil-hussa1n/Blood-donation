@@ -9,8 +9,8 @@
     <meta name="description" content="Bloodify247 connects blood donors and seekers in Beanibazar Upazila, Sylhet. Find A+, B+, O+, AB+ blood donors, check cooldown states, and post emergency requests." />
 
     <!-- Mobile Browser Theme -->
-    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
     <meta name="color-scheme" content="dark light" />
 
     <!-- Apple / Safari iOS -->
@@ -45,16 +45,18 @@
           theme = localStorage.getItem('theme') || 'light';
         } catch (e) {}
         var isDark = theme === 'dark';
-        var bg = isDark ? '#0a0a0a' : '#fafafa';
+        var bg = isDark ? '#09090b' : '#f8fafc';
         if (isDark) {
           document.documentElement.classList.add('dark');
         } else {
           document.documentElement.classList.remove('dark');
         }
-        // Set as CSS custom property so preloader CSS uses it at first paint
-        document.documentElement.style.setProperty('--pl-bg', bg);
-        document.documentElement.style.backgroundColor = bg;
-        document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+        try {
+          // Set as CSS custom property so preloader CSS uses it at first paint
+          document.documentElement.style.setProperty('--pl-bg', bg);
+          document.documentElement.style.backgroundColor = bg;
+          document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+        } catch (e) {}
       })();
     </script>
 
@@ -62,14 +64,14 @@
       html {
         min-height: 100%;
         min-height: 100dvh;
-        background-color: #fafafa;
+        background-color: #f8fafc;
         /* --pl-bg is set by inline JS before first paint */
-        --pl-bg: #fafafa;
+        --pl-bg: #f8fafc;
       }
 
       html.dark {
-        background-color: #0a0a0a;
-        --pl-bg: #0a0a0a;
+        background-color: #09090b;
+        --pl-bg: #09090b;
       }
 
       body {
@@ -82,9 +84,12 @@
       /* Lock scroll AND overflow on html+body so no gap shows through */
       html.preloader-html,
       body.preloader-active {
+        height: 100% !important;
+        height: 100dvh !important;
         overflow: hidden !important;
         touch-action: none;
         padding: 0 !important;
+        margin: 0 !important;
         overscroll-behavior: none;
       }
 
@@ -130,13 +135,11 @@
 
       .static-preloader {
         position: fixed;
-        /* Cover entire screen including area behind browser chrome */
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100%;
-        height: 100%;
+        /* Bleed 100px beyond all edges to cover Safari status/navigation bar safe areas and elastic scrolling */
+        top: -100px;
+        left: -100px;
+        right: -100px;
+        bottom: -100px;
         z-index: 9999;
         display: flex;
         flex-direction: column;
@@ -155,11 +158,8 @@
       }
 
       .static-preloader__backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        position: absolute;
+        inset: 0;
         background: var(--pl-bg, #fafafa);
         z-index: 0;
         pointer-events: none;
@@ -321,7 +321,7 @@
       }
 
       .dark .static-preloader__backdrop {
-        background: var(--pl-bg, #0a0a0a);
+        background: var(--pl-bg, #09090b);
       }
 
       .dark .static-preloader::before {
@@ -368,17 +368,15 @@
   </head>
   <body class="preloader-active">
     <script>
-      window.__PRELOADER_START__ = performance.now();
+      window.__PRELOADER_START__ = (window.performance && window.performance.now) ? window.performance.now() : Date.now();
       // Lock html scroll and apply bg inline before preloader paints
-      document.documentElement.classList.add('preloader-html');
+      try {
+        document.documentElement.classList.add('preloader-html');
+      } catch (e) {}
     </script>
 
     <!-- Lightweight static shell shown while the JS bundle downloads -->
     <div id="static-preloader" class="static-preloader" role="status" aria-live="polite" aria-label="Loading Bloodify247">
-      <script>(function(){
-        var el=document.getElementById('static-preloader');
-        if(el){var bg=getComputedStyle(document.documentElement).getPropertyValue('--pl-bg').trim()||'#fafafa';el.style.background=bg;}
-      })();</script>
       <div class="static-preloader__backdrop" aria-hidden="true"></div>
       <div class="static-preloader__inner">
         <div class="static-preloader__logo-wrap">
