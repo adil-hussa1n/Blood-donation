@@ -139,7 +139,7 @@ export const TRANSLATIONS = {
     saveChanges: 'Save Changes',
     totalDonationsCount: 'Total Donations',
     times: 'times',
-    never: 'Never',
+    never: 'Not Mentioned',
 
     // Emergency Page
     emergencyTitle: 'Emergency Blood Requests',
@@ -225,7 +225,7 @@ export const TRANSLATIONS = {
     daysLeft: '{days} days left',
     daysRemainingText: 'Available in {days} days',
     timesUnit: '{count} times',
-    neverDonated: 'Never',
+    neverDonated: 'Not Mentioned',
     deletingRequestText: 'Deleting request for',
     bloodAtText: 'blood at',
     cancelButton: 'Cancel',
@@ -392,7 +392,7 @@ export const TRANSLATIONS = {
     saveChanges: 'পরিবর্তন সংরক্ষণ করুন',
     totalDonationsCount: 'মোট রক্তদান',
     times: 'বার',
-    never: 'কখনো নয়',
+    never: 'উল্লেখ নেই',
 
     // Emergency Page
     emergencyTitle: 'জরুরি রক্তের অনুরোধসমূহ',
@@ -467,7 +467,7 @@ export const TRANSLATIONS = {
     daysLeft: '{days} দিন বাকি',
     daysRemainingText: '{days} দিন পর প্রস্তুত হবে',
     timesUnit: '{count} বার',
-    neverDonated: 'কখনো নয়',
+    neverDonated: 'উল্লেখ নেই',
     deletingRequestText: 'অনুরোধ মুছে ফেলা হচ্ছে:',
     bloodAtText: 'রক্তের অনুরোধ, স্থান:',
     cancelButton: 'বাতিল',
