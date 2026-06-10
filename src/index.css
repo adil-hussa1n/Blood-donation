@@ -218,58 +218,56 @@ input[type="date"]::-webkit-date-and-time-value {
 }
 
 .mobile-nav-shell {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  overflow: hidden;
   pointer-events: none;
+  z-index: 30;
 }
 
 .mobile-nav-shell--open {
-  grid-template-rows: 1fr;
   pointer-events: auto;
 }
 
 .mobile-nav-dropdown {
-  overflow: hidden;
-  min-height: 0;
+  transform: translate3d(0, -100%, 0);
   opacity: 0;
-  border-top: 1px solid transparent;
-  background: color-mix(in srgb, #ffffff 95%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: color-mix(in srgb, #ffffff 96%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid color-mix(in srgb, #e2e8f0 60%, transparent);
+  box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.08);
   transition:
-    opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.28s ease-out;
 }
 
 .dark .mobile-nav-dropdown {
-  background: color-mix(in srgb, #09090b 95%, transparent);
+  background: color-mix(in srgb, #09090b 96%, transparent);
+  border-bottom-color: color-mix(in srgb, #27272a 60%, transparent);
+  box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.35);
 }
 
 .mobile-nav-shell--open .mobile-nav-dropdown {
+  transform: translate3d(0, 0, 0);
   opacity: 1;
-  border-top-color: color-mix(in srgb, #e2e8f0 50%, transparent);
-}
-
-.dark .mobile-nav-shell--open .mobile-nav-dropdown {
-  border-top-color: color-mix(in srgb, #27272a 50%, transparent);
 }
 
 .mobile-nav-dropdown__inner {
   min-height: 0;
-  padding: 0 1rem;
-  transform: translate3d(0, -6px, 0);
-  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  padding: 0.75rem 1rem 1.25rem 1rem;
+  transform: translate3d(0, -8px, 0);
+  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mobile-nav-shell--open .mobile-nav-dropdown__inner {
-  padding-top: 0.5rem;
-  padding-bottom: 1rem;
   transform: translate3d(0, 0, 0);
 }
 
 .mobile-nav-shell--open .mobile-nav-item {
-  animation: mobileNavItemIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: mobileNavItemIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .mobile-menu-icon {
