@@ -224,6 +224,13 @@ export default function Layout({ children }) {
               <span className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white">
                 © {new Date().getFullYear()} Bloodify247
               </span>
+              <span className="text-slate-300 dark:text-zinc-700">|</span>
+              <Link
+                to="/support"
+                className="text-xs sm:text-sm font-bold text-slate-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 transition-colors"
+              >
+                {t('supportTitle')}
+              </Link>
             </div>
             <span className="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-400 font-semibold tracking-wide">
               Design & Developed By{' '}
@@ -238,7 +245,7 @@ export default function Layout({ children }) {
             </span>
           </div>
           <div className="text-[10px] sm:text-xs text-slate-400 dark:text-zinc-500 flex flex-col items-center md:items-end gap-1">
-            <span>Dedicated to saving lives in Beanibazar, Sylhet, Bangladesh.</span>
+            <span>{t('dedicatedTo')}</span>
             <a
               href="https://www.graffixinnovation.com/"
               target="_blank"

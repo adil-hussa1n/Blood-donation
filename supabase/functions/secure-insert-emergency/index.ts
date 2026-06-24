@@ -83,6 +83,26 @@ serve(async (req) => {
     const delayMs = Math.floor(Math.random() * 500) + 500;
     await new Promise((resolve) => setTimeout(resolve, delayMs));
 
+    // Block check — reject if contact phone is blocked by admin
+    const { data: isBlocked } = await supabase
+      .from("blocked_donors")
+      .select("phone")
+      .eq("phone", requestData.contact.trim())
+      .maybeSingle();
+
+    if (isBlocked) {
+      await supabase.from("rate_limit_logs").insert([{
+        ip_address: clientIp,
+        request_type: "emergency_request",
+        status: "blocked",
+        reason: "phone_blocked_emergency"
+      }]);
+      return new Response(JSON.stringify({ error: { message: "Your account has been blocked. Contact Support." } }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     // 5. Check if the contact phone belongs to a registered donor
     let finalPasscode = requestData.passcode || "1234";
     const { data: donor } = await supabase

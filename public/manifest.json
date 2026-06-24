@@ -1,7 +1,7 @@
 {
-  "name": "Beanibazar Blood Donation Platform",
+  "name": "Sylhet Blood Donation Platform",
   "short_name": "Blood Donate",
-  "description": "Find blood donors, post emergency requests, and save lives in Beanibazar, Sylhet.",
+  "description": "Find blood donors, post emergency requests, and save lives in Sylhet.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

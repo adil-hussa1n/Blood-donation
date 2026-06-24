@@ -20,7 +20,7 @@ serve(async (req) => {
                      req.headers.get("x-forwarded-for")?.split(",")[0].trim() || 
                      "127.0.0.1";
 
-    const { action, id, password, payload, name, phone, blood_group, new_password } = await req.json();
+    const { action, id, password, payload, name, phone, blood_group, new_password, dob } = await req.json();
 
     // 1. Rate Limiting Check (Max 10 per minute for updates to prevent brute-forcing passwords)
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
@@ -46,23 +46,43 @@ serve(async (req) => {
 
     // 2. Perform actions based on request type
     if (action === "reset_password") {
+      // Block check — reject if phone is blocked by admin
+      const { data: isBlocked } = await supabase
+        .from("blocked_donors")
+        .select("phone")
+        .eq("phone", phone.trim())
+        .maybeSingle();
+
+      if (isBlocked) {
+        await supabase.from("rate_limit_logs").insert([{
+          ip_address: clientIp,
+          request_type: "donor_update",
+          status: "blocked",
+          reason: "phone_blocked_recovery"
+        }]);
+        return new Response(JSON.stringify({ error: { message: "Your account has been blocked. Contact Support." } }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
       // Password Recovery Action
       const { data: donor, error: fetchErr } = await supabase
         .from("donors")
-        .select("id, password")
+        .select("id, password, dob")
         .eq("name", name.trim())
         .eq("phone", phone.trim())
         .eq("blood_group", blood_group)
         .maybeSingle();
 
-      if (fetchErr || !donor) {
+      if (fetchErr || !donor || donor.dob !== dob) {
         await supabase.from("rate_limit_logs").insert([{
           ip_address: clientIp,
           request_type: "donor_update",
           status: "blocked",
           reason: "recovery_failed"
         }]);
-        return new Response(JSON.stringify({ error: { message: "Verification failed. No donor matched the provided Name, Phone, and Blood Group." } }), {
+        return new Response(JSON.stringify({ error: { message: "Verification failed. No donor matched the provided Name, Phone, Blood Group, and Date of Birth." } }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
@@ -110,7 +130,7 @@ serve(async (req) => {
 
       const { data: donor, error: fetchErr } = await supabase
         .from("donors")
-        .select("password")
+        .select("password, phone")
         .eq("id", id)
         .maybeSingle();
 
@@ -119,6 +139,28 @@ serve(async (req) => {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
+      }
+
+      // Block check — reject if phone is blocked by admin
+      if (donor.phone) {
+        const { data: isBlocked } = await supabase
+          .from("blocked_donors")
+          .select("phone")
+          .eq("phone", donor.phone.trim())
+          .maybeSingle();
+
+        if (isBlocked) {
+          await supabase.from("rate_limit_logs").insert([{
+            ip_address: clientIp,
+            request_type: "donor_update",
+            status: "blocked",
+            reason: "phone_blocked_update"
+          }]);
+          return new Response(JSON.stringify({ error: { message: "Your account has been blocked. Contact Support." } }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
       }
 
       // Password verification

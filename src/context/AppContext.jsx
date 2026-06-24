@@ -60,17 +60,21 @@ const sessionStorage = (() => {
 const AppContext = createContext(undefined);
 
 export const AREAS = [
+  'Sylhet City Corporation',
+  // Sylhet District Upazilas
+  'Sylhet Sadar Upazila',
   'Beanibazar Upazila',
-  'Alinagar',
-  'Charkhai',
-  'Dubag',
-  'Kurar Bazar',
-  'Lauta',
-  'Mathiura',
-  'Mullapur',
-  'Muria',
-  'Sheola',
-  'Tilpara'
+  'Bishwanath Upazila',
+  'Companiganj Upazila',
+  'Fenchuganj Upazila',
+  'Golapganj Upazila',
+  'Gowainghat Upazila',
+  'Jaintiapur Upazila',
+  'Kanaighat Upazila',
+  'Osmani Nagar Upazila',
+  'South Surma Upazila',
+  'Zakiganj Upazila',
+  'Balaganj Upazila',
 ];
 
 export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
@@ -78,6 +82,7 @@ export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 export const TRANSLATIONS = {
   en: {
     // Navigation
+    dobLabel: 'Date of Birth',
     searchDonors: 'Search Donors',
     registerUpdate: 'Register / Update',
     emergencyRequests: 'Emergency Requests',
@@ -86,9 +91,9 @@ export const TRANSLATIONS = {
 
     // Hero & Search
     findDonors: 'Find Blood Donors',
-    findDonorsDesc: 'Search active donors near you in Beanibazar local areas.',
+    findDonorsDesc: 'Search active donors near you in Sylhet local areas.',
     bloodGroup: 'Required Blood Group',
-    area: 'Area (Beanibazar Unions)',
+    area: 'Area (Sylhet Unions/Upazilas)',
     searchButton: 'Search Donors',
     searchQueryPlaceholder: 'Search by donor name or phone...',
     showingResults: 'Blood Donors Directory',
@@ -117,7 +122,7 @@ export const TRANSLATIONS = {
     fullName: 'Full Name',
     phoneUnique: 'Phone Number (Unique)',
     choosePassword: 'Choose Account Password (min. 4 chars)',
-    selectArea: 'Area (Beanibazar Union)',
+    selectArea: 'Area (Sylhet Union/Upazila)',
     lastDonationOptional: 'Last Donation Date (Optional)',
     timesDonatedOptional: 'How Many Times Donated (Optional)',
     timesDonatedHelper: 'Approximate lifetime count if you donated before.',
@@ -143,7 +148,7 @@ export const TRANSLATIONS = {
 
     // Emergency Page
     emergencyTitle: 'Emergency Blood Requests',
-    emergencyDesc: 'If you or your family needs blood urgently in Beanibazar, post an emergency request here.',
+    emergencyDesc: 'If you or your family needs blood urgently in Sylhet, post an emergency request here.',
     createRequestTitle: 'Create Urgent Request',
     locationHospital: 'Hospital/Area Location',
     emergencyPhone: 'Emergency Contact Phone',
@@ -154,11 +159,13 @@ export const TRANSLATIONS = {
     activeFeedTitle: 'Active Emergency Posts Feed',
     activeCount: 'active',
     filterEmergencyByBlood: 'Filter by Blood Group',
+    filterEmergencyByArea: 'Filter by Area',
+    allAreas: 'All Areas',
     allBloodGroups: 'All Groups',
     noEmergencyForBloodGroup: 'No active requests for {bloodGroup} blood.',
     noEmergencyForBloodGroupDesc: 'Try another blood group or check back later.',
     allAddressedTitle: 'All Requests Addressed!',
-    allAddressedDesc: 'There are no active emergency blood requests in Beanibazar at the moment. Keep saving lives!',
+    allAddressedDesc: 'There are no active emergency blood requests in Sylhet at the moment. Keep saving lives!',
     postedAgo: 'Posted',
     actions: 'Actions',
     deleteRequest: 'Delete Request',
@@ -177,7 +184,7 @@ export const TRANSLATIONS = {
 
     // Footers
     developedBy: 'Design & Developed By',
-    dedicatedTo: 'Dedicated to saving lives in Beanibazar, Sylhet, Bangladesh.',
+    dedicatedTo: 'Dedicated to saving lives in Sylhet, Bangladesh.',
     projectOf: 'A project of GraffixInnovation',
 
     // Form Alerts & Errors
@@ -211,7 +218,7 @@ export const TRANSLATIONS = {
     registeredPhoneLabel: 'Registered Phone Number',
 
     // Placeholders
-    hospitalPlaceholder: 'e.g. Beanibazar Upazila',
+    hospitalPlaceholder: 'e.g. Osmani Medical College Hospital',
     passwordPlaceholder: 'Enter account password or choose a password...',
     recoveryPasswordPlaceholder: 'Enter new password...',
     notePlaceholder: 'Details like surgery reason, amount needed, timing, etc...',
@@ -254,16 +261,16 @@ export const TRANSLATIONS = {
     toggleManualPresence: 'Toggle your profile presence manually',
 
     // Home Page Additional
-    empoweringCommunity: 'Empowering Beanibazar Community',
+    empoweringCommunity: 'Empowering Sylhet Community',
     everyDonorLifesaver: 'Every Blood Donor is a Lifesaver',
     lifesaverWord: 'Lifesaver',
-    heroDescText: 'A local network connecting blood donors in Beanibazar Upazila. Search by blood group, check real-time donor availability, and respond to local emergencies.',
+    heroDescText: 'A local network connecting blood donors in Sylhet. Search by blood group, check real-time donor availability, and respond to local emergencies.',
     registerAsDonorButton: 'Register as Donor',
     filterDonorsTitle: 'Filter Donors',
     clearButton: 'Clear',
     searchByNamePhoneLabel: 'Search by name / phone',
     selectAreaLabel: 'Select Area',
-    allBeanibazarAreas: 'All Beanibazar Areas',
+    allBeanibazarAreas: 'All Sylhet Areas',
     recentEmergencyRequestsTitle: 'Recent Emergency Blood Requests',
     viewAllRequestsLink: 'View All Requests',
     noDescriptionProvided: 'No description provided.',
@@ -328,21 +335,44 @@ export const TRANSLATIONS = {
     postedDateHeader: 'Posted Date',
     errorDeletingDonorPrefix: 'Error deleting donor: ',
     errorDeletingRequestPrefix: 'Error deleting emergency request: ',
+    // Sylhet City & Key Areas
+    area_sylhetcitycorporation: 'Sylhet City Corporation',
+    // Sylhet Upazilas
+    area_sylhetsadarupazila: 'Sylhet Sadar Upazila',
     area_beanibazarupazila: 'Beanibazar Upazila',
-    area_beanibazarupazila_hospital: 'Beanibazar Upazila (General Hospital)',
-    area_alinagar: 'Alinagar',
-    area_charkhai: 'Charkhai',
-    area_dubag: 'Dubag',
-    area_kurarbazar: 'Kurar Bazar',
-    area_lauta: 'Lauta',
-    area_mathiura: 'Mathiura',
-    area_mullapur: 'Mullapur',
-    area_muria: 'Muria',
-    area_sheola: 'Sheola',
-    area_tilpara: 'Tilpara'
+    area_bishwanathupazila: 'Bishwanath Upazila',
+    area_companiganjupazila: 'Companiganj Upazila',
+    area_fenchuganjupazila: 'Fenchuganj Upazila',
+    area_golapganjupazila: 'Golapganj Upazila',
+    area_gowainghatupazila: 'Gowainghat Upazila',
+    area_jaintiapurupazila: 'Jaintiapur Upazila',
+    area_kanaighatupazila: 'Kanaighat Upazila',
+    area_osmaninagarupazila: 'Osmani Nagar Upazila',
+    area_southsurmaupazila: 'South Surma Upazila',
+    area_zakiganjupazila: 'Zakiganj Upazila',
+    area_balaganjupazila: 'Balaganj Upazila',
+
+    // Support Page
+    supportTitle: 'Help & Support',
+    supportDesc: 'Need help or want to report a problem? Get in touch with our team.',
+    contactSupportTab: 'Contact Support',
+    reportProblemTab: 'Report a Problem',
+    supportName: 'Your Name',
+    supportPhone: 'Phone Number',
+    supportMessage: 'Your Message / Query',
+    supportIssueType: 'Select Issue Type',
+    supportSubmit: 'Submit Request',
+    supportSuccessMsg: 'Your request has been submitted successfully!',
+    supportErrorMsg: 'Failed to submit request.',
+    blockedAccount: 'Blocked Account',
+    bugReport: 'App Bug / Error',
+    fakeDonor: 'Report Fake Donor Profile',
+    incorrectDonorDetails: 'Incorrect Donor Details',
+    otherIssue: 'Other Problem',
   },
   bn: {
     // Navigation
+    dobLabel: 'জন্ম তারিখ',
     searchDonors: 'রক্তদাতা খুঁজুন',
     registerUpdate: 'নিবন্ধন / আপডেট',
     emergencyRequests: 'জরুরি রক্তের অনুরোধ',
@@ -351,9 +381,9 @@ export const TRANSLATIONS = {
 
     // Hero & Search
     findDonors: 'রক্তদাতা অনুসন্ধান',
-    findDonorsDesc: 'বিয়ানীবাজারের স্থানীয় এলাকায় আপনার নিকটবর্তী সক্রিয় রক্তদাতাদের খুঁজুন।',
+    findDonorsDesc: 'সিলেটের স্থানীয় এলাকায় আপনার নিকটবর্তী সক্রিয় রক্তদাতাদের খুঁজুন।',
     bloodGroup: 'রক্তের গ্রুপ',
-    area: 'এলাকা (বিয়ানীবাজার ইউনিয়ন)',
+    area: 'এলাকা (সিলেট ইউনিয়ন/উপজেলা)',
     searchButton: 'অনুসন্ধান করুন',
     searchQueryPlaceholder: 'দাতা বা ফোন নম্বর দিয়ে খুঁজুন...',
     showingResults: 'রক্তদাতাদের তালিকা',
@@ -382,7 +412,7 @@ export const TRANSLATIONS = {
     fullName: 'পূর্ণ নাম',
     phoneUnique: 'ফোন নম্বর (ইউনিক)',
     choosePassword: 'অ্যাকাউন্ট পাসওয়ার্ড (নূন্যতম ৪ অক্ষর)',
-    selectArea: 'এলাকা (বিয়ানীবাজার ইউনিয়ন)',
+    selectArea: 'এলাকা (সিলেট ইউনিয়ন/উপজেলা)',
     lastDonationOptional: 'শেষ রক্তদানের তারিখ (ঐচ্ছিক)',
     timesDonatedOptional: 'কতবার রক্ত দিয়েছেন (ঐচ্ছিক)',
     timesDonatedHelper: 'আগে রক্ত দিয়ে থাকলে আনুমানিক মোট সংখ্যা লিখুন।',
@@ -408,7 +438,7 @@ export const TRANSLATIONS = {
 
     // Emergency Page
     emergencyTitle: 'জরুরি রক্তের অনুরোধসমূহ',
-    emergencyDesc: 'যদি আপনার বা আপনার পরিবারের বিয়ানীবাজারে জরুরি রক্তের প্রয়োজন হয়, এখানে অনুরোধ পোস্ট করুন।',
+    emergencyDesc: 'যদি আপনার বা আপনার পরিবারের সিলেটে জরুরি রক্তের প্রয়োজন হয়, এখানে অনুরোধ পোস্ট করুন।',
     createRequestTitle: 'জরুরি রক্তের অনুরোধ তৈরি করুন',
     locationHospital: 'হাসপাতাল/এলাকার অবস্থান',
     emergencyPhone: 'জরুরি যোগাযোগের ফোন নম্বর',
@@ -419,11 +449,13 @@ export const TRANSLATIONS = {
     activeFeedTitle: 'সক্রিয় অনুরোধসমূহের তালিকা',
     activeCount: 'সক্রিয়',
     filterEmergencyByBlood: 'রক্তের গ্রুপ অনুযায়ী ফিল্টার',
+    filterEmergencyByArea: 'এলাকা অনুযায়ী ফিল্টার',
+    allAreas: 'সব এলাকা',
     allBloodGroups: 'সব গ্রুপ',
     noEmergencyForBloodGroup: '{bloodGroup} রক্তের জন্য কোনো সক্রিয় অনুরোধ নেই।',
     noEmergencyForBloodGroupDesc: 'অন্য রক্তের গ্রুপ বেছে নিন অথবা পরে আবার দেখুন।',
     allAddressedTitle: 'সব অনুরোধ সম্পন্ন হয়েছে!',
-    allAddressedDesc: 'এই মুহূর্তে বিয়ানীবাজারে কোনো সক্রিয় জরুরি রক্তের অনুরোধ নেই। জীবন বাঁচাতে থাকুন!',
+    allAddressedDesc: 'এই মুহূর্তে সিলেটে কোনো সক্রিয় জরুরি রক্তের অনুরোধ নেই। জীবন বাঁচাতে থাকুন!',
     postedAgo: 'পোস্টের সময়',
     actions: 'অ্যাকশন',
     deleteRequest: 'অনুরোধ মুছে ফেলুন',
@@ -431,7 +463,7 @@ export const TRANSLATIONS = {
 
     // Footers
     developedBy: 'ডিজাইন ও ডেভেলপমেন্টে',
-    dedicatedTo: 'বিয়ানীবাজার, সিলেট, বাংলাদেশে জীবন বাঁচাতে নিবেদিত।',
+    dedicatedTo: 'সিলেট, বাংলাদেশে জীবন বাঁচাতে নিবেদিত।',
     projectOf: 'গ্রাফিক্স ইনোভেশন এর একটি প্রজেক্ট',
 
     // Form Alerts & Errors
@@ -465,7 +497,7 @@ export const TRANSLATIONS = {
     registeredPhoneLabel: 'নিবন্ধিত ফোন নম্বর',
 
     // Placeholders
-    hospitalPlaceholder: 'যেমন: বিয়ানীবাজার উপজেলা',
+    hospitalPlaceholder: 'যেমন: ওসমানী মেডিকেল কলেজ হাসপাতাল',
     passwordPlaceholder: 'অ্যাকাউন্টের পাসওয়ার্ড দিন বা নতুন পাসওয়ার্ড সেট করুন...',
     recoveryPasswordPlaceholder: 'নতুন পাসওয়ার্ড লিখুন...',
     notePlaceholder: 'অপারেশনের কারণ, কত ব্যাগ রক্ত লাগবে, সময় ইত্যাদি বিবরণ...',
@@ -508,16 +540,16 @@ export const TRANSLATIONS = {
     toggleManualPresence: 'অনুসন্ধানে প্রোফাইল প্রদর্শন পরিবর্তন করুন',
 
     // Home Page Additional
-    empoweringCommunity: 'বিয়ানীবাজার রক্তদাতা নেটওয়ার্ক',
+    empoweringCommunity: 'সিলেট রক্তদাতা নেটওয়ার্ক',
     everyDonorLifesaver: 'প্রতিটি রক্তদাতাই একজন জীবনরক্ষক',
     lifesaverWord: 'জীবনরক্ষক',
-    heroDescText: 'বিয়ানীবাজার উপজেলায় রক্তদাতাদের সংযোগকারী একটি স্থানীয় নেটওয়ার্ক। রক্তের গ্রুপ দিয়ে খুঁজুন, রক্তদাতার প্রাপ্যতা দেখুন এবং স্থানীয় জরুরি অনুরোধে সাড়া দিন।',
+    heroDescText: 'সিলেটে রক্তদাতাদের সংযোগকারী একটি স্থানীয় নেটওয়ার্ক। রক্তের গ্রুপ দিয়ে খুঁজুন, রক্তদাতার প্রাপ্যতা দেখুন এবং স্থানীয় জরুরি অনুরোধে সাড়া দিন।',
     registerAsDonorButton: 'রক্তদাতা হিসেবে নিবন্ধন',
     filterDonorsTitle: 'দাতা ফিল্টার',
     clearButton: 'মুছুন',
     searchByNamePhoneLabel: 'নাম বা ফোন নম্বর',
     selectAreaLabel: 'ইউনিয়ন/এলাকা',
-    allBeanibazarAreas: 'সব বিয়ানীবাজার এলাকা',
+    allBeanibazarAreas: 'সব সিলেট এলাকা',
     recentEmergencyRequestsTitle: 'সাম্প্রতিক জরুরি রক্তের অনুরোধ',
     viewAllRequestsLink: 'সব অনুরোধ দেখুন',
     noDescriptionProvided: 'কোনো বিবরণ দেওয়া নেই।',
@@ -582,18 +614,40 @@ export const TRANSLATIONS = {
     postedDateHeader: 'পোস্টের তারিখ',
     errorDeletingDonorPrefix: 'রক্তদাতা মুছতে ত্রুটি: ',
     errorDeletingRequestPrefix: 'জরুরি অনুরোধ মুছতে ত্রুটি: ',
+    // সিলেট সিটি ও গুরুত্বপূর্ণ এলাকা
+    area_sylhetcitycorporation: 'সিলেট সিটি কর্পোরেশন',
+    // সিলেট উপজেলা
+    area_sylhetsadarupazila: 'সিলেট সদর উপজেলা',
     area_beanibazarupazila: 'বিয়ানীবাজার উপজেলা',
-    area_beanibazarupazila_hospital: 'বিয়ানীবাজার উপজেলা (জেনারেল হাসপাতাল)',
-    area_alinagar: 'আলীনগর',
-    area_charkhai: 'চরখাই',
-    area_dubag: 'দুবাগ',
-    area_kurarbazar: 'কুড়ার বাজার',
-    area_lauta: 'লাউতা',
-    area_mathiura: 'মাথিউরা',
-    area_mullapur: 'মোল্লাপুর',
-    area_muria: 'মুড়িয়া',
-    area_sheola: 'শেওলা',
-    area_tilpara: 'তিলপাড়া'
+    area_bishwanathupazila: 'বিশ্বনাথ উপজেলা',
+    area_companiganjupazila: 'কোম্পানিগঞ্জ উপজেলা',
+    area_fenchuganjupazila: 'ফেঞ্চুগঞ্জ উপজেলা',
+    area_golapganjupazila: 'গোলাপগঞ্জ উপজেলা',
+    area_gowainghatupazila: 'গোয়াইনঘাট উপজেলা',
+    area_jaintiapurupazila: 'জৈন্তাপুর উপজেলা',
+    area_kanaighatupazila: 'কানাইঘাট উপজেলা',
+    area_osmaninagarupazila: 'ওসমানী নগর উপজেলা',
+    area_southsurmaupazila: 'দক্ষিণ সুরমা উপজেলা',
+    area_zakiganjupazila: 'জকিগঞ্জ উপজেলা',
+    area_balaganjupazila: 'বালাগঞ্জ উপজেলা',
+
+    // Support Page
+    supportTitle: 'সাহায্য ও সহযোগিতা',
+    supportDesc: 'কোনো সাহায্য লাগবে বা কোনো সমস্যা জানাতে চান? আমাদের টিমের সাথে যোগাযোগ করুন।',
+    contactSupportTab: 'যোগাযোগ করুন',
+    reportProblemTab: 'সমস্যা রিপোর্ট করুন',
+    supportName: 'আপনার নাম',
+    supportPhone: 'ফোন নম্বর',
+    supportMessage: 'আপনার বার্তা / প্রশ্ন',
+    supportIssueType: 'সমস্যার ধরণ নির্বাচন করুন',
+    supportSubmit: 'অনুরোধ পাঠান',
+    supportSuccessMsg: 'আপনার অনুরোধটি সফলভাবে পাঠানো হয়েছে!',
+    supportErrorMsg: 'অনুরোধ পাঠাতে ব্যর্থ হয়েছে।',
+    blockedAccount: 'অ্যাকাউন্ট ব্লক সংক্রান্ত',
+    bugReport: 'অ্যাপের সমস্যা / ত্রুটি',
+    fakeDonor: 'ভুয়া দাতার তথ্য রিপোর্ট',
+    incorrectDonorDetails: 'দাতার ভুল তথ্য সংশোধন',
+    otherIssue: 'অন্যান্য সমস্যা',
   }
 };
 
@@ -746,6 +800,7 @@ export const AppProvider = ({ children }) => {
   }, [theme]);
 
   // Fetch data
+  // Fetch data
   const refreshData = async (silent = false) => {
     if (!silent) setLoading(true);
     setError(null);
@@ -762,74 +817,63 @@ export const AppProvider = ({ children }) => {
         }
       }
 
-      // 3.5-second timeout wrapper for live database fetches to ensure fast mobile startup
-      const fetchPromise = Promise.all([
+      const timeout = (ms) => new Promise(resolve => setTimeout(() => resolve(null), ms));
+
+      // Fetch Donors with a 3.5s timeout, load immediately when resolved
+      const donorsFetch = Promise.race([
         dbService.getDonors(),
-        dbService.getEmergencyRequests()
-      ]);
-
-      const res = await Promise.race([
-        fetchPromise,
-        new Promise((resolve) => setTimeout(() => {
-          console.warn("Database fetch timed out. Falling back to offline cache.");
-          resolve(null);
-        }, 3500))
-      ]);
-
-      let fetchedDonors = [];
-      let fetchedRequests = [];
-
-      if (res) {
-        const [donorsRes, requestsRes] = res;
-        if (donorsRes.error) throw new Error(donorsRes.error.message);
-        if (requestsRes.error) throw new Error(requestsRes.error.message);
-        
-        fetchedDonors = donorsRes.data || [];
-        fetchedRequests = requestsRes.data || [];
-
-        // Save successfully fetched live data to local cache for future offline startups
-        if (!isDemoMode && fetchedDonors.length > 0) {
-          localStorage.setItem('bb_donors_cache', JSON.stringify(fetchedDonors));
-        }
-        if (!isDemoMode && fetchedRequests.length > 0) {
-          localStorage.setItem('bb_emergencies_cache', JSON.stringify(fetchedRequests));
-        }
-      } else {
-        // Fetch timed out - retrieve offline cache
-        const cachedDonors = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
-        const cachedRequests = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
-        
-        if (cachedDonors) fetchedDonors = JSON.parse(cachedDonors);
-        if (cachedRequests) fetchedRequests = JSON.parse(cachedRequests);
-        console.info("Database connection delayed. Loaded content from offline cache.");
-      }
-
-      if (isDemoMode) {
-        // Fallback maintenance for demo mode (local storage)
-        const updatedDonorsPromises = fetchedDonors.map(async (donor) => {
-          const days = calculateDaysSince(donor.last_donation_date);
-          if (days >= 90 && !donor.is_available) {
-            dbService.updateDonorAvailability(donor.id, true);
-            return { ...donor, is_available: true };
+        timeout(3500)
+      ]).then((res) => {
+        if (res) {
+          if (res.error) throw new Error(res.error.message);
+          const data = res.data || [];
+          setDonors(data.map(normalizeDonor));
+          if (!isDemoMode && data.length > 0) {
+            localStorage.setItem('bb_donors_cache', JSON.stringify(data));
           }
-          return donor;
-        });
-        fetchedDonors = await Promise.all(updatedDonorsPromises);
-
-        const activeRequests = [];
-        for (const req of fetchedRequests) {
-          const hours = calculateHoursSince(req.created_at);
-          if (hours >= 24) {
-            dbService.deleteEmergencyRequest(req.id);
-          } else {
-            activeRequests.push(req);
-          }
+        } else {
+          console.warn("Donors database fetch timed out. Using offline cache.");
+          const cachedDonors = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
+          if (cachedDonors) setDonors(JSON.parse(cachedDonors).map(normalizeDonor));
         }
-        fetchedRequests = activeRequests;
-      }
+      });
 
-      setDonors(fetchedDonors.map(normalizeDonor));
-      setEmergencyRequests(fetchedRequests);
+      // Fetch Emergencies with a 3.5s timeout, load immediately when resolved
+      const emergenciesFetch = Promise.race([
+        dbService.getEmergencyRequests(),
+        timeout(3500)
+      ]).then(async (res) => {
+        if (res) {
+          if (res.error) throw new Error(res.error.message);
+          let data = res.data || [];
+
+          if (isDemoMode) {
+            const activeRequests = [];
+            for (const req of data) {
+              const hours = calculateHoursSince(req.created_at);
+              if (hours >= 24) {
+                dbService.deleteEmergencyRequest(req.id);
+              } else {
+                activeRequests.push(req);
+              }
+            }
+            data = activeRequests;
+          }
+
+          setEmergencyRequests(data);
+          if (!isDemoMode && data.length > 0) {
+            localStorage.setItem('bb_emergencies_cache', JSON.stringify(data));
+          }
+        } else {
+          console.warn("Emergencies database fetch timed out. Using offline cache.");
+          const cachedRequests = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
+          if (cachedRequests) setEmergencyRequests(JSON.parse(cachedRequests));
+        }
+      });
+
+      // Execute both in parallel
+      await Promise.all([donorsFetch, emergenciesFetch]);
+
     } catch (err) {
       console.error("Error fetching data:", err);
       setError(err.message || "Something went wrong while loading data.");
@@ -940,27 +984,54 @@ export const AppProvider = ({ children }) => {
 
   const verifyDonorCredentials = async (phone, password) => {
     setError(null);
-    const { data, error } = await dbService.getDonorByPhone(phone);
+    const { data, error } = await dbService.verifyDonor(phone, password);
     if (error) {
       setError(error.message);
       return { success: false, error };
     }
-    if (data.password !== password) {
-      setError("Invalid password credentials.");
-      return { success: false, error: { message: "Invalid password credentials." } };
-    }
     return { success: true, donor: data };
   };
 
-  const resetDonorPassword = async (name, phone, bloodGroup, newPassword) => {
+  const resetDonorPassword = async (name, phone, bloodGroup, dob, newPassword) => {
     setError(null);
-    const res = await dbService.resetDonorPassword(name, phone, bloodGroup, newPassword);
+    const res = await dbService.resetDonorPassword(name, phone, bloodGroup, dob, newPassword);
     if (!res.success) {
       setError(res.error?.message || "Verification failed.");
       return { success: false, error: res.error };
     }
     await refreshData(true);
     return { success: true };
+  };
+
+  const blockDonorByPhone = async (phone, reason) => {
+    if (!isAdmin) return { success: false, error: { message: 'Unauthorized' } };
+    setError(null);
+    const adminUser = adminCredentials?.username || '';
+    const adminPass = adminCredentials?.password || '';
+    const res = await dbService.blockDonorByPhone(phone, adminUser, adminPass, reason);
+    if (!res.success) {
+      setError(res.error?.message || 'Failed to block donor.');
+    }
+    return res;
+  };
+
+  const unblockDonorByPhone = async (phone) => {
+    if (!isAdmin) return { success: false, error: { message: 'Unauthorized' } };
+    setError(null);
+    const adminUser = adminCredentials?.username || '';
+    const adminPass = adminCredentials?.password || '';
+    const res = await dbService.unblockDonorByPhone(phone, adminUser, adminPass);
+    if (!res.success) {
+      setError(res.error?.message || 'Failed to unblock donor.');
+    }
+    return res;
+  };
+
+  const getBlockedPhones = async () => {
+    if (!isAdmin) return { success: false, data: [], error: { message: 'Unauthorized' } };
+    const adminUser = adminCredentials?.username || '';
+    const adminPass = adminCredentials?.password || '';
+    return await dbService.getBlockedPhones(adminUser, adminPass);
   };
 
   const registerDonor = async (donorData, honeypot) => {
@@ -1073,7 +1144,10 @@ export const AppProvider = ({ children }) => {
         deleteDonor,
         createEmergencyRequest,
         deleteEmergencyRequest,
-        refreshData
+        refreshData,
+        blockDonorByPhone,
+        unblockDonorByPhone,
+        getBlockedPhones
       }}
     >
       {children}

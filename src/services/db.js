@@ -116,7 +116,7 @@ export const dbService = {
     } else {
       const { data, error } = await supabase
         .from('donors')
-        .select('*')
+        .select('id, name, phone, blood_group, area, last_donation_date, is_available, total_donations, lifetime_donation_count, created_at')
         .order('created_at', { ascending: false });
       return { data, error };
     }
@@ -152,6 +152,12 @@ export const dbService = {
         return { data: null, error: { message: `Phone number ${donorData.phone} is already registered.` } };
       }
 
+      // Check if blocked in demo mode
+      const blocked = JSON.parse(localStorage.getItem('bb_blocked_donors') || '[]');
+      if (blocked.find(b => b.phone.trim() === donorData.phone.trim())) {
+        return { data: null, error: { message: 'This phone number has been blocked. Please contact the administrator.' } };
+      }
+
       const donationCount = resolveRegistrationTotalDonations(donorData);
       const newDonor = {
         id: generateUUID(),
@@ -164,6 +170,7 @@ export const dbService = {
         total_donations: donationCount,
         lifetime_donation_count: donationCount,
         password: donorData.password || '123456',
+        dob: donorData.dob || null,
         created_at: new Date().toISOString()
       };
 
@@ -185,6 +192,7 @@ export const dbService = {
         p_password: donorData.password || '123456',
         p_lifetime_count: lifetimeCount,
         p_honeypot: honeypot || '',
+        p_dob: donorData.dob || null,
       });
 
       if (!rpcError && rpcDonor) {
@@ -202,7 +210,7 @@ export const dbService = {
       }
 
       const { data: responseBody, error } = await supabase.functions.invoke('secure-insert-donor', {
-        body: { donorData: { ...donorData, total_donations: lifetimeCount }, honeypot }
+        body: { donorData: { ...donorData, total_donations: lifetimeCount, dob: donorData.dob }, honeypot }
       });
       const normalizedError = await normalizeFunctionError(error);
       if (normalizedError) {
@@ -285,14 +293,15 @@ export const dbService = {
     }
   },
 
-  async resetDonorPassword(name, phone, blood_group, new_password) {
+  async resetDonorPassword(name, phone, blood_group, dob, new_password) {
     if (isDemoMode) {
       await delay();
       const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
       const index = donors.findIndex(
         d => d.name.trim().toLowerCase() === name.trim().toLowerCase() && 
              d.phone.trim() === phone.trim() && 
-             d.blood_group === blood_group
+             d.blood_group === blood_group &&
+             d.dob === dob
       );
 
       if (index !== -1) {
@@ -300,14 +309,123 @@ export const dbService = {
         localStorage.setItem('bb_donors', JSON.stringify(donors));
         return { success: true, error: null };
       }
-      return { success: false, error: { message: 'Verification failed. No donor matched the provided Name, Phone, and Blood Group.' } };
+      return { success: false, error: { message: 'Verification failed. No donor matched the provided Name, Phone, Blood Group, and Date of Birth.' } };
     } else {
-      // Invoke secure update Edge Function
+      // First try RPC
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('reset_donor_password_secure', {
+        p_name: name,
+        p_phone: phone,
+        p_blood_group: blood_group,
+        p_dob: dob,
+        p_new_password: new_password
+      });
+
+      if (!rpcError) {
+        return { success: true, error: null };
+      }
+
+      const rpcMessage = rpcError.message || rpcError.details || 'Verification failed.';
+      const rpcMissing = rpcMessage.includes('reset_donor_password_secure') &&
+        (rpcMessage.includes('does not exist') || rpcMessage.includes('Could not find'));
+      if (!rpcMissing) {
+        return { success: false, error: { message: rpcMessage } };
+      }
+
+      // Fallback (Edge Function)
       const { error } = await supabase.functions.invoke('secure-update-donor', {
-        body: { action: 'reset_password', name, phone, blood_group, new_password }
+        body: { action: 'reset_password', name, phone, blood_group, dob, new_password }
       });
       const normalizedError = await normalizeFunctionError(error);
       return { success: !normalizedError, error: normalizedError };
+    }
+  },
+
+  async blockDonorByPhone(phone, adminUsername, adminPassword, reason) {
+    if (isDemoMode) {
+      await delay();
+      const blocked = JSON.parse(localStorage.getItem('bb_blocked_donors') || '[]');
+      const exists = blocked.find(b => b.phone === phone);
+      if (!exists) {
+        blocked.push({
+          phone,
+          reason: reason || 'Blocked by admin',
+          blocked_by: adminUsername,
+          blocked_at: new Date().toISOString()
+        });
+        localStorage.setItem('bb_blocked_donors', JSON.stringify(blocked));
+      }
+      return { success: true, error: null };
+    } else {
+      const { data, error } = await supabase.rpc('block_donor_by_phone', {
+        p_phone: phone,
+        p_admin_username: adminUsername,
+        p_admin_password: adminPassword,
+        p_reason: reason || 'Blocked by admin'
+      });
+      if (error) {
+        return { success: false, error: { message: error.message || 'Failed to block donor' } };
+      }
+      return { success: true, error: null };
+    }
+  },
+
+  async unblockDonorByPhone(phone, adminUsername, adminPassword) {
+    if (isDemoMode) {
+      await delay();
+      let blocked = JSON.parse(localStorage.getItem('bb_blocked_donors') || '[]');
+      blocked = blocked.filter(b => b.phone !== phone);
+      localStorage.setItem('bb_blocked_donors', JSON.stringify(blocked));
+      return { success: true, error: null };
+    } else {
+      const { data, error } = await supabase.rpc('unblock_donor_by_phone', {
+        p_phone: phone,
+        p_admin_username: adminUsername,
+        p_admin_password: adminPassword
+      });
+      if (error) {
+        return { success: false, error: { message: error.message || 'Failed to unblock donor' } };
+      }
+      return { success: true, error: null };
+    }
+  },
+
+  async getBlockedPhones(adminUsername, adminPassword) {
+    if (isDemoMode) {
+      await delay();
+      const blocked = JSON.parse(localStorage.getItem('bb_blocked_donors') || '[]');
+      return { success: true, data: blocked, error: null };
+    } else {
+      const { data, error } = await supabase.rpc('get_blocked_phones', {
+        p_admin_username: adminUsername,
+        p_admin_password: adminPassword
+      });
+      if (error) {
+        return { success: false, data: [], error: { message: error.message || 'Failed to get blocked list' } };
+      }
+      return { success: true, data: typeof data === 'string' ? JSON.parse(data) : (data || []), error: null };
+    }
+  },
+
+  async verifyDonor(phone, password) {
+    if (isDemoMode) {
+      await delay();
+      const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
+      const donor = donors.find(
+        d => d.phone.trim() === phone.trim() && d.password === password
+      );
+      if (!donor) {
+        return { data: null, error: { message: 'Invalid phone or password.' } };
+      }
+      return { data: donor, error: null };
+    } else {
+      const { data, error } = await supabase.rpc('verify_donor_credentials', {
+        p_phone: phone.trim(),
+        p_password: password
+      });
+      if (error) {
+        return { data: null, error: { message: error.message || 'Verification failed.' } };
+      }
+      return { data: typeof data === 'string' ? JSON.parse(data) : data, error: null };
     }
   },
 
@@ -407,7 +525,7 @@ export const dbService = {
     } else {
       const { data, error } = await supabase
         .from('emergency_requests')
-        .select('*')
+        .select('id, blood_group, area, contact, note, created_at')
         .order('created_at', { ascending: false });
       return { data, error };
     }
@@ -460,14 +578,49 @@ export const dbService = {
     }
   },
 
+  async checkIfBlocked(phone) {
+    if (isDemoMode) {
+      await delay();
+      const blocked = JSON.parse(localStorage.getItem('bb_blocked_donors') || '[]');
+      const exists = blocked.find(b => b.phone.trim() === phone.trim());
+      return { data: !!exists, error: null };
+    } else {
+      const { data, error } = await supabase.rpc('is_phone_blocked', {
+        p_phone: phone.trim()
+      });
+      if (error) {
+        return { data: false, error };
+      }
+      return { data: !!data, error: null };
+    }
+  },
+
+  async submitSupportRequest(requestData) {
+    if (isDemoMode) {
+      await delay();
+      const requests = JSON.parse(localStorage.getItem('bb_support_requests') || '[]');
+      requests.push({
+        id: generateUUID(),
+        ...requestData,
+        created_at: new Date().toISOString()
+      });
+      localStorage.setItem('bb_support_requests', JSON.stringify(requests));
+      return { success: true, error: null };
+    } else {
+      const { error } = await supabase
+        .from('support_requests')
+        .insert([requestData]);
+      if (error) {
+        return { success: false, error: { message: error.message } };
+      }
+      return { success: true, error: null };
+    }
+  },
+
   // ==========================================
   // ADMIN AUTHENTICATION
   // ==========================================
   async verifyAdminCredentials(username, password) {
-    const isHardcodedMatch = 
-      username.trim().toLowerCase() === 'adilhussa1n' && 
-      password === 'Adil@1267';
-
     if (isDemoMode) {
       await delay();
       const admins = JSON.parse(localStorage.getItem('bb_admins') || '[]');
@@ -475,7 +628,7 @@ export const dbService = {
         a => a.username.trim().toLowerCase() === username.trim().toLowerCase() && 
              a.password === password
       );
-      return { success: !!match || isHardcodedMatch, error: (match || isHardcodedMatch) ? null : { message: 'Invalid Admin credentials.' } };
+      return { success: !!match, error: match ? null : { message: 'Invalid Admin credentials.' } };
     } else {
       try {
         // Securely verify admin credentials via RPC instead of select *
@@ -488,12 +641,9 @@ export const dbService = {
           return { success: true, error: null };
         }
       } catch (err) {
-        console.error("Supabase admin query error, falling back to local credentials:", err);
+        console.error("Supabase admin query error:", err);
       }
       
-      if (isHardcodedMatch) {
-        return { success: true, error: null };
-      }
       return { success: false, error: { message: 'Invalid Admin credentials.' } };
     }
   }

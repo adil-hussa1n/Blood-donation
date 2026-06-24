@@ -24,24 +24,17 @@ serve(async (req) => {
 
     // 1. Authenticate Admin if admin credentials are provided
     let isAuthorizedAdmin = false;
-    const isHardcodedAdmin = 
-      adminUsername?.trim().toLowerCase() === "adilhussa1n" && 
-      adminPassword === "Adil@1267";
 
     if (adminUsername && adminPassword) {
-      if (isHardcodedAdmin) {
+      const { data: adminMatch } = await supabase
+        .from("admins")
+        .select("id")
+        .eq("username", adminUsername.trim())
+        .eq("password", adminPassword)
+        .maybeSingle();
+      
+      if (adminMatch) {
         isAuthorizedAdmin = true;
-      } else {
-        const { data: adminMatch } = await supabase
-          .from("admins")
-          .select("id")
-          .eq("username", adminUsername.trim())
-          .eq("password", adminPassword)
-          .maybeSingle();
-        
-        if (adminMatch) {
-          isAuthorizedAdmin = true;
-        }
       }
     }
 

@@ -36,11 +36,12 @@ export default function Register() {
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regBloodGroup, setRegBloodGroup] = useState('O+');
-  const [regArea, setRegArea] = useState('Beanibazar Upazila');
+  const [regArea, setRegArea] = useState('Sylhet City Corporation');
   const [regLastDonationDate, setRegLastDonationDate] = useState('');
   const [regTotalDonations, setRegTotalDonations] = useState('');
   const [regAvailable, setRegAvailable] = useState(true);
   const [regPassword, setRegPassword] = useState('');
+  const [regDob, setRegDob] = useState('');
 
   // ----------------------------------------
   // UPDATE FORM STATE
@@ -81,6 +82,7 @@ export default function Register() {
   const [recoveryPhone, setRecoveryPhone] = useState('');
   const [recoveryBloodGroup, setRecoveryBloodGroup] = useState('O+');
   const [recoveryNewPassword, setRecoveryNewPassword] = useState('');
+  const [recoveryDob, setRecoveryDob] = useState('');
 
   // ----------------------------------------
   // ACTIONS: REGISTRATION
@@ -106,6 +108,18 @@ export default function Register() {
       return;
     }
 
+    // 3. Client-side rate limiting: 1 registration in a minute
+    const lastRegTime = localStorage.getItem('last_registration_time');
+    if (lastRegTime) {
+      const timeDiff = Date.now() - Number.parseInt(lastRegTime, 10);
+      if (timeDiff < 60000) {
+        const secondsLeft = Math.ceil((60000 - timeDiff) / 1000);
+        setErrorMsg(`Too many registration attempts. Please wait ${secondsLeft} seconds before trying again.`);
+        setFormLoading(false);
+        return;
+      }
+    }
+
     const phoneTrimmed = regPhone.trim();
     // Validate phone number format strictly
     const phoneRegex = /^01[3-9]\d{8}$/;
@@ -117,6 +131,12 @@ export default function Register() {
 
     if (regPassword.length < 4) {
       setErrorMsg(t('passwordLengthError'));
+      setFormLoading(false);
+      return;
+    }
+
+    if (!regDob) {
+      setErrorMsg("Date of birth is required.");
       setFormLoading(false);
       return;
     }
@@ -144,15 +164,20 @@ export default function Register() {
       last_donation_date: regLastDonationDate || null,
       total_donations: totalDonations,
       is_available: regAvailable,
-      password: regPassword
+      password: regPassword,
+      dob: regDob
     };
 
     try {
       const res = await registerDonor(donorData, honeypot);
       if (res.success) {
+        // Save registration time
+        localStorage.setItem('last_registration_time', Date.now().toString());
+
         setSuccessMsg(t('regSuccessMsg', { name: regName }));
         setRegName('');
         setRegPhone('');
+        setRegDob('');
         setRegLastDonationDate('');
         setRegTotalDonations('');
         setRegAvailable(true);
@@ -298,9 +323,10 @@ export default function Register() {
     const phoneTrimmed = recoveryPhone.trim();
     const nameTrimmed = recoveryName.trim();
     const groupSelected = recoveryBloodGroup;
+    const dobSelected = recoveryDob;
     const newPass = recoveryNewPassword.trim();
 
-    if (!nameTrimmed || !phoneTrimmed || !newPass) {
+    if (!nameTrimmed || !phoneTrimmed || !dobSelected || !newPass) {
       setErrorMsg(t('fillAllFieldsError'));
       setFormLoading(false);
       return;
@@ -313,12 +339,13 @@ export default function Register() {
     }
 
     try {
-      const res = await resetDonorPassword(nameTrimmed, phoneTrimmed, groupSelected, newPass);
+      const res = await resetDonorPassword(nameTrimmed, phoneTrimmed, groupSelected, dobSelected, newPass);
       if (res.success) {
         setSuccessMsg(t('recoverySuccess'));
         // Reset recovery fields and toggle back to search lookup
         setRecoveryName('');
         setRecoveryPhone('');
+        setRecoveryDob('');
         setRecoveryNewPassword('');
         setSearchPhone(phoneTrimmed);
         setShowForgotPassword(false);
@@ -507,7 +534,7 @@ export default function Register() {
               </div>
 
               {/* Last Donation Date */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 font-semibold text-xs">
                 <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
                   {t('lastDonationOptional')}
                 </label>
@@ -517,6 +544,24 @@ export default function Register() {
                     value={regLastDonationDate}
                     max={new Date().toISOString().split('T')[0]}
                     onChange={(e) => setRegLastDonationDate(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
+                  />
+                  <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                </div>
+              </div>
+
+              {/* Date of Birth */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                  {t('dobLabel')}
+                </label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    required
+                    max={new Date().toISOString().split('T')[0]}
+                    value={regDob}
+                    onChange={(e) => setRegDob(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
                   />
                   <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -751,6 +796,24 @@ export default function Register() {
                         <option key={g} value={g}>{g}</option>
                       ))}
                     </select>
+                  </div>
+
+                  {/* Recovery Date of Birth */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                      {t('dobLabel')}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="date"
+                        required
+                        max={new Date().toISOString().split('T')[0]}
+                        value={recoveryDob}
+                        onChange={(e) => setRecoveryDob(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
+                      />
+                      <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    </div>
                   </div>
 
                   {/* New Password */}

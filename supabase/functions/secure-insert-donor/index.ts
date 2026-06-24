@@ -86,6 +86,26 @@ serve(async (req) => {
 
     await new Promise((resolve) => setTimeout(resolve, Math.floor(Math.random() * 500) + 500));
 
+    // Block check — reject if phone is blocked by admin
+    const { data: isBlocked } = await supabase
+      .from("blocked_donors")
+      .select("phone")
+      .eq("phone", donorData.phone.trim())
+      .maybeSingle();
+
+    if (isBlocked) {
+      await supabase.from("rate_limit_logs").insert([{
+        ip_address: clientIp,
+        request_type: "donor_registration",
+        status: "blocked",
+        reason: "phone_blocked",
+      }]);
+      return new Response(JSON.stringify({ error: { message: "Your account has been blocked. Contact Support." } }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: existingDonor } = await supabase
       .from("donors")
       .select("phone")
@@ -94,6 +114,20 @@ serve(async (req) => {
 
     if (existingDonor) {
       return new Response(JSON.stringify({ error: { message: `Phone number ${donorData.phone} is already registered.` } }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // DOB required check
+    if (!donorData?.dob) {
+      await supabase.from("rate_limit_logs").insert([{
+        ip_address: clientIp,
+        request_type: "donor_registration",
+        status: "blocked",
+        reason: "missing_dob",
+      }]);
+      return new Response(JSON.stringify({ error: { message: "Date of birth is required for registration." } }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -114,6 +148,7 @@ serve(async (req) => {
         is_available: donorData.is_available ?? true,
         password: donorData.password || "123456",
         total_donations: resolvedTotalDonations,
+        dob: donorData.dob,
       }])
       .select()
       .single();

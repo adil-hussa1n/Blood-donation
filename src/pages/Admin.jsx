@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Shield, Key, Eye, EyeOff, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Shield, Key, Eye, EyeOff, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, User, ChevronLeft, ChevronRight, Ban } from 'lucide-react';
 import { useApp, BLOOD_GROUPS, normalizeDonor, getAreaLabel } from '../context/AppContext';
 
 export default function Admin() {
@@ -11,6 +11,9 @@ export default function Admin() {
     logoutAdmin, 
     deleteDonor, 
     deleteEmergencyRequest,
+    blockDonorByPhone,
+    unblockDonorByPhone,
+    getBlockedPhones,
     t
   } = useApp();
 
@@ -21,11 +24,68 @@ export default function Admin() {
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
-  // Dashboard view state: 'donors' or 'emergencies'
+  // Dashboard view state: 'donors' or 'emergencies' or 'blocked'
   const [adminTab, setAdminTab] = useState('donors');
   
   // Blood group filter in Donors view
   const [bloodGroupFilter, setBloodGroupFilter] = useState(''); // '' means All
+
+  // Blocked phone states
+  const [blockedPhones, setBlockedPhones] = useState([]);
+  const [blockedLoading, setBlockedLoading] = useState(false);
+  const [phoneToBlock, setPhoneToBlock] = useState('');
+  const [blockReason, setBlockReason] = useState('');
+
+  const fetchBlockedPhones = async () => {
+    setBlockedLoading(true);
+    const res = await getBlockedPhones();
+    if (res.success) {
+      setBlockedPhones(res.data || []);
+    }
+    setBlockedLoading(false);
+  };
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchBlockedPhones();
+    }
+  }, [isAdmin]);
+
+  const handleBlockPhone = async (e) => {
+    e.preventDefault();
+    if (!phoneToBlock.trim()) return;
+
+    const phoneRegex = /^01[3-9]\d{8}$/;
+    if (!phoneRegex.test(phoneToBlock.trim())) {
+      alert("Invalid phone number. Must be a valid 11-digit Bangladeshi number starting with 013-019.");
+      return;
+    }
+
+    setBlockedLoading(true);
+    const res = await blockDonorByPhone(phoneToBlock.trim(), blockReason.trim() || 'Blocked by admin');
+    if (res.success) {
+      setPhoneToBlock('');
+      setBlockReason('');
+      await fetchBlockedPhones();
+      alert("Phone number blocked successfully.");
+    } else {
+      alert("Failed to block phone: " + (res.error?.message || "unknown error"));
+    }
+    setBlockedLoading(false);
+  };
+
+  const handleUnblockPhone = async (phone) => {
+    if (!confirm(`Are you sure you want to unblock ${phone}?`)) return;
+    setBlockedLoading(true);
+    const res = await unblockDonorByPhone(phone);
+    if (res.success) {
+      await fetchBlockedPhones();
+      alert("Phone number unblocked successfully.");
+    } else {
+      alert("Failed to unblock phone: " + (res.error?.message || "unknown error"));
+    }
+    setBlockedLoading(false);
+  };
 
   // Modal / Confirm state
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -254,10 +314,10 @@ export default function Admin() {
       </div>
 
       {/* Stats Quick Cards */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <button
           onClick={() => setAdminTab('donors')}
-          className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all ${
+          className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
             adminTab === 'donors'
               ? 'border-red-500/40 ring-1 ring-red-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
@@ -278,7 +338,7 @@ export default function Admin() {
 
         <button
           onClick={() => setAdminTab('emergencies')}
-          className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all ${
+          className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
             adminTab === 'emergencies'
               ? 'border-rose-500/40 ring-1 ring-rose-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
@@ -294,6 +354,27 @@ export default function Admin() {
           </div>
           <div className="p-3 rounded-xl bg-rose-500/5 dark:bg-rose-500/10 text-rose-500">
             <Flame className="w-6 h-6" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('blocked')}
+          className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+            adminTab === 'blocked'
+              ? 'border-zinc-500/40 ring-1 ring-zinc-500/10 shadow-md'
+              : 'hover:border-slate-300 dark:hover:border-zinc-700'
+          }`}
+        >
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+              Blocked Phones
+            </span>
+            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+              {blockedPhones.length}
+            </span>
+          </div>
+          <div className="p-3 rounded-xl bg-zinc-500/5 dark:bg-zinc-500/10 text-zinc-500">
+            <Ban className="w-6 h-6" />
           </div>
         </button>
       </div>
@@ -331,7 +412,7 @@ export default function Admin() {
 
       {/* Main Tables */}
       <div className="glass-panel border rounded-3xl overflow-hidden">
-        {adminTab === 'donors' ? (
+        {adminTab === 'donors' && (
           <div className="space-y-4">
             
             {/* Header with categories */}
@@ -504,7 +585,9 @@ export default function Admin() {
             </>
           )}
           </div>
-        ) : (
+        )}
+
+        {adminTab === 'emergencies' && (
           <div className="space-y-4">
             <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 flex items-center justify-between">
               <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
@@ -582,7 +665,7 @@ export default function Admin() {
                         </div>
 
                         {req.note && (
-                          <p className="text-xs text-slate-650 dark:text-zinc-350 bg-slate-50 dark:bg-zinc-900/40 p-2.5 rounded-xl border border-slate-200/20 dark:border-zinc-800/30 text-left leading-normal">
+                          <p className="text-xs text-slate-650 dark:text-zinc-355 bg-slate-50 dark:bg-zinc-900/40 p-2.5 rounded-xl border border-slate-200/20 dark:border-zinc-800/30 text-left leading-normal">
                             {req.note}
                           </p>
                         )}
@@ -629,6 +712,101 @@ export default function Admin() {
               )}
             </>
           )}
+          </div>
+        )}
+
+        {adminTab === 'blocked' && (
+          <div className="space-y-6 p-5">
+            <h3 className="font-extrabold text-slate-950 dark:text-white text-base border-b border-slate-200/50 dark:border-zinc-800/50 pb-3 text-left">
+              Block Users by Phone Number
+            </h3>
+
+            {/* Block phone form */}
+            <form onSubmit={handleBlockPhone} className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-zinc-950/20 p-5 rounded-2xl border border-slate-200/50 dark:border-zinc-800/30">
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="e.g. 01712345678"
+                  value={phoneToBlock}
+                  onChange={(e) => setPhoneToBlock(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                />
+              </div>
+
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">
+                  Reason for Block (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Spam donor"
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  disabled={blockedLoading}
+                  className="w-full bg-red-500 hover:bg-red-600 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-md hover:shadow-lg transition-all text-xs cursor-pointer flex items-center justify-center gap-1.5 h-[42px]"
+                >
+                  <Ban className="w-4 h-4" />
+                  Block Phone Number
+                </button>
+              </div>
+            </form>
+
+            {/* Block list */}
+            <div className="space-y-3">
+              <h4 className="font-bold text-slate-900 dark:text-white text-sm text-left">
+                Currently Blocked Phone Numbers
+              </h4>
+
+              {blockedLoading && blockedPhones.length === 0 ? (
+                <p className="text-xs text-slate-400 dark:text-zinc-500 font-semibold py-4">Loading blocked list...</p>
+              ) : blockedPhones.length === 0 ? (
+                <p className="text-xs text-slate-400 dark:text-zinc-500 font-semibold py-4">No blocked phone numbers.</p>
+              ) : (
+                <div className="overflow-x-auto border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">
+                        <th className="p-3">Phone</th>
+                        <th className="p-3">Reason</th>
+                        <th className="p-3">Blocked By</th>
+                        <th className="p-3">Blocked At</th>
+                        <th className="p-3 text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-zinc-900 text-slate-700 dark:text-zinc-350">
+                      {blockedPhones.map((b) => (
+                        <tr key={b.phone} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                          <td className="p-3 font-bold">{b.phone}</td>
+                          <td className="p-3">{b.reason || 'Blocked by admin'}</td>
+                          <td className="p-3">{b.blocked_by || 'Admin'}</td>
+                          <td className="p-3">{b.blocked_at ? new Date(b.blocked_at).toLocaleString() : 'N/A'}</td>
+                          <td className="p-3 text-center">
+                            <button
+                              onClick={() => handleUnblockPhone(b.phone)}
+                              disabled={blockedLoading}
+                              className="px-2.5 py-1 bg-green-500/15 hover:bg-green-500/25 text-green-600 dark:text-green-400 rounded-lg text-[10px] font-extrabold cursor-pointer transition-all border border-green-500/20 hover:scale-[1.02]"
+                            >
+                              Unblock
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
