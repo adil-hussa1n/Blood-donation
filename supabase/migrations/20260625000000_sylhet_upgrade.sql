@@ -253,10 +253,13 @@ BEGIN
     RAISE EXCEPTION 'Unauthorized. Invalid admin credentials.';
   END IF;
 
-  SELECT json_agg(row_to_json(b))
+  SELECT json_agg(row_to_json(s))
   INTO v_result
-  FROM public.blocked_donors b
-  ORDER BY b.blocked_at DESC;
+  FROM (
+    SELECT phone, reason, blocked_by, blocked_at
+    FROM public.blocked_donors
+    ORDER BY blocked_at DESC
+  ) s;
 
   RETURN COALESCE(v_result, '[]'::json);
 END;
