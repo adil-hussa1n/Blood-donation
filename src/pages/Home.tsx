@@ -8,6 +8,7 @@ import { Donor, EmergencyRequest, HospitalInventory } from '../types';
 
 export default function Home() {
   const { donors, emergencyRequests, hospitalInventory, loading, error, language, t } = useApp();
+  const [filterOpen, setFilterOpen] = useState(false);
   
   // Active applied filters (used for rendering the list)
   const [appliedBloodGroup, setAppliedBloodGroup] = useState('');
@@ -146,13 +147,28 @@ export default function Home() {
       <QuickStats donors={donors} emergencyRequests={emergencyRequests} />
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
         
         {/* Left Filters Panel */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-1 space-y-3 lg:space-y-6">
+          {/* Mobile filter toggle */}
+          <button
+            type="button"
+            onClick={() => setFilterOpen(prev => !prev)}
+            className="lg:hidden w-full flex items-center justify-between px-4 py-3 glass-panel rounded-2xl border border-slate-200/50 dark:border-zinc-800/50 text-sm font-bold text-slate-700 dark:text-zinc-300 cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <Search className="w-4 h-4 text-red-500" />
+              {t('filterDonorsTitle')}
+              {(appliedBloodGroup || appliedArea || appliedSearchQuery) && (
+                <span className="w-2 h-2 bg-red-500 rounded-full" />
+              )}
+            </span>
+            <span className={`text-slate-400 text-xs transition-transform duration-200 ${filterOpen ? 'rotate-180' : ''}`}>▼</span>
+          </button>
           <form 
             onSubmit={handleSearchSubmit}
-            className="glass-panel rounded-2xl p-6 border border-slate-200/50 dark:border-zinc-800/50 text-left space-y-5"
+            className={`glass-panel rounded-2xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 text-left space-y-5 ${filterOpen ? 'block' : 'hidden'} lg:block`}
           >
             <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-800/50 pb-3">
               <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-sm md:text-base">

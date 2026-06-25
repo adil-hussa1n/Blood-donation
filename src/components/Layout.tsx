@@ -52,8 +52,8 @@ export default function Layout({ children }: LayoutProps) {
       )}
 
       {/* Main Header */}
-      <header className="sticky top-0 z-40 w-full glass-panel border-b transition-all duration-300 backdrop-blur-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-40 w-full glass-panel border-b transition-all duration-300 backdrop-blur-md relative" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="max-w-[1380px] mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
 
             {/* Logo */}
@@ -217,7 +217,7 @@ export default function Layout({ children }: LayoutProps) {
       </header>
 
       {/* Main Body */}
-      <main className="flex-grow max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8 animate-fade-in">
+      <main className="flex-grow max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8 animate-fade-in" style={{ paddingLeft: 'max(0.75rem, env(safe-area-inset-left))', paddingRight: 'max(0.75rem, env(safe-area-inset-right))' }}>
         {children}
       </main>
 

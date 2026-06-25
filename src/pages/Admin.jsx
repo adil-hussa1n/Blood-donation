@@ -355,19 +355,19 @@ export default function Admin() {
   // RENDER: ADMIN PANEL DASHBOARD
   // ==============================================================
   return (
-    <div className="space-y-8 max-w-6xl mx-auto relative">
+    <div className="space-y-5 sm:space-y-8 max-w-6xl mx-auto relative">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-100 dark:bg-zinc-900/50 p-6 rounded-3xl border border-slate-200/50 dark:border-zinc-800/30">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 bg-slate-100 dark:bg-zinc-900/50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200/50 dark:border-zinc-800/30">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-red-500 text-white flex items-center justify-center shadow-md">
-            <Shield className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-red-500 text-white flex items-center justify-center shadow-md shrink-0">
+            <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="text-left">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               {t('adminDashboardTitle')}
             </h2>
-            <p className="text-xs text-slate-500 dark:text-zinc-400 font-semibold uppercase tracking-wider mt-0.5">
+            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-400 font-semibold uppercase tracking-wider mt-0.5">
               {t('moderatorControlsText')}
             </p>
           </div>
@@ -375,7 +375,7 @@ export default function Admin() {
         
         <button
           onClick={logoutAdmin}
-          className="flex items-center gap-1.5 px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 dark:text-rose-400 rounded-xl text-xs font-bold transition-all"
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 dark:text-rose-400 rounded-xl text-xs font-bold transition-all self-start sm:self-auto"
         >
           <LogOut className="w-4 h-4" />
           {t('exitAdminButton')}
@@ -383,109 +383,109 @@ export default function Admin() {
       </div>
 
       {/* Stats Quick Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <button
           onClick={() => setAdminTab('donors')}
-          className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
             adminTab === 'donors'
               ? 'border-red-500/40 ring-1 ring-red-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
           }`}
         >
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
               {t('manageDonorsTab')}
             </span>
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
               {donors.length}
             </span>
           </div>
-          <div className="p-3 rounded-xl bg-red-500/5 dark:bg-red-500/10 text-red-500">
-            <Heart className="w-6 h-6" />
+          <div className="p-2 sm:p-3 rounded-xl bg-red-500/5 dark:bg-red-500/10 text-red-500 shrink-0">
+            <Heart className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </button>
 
         <button
           onClick={() => setAdminTab('emergencies')}
-          className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
             adminTab === 'emergencies'
               ? 'border-rose-500/40 ring-1 ring-rose-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
           }`}
         >
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
               {t('manageEmergenciesTab')}
             </span>
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
               {emergencyRequests.length}
             </span>
           </div>
-          <div className="p-3 rounded-xl bg-rose-500/5 dark:bg-rose-500/10 text-rose-500">
-            <Flame className="w-6 h-6" />
+          <div className="p-2 sm:p-3 rounded-xl bg-rose-500/5 dark:bg-rose-500/10 text-rose-500 shrink-0">
+            <Flame className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </button>
 
         <button
           onClick={() => setAdminTab('blocked')}
-          className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
             adminTab === 'blocked'
               ? 'border-zinc-500/40 ring-1 ring-zinc-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
           }`}
         >
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
               Blocked Phones
             </span>
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
               {blockedPhones.length}
             </span>
           </div>
-          <div className="p-3 rounded-xl bg-zinc-500/5 dark:bg-zinc-500/10 text-zinc-500">
-            <Ban className="w-6 h-6" />
+          <div className="p-2 sm:p-3 rounded-xl bg-zinc-500/5 dark:bg-zinc-500/10 text-zinc-500 shrink-0">
+            <Ban className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </button>
 
         <button
           onClick={() => setAdminTab('hospitals')}
-          className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
             adminTab === 'hospitals'
               ? 'border-emerald-500/40 ring-1 ring-emerald-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
           }`}
         >
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
               Manage Clinics
             </span>
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
               {hospitals.length}
             </span>
           </div>
-          <div className="p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 text-emerald-500">
-            <Hospital className="w-6 h-6" />
+          <div className="p-2 sm:p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 text-emerald-500 shrink-0">
+            <Hospital className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </button>
 
         <button
           onClick={() => setAdminTab('support')}
-          className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer col-span-2 sm:col-span-1 ${
             adminTab === 'support'
               ? 'border-blue-500/40 ring-1 ring-blue-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
           }`}
         >
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
               Support Tickets
             </span>
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
               {supportRequests.length}
             </span>
           </div>
-          <div className="p-3 rounded-xl bg-blue-500/5 dark:bg-blue-500/10 text-blue-500">
-            <MessageSquare className="w-6 h-6" />
+          <div className="p-2 sm:p-3 rounded-xl bg-blue-500/5 dark:bg-blue-500/10 text-blue-500 shrink-0">
+            <MessageSquare className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </button>
       </div>
