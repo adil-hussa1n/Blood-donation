@@ -72,6 +72,29 @@ const initDemoDB = () => {
     localStore.setItem('bb_emergency_requests', JSON.stringify([]));
   }
   
+  if (!localStore.getItem('bb_support_requests')) {
+    const mockSupportRequests = [
+      {
+        id: generateUUID(),
+        type: 'support',
+        name: 'Rakib Hasan',
+        phone: '01712345678',
+        message: 'Hello, I am having trouble updating my donation count on the profile tab. Can you please verify my records?',
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: generateUUID(),
+        type: 'problem',
+        name: 'Sadia Rahman',
+        phone: '01987654321',
+        issue_type: 'bug_report',
+        message: 'The print certificate modal close button was overlapping previously. Please check if the layout aligns well on mobile.',
+        created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+      }
+    ];
+    localStore.setItem('bb_support_requests', JSON.stringify(mockSupportRequests));
+  }
+  
   if (!localStore.getItem('bb_admins')) {
     const mockAdmins = [
       { id: 'admin-1', username: 'adilhussa1n', password: 'Adil@1267' }
@@ -131,7 +154,7 @@ export const dbService = {
     } else {
       const { data, error } = await supabase
         .from('donors')
-        .select('*')
+        .select('id, name, phone, blood_group, area, last_donation_date, is_available, total_donations, lifetime_donation_count, created_at')
         .eq('phone', phone.trim())
         .maybeSingle();
       
@@ -730,7 +753,7 @@ export const dbService = {
     } else {
       const { data, error } = await supabase
         .from('hospitals')
-        .select('*')
+        .select('id, name, username, area, contact, is_verified, created_at')
         .order('name', { ascending: true });
       return { data, error };
     }
@@ -811,6 +834,23 @@ export const dbService = {
         return { success: false, error: { message: error.message } };
       }
       return { success: true, error: null };
+    }
+  },
+  async getSupportRequests(adminUsername?: string, adminPassword?: string) {
+    if (isDemoMode) {
+      await delay();
+      const requests = JSON.parse(localStore.getItem('bb_support_requests') || '[]');
+      requests.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return { data: requests, error: null };
+    } else {
+      const { data, error } = await supabase.rpc('get_support_requests', {
+        p_admin_username: adminUsername,
+        p_admin_password: adminPassword
+      });
+      if (error) {
+        return { data: [], error: { message: error.message } };
+      }
+      return { data: typeof data === 'string' ? JSON.parse(data) : (data || []), error: null };
     }
   },
 

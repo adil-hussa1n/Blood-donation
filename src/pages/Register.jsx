@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Search, Save, History, Sparkles, Key, Eye, EyeOff, User, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Search, Save, History, Sparkles, Key, Eye, EyeOff, User, ArrowLeft, ChevronLeft, ChevronRight, LogOut, X, Award, Flame } from 'lucide-react';
 import { useApp, AREAS, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
 import { dbService } from '../services/db';
 
@@ -30,6 +30,38 @@ export default function Register() {
 
   // Toggle recovery mode
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+
+  // Load session from localStorage on mount
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem('bb_donor_session');
+      if (cached) {
+        const session = JSON.parse(cached);
+        if (session && session.donor && session.password) {
+          const donor = normalizeDonor(session.donor);
+          setFoundDonor(donor);
+          setSearchPhone(donor.phone);
+          setSearchPassword(session.password);
+          setEditName(donor.name);
+          setEditArea(donor.area);
+          setEditAvailable(donor.is_available);
+          setActiveTab('update');
+          
+          setHistoryLoading(true);
+          dbService.getDonationHistory(donor.id).then((historyRes) => {
+            if (!historyRes.error) {
+              setDonorHistory(historyRes.data || []);
+            }
+            setHistoryLoading(false);
+          }).catch((err) => {
+            setHistoryLoading(false);
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to restore donor session:", e);
+    }
+  }, []);
 
   // ----------------------------------------
   // REGISTER FORM STATE
@@ -229,6 +261,12 @@ export default function Register() {
       setEditArea(donor.area);
       setEditAvailable(donor.is_available);
 
+      try {
+        localStorage.setItem('bb_donor_session', JSON.stringify({ donor, password: passwordInput }));
+      } catch (e) {
+        console.error("Failed to save donor session:", e);
+      }
+
       setHistoryLoading(true);
       const historyRes = await dbService.getDonationHistory(donor.id);
       if (!historyRes.error) {
@@ -260,10 +298,16 @@ export default function Register() {
       const res = await updateDonorProfile(foundDonor.id, profileData, searchPassword);
       if (res.success) {
         setSuccessMsg(t('profileUpdateSuccess'));
-        setFoundDonor({
+        const updatedDonor = {
           ...foundDonor,
           ...profileData
-        });
+        };
+        setFoundDonor(updatedDonor);
+        try {
+          localStorage.setItem('bb_donor_session', JSON.stringify({ donor: updatedDonor, password: searchPassword }));
+        } catch (e) {
+          console.error("Failed to sync donor session on profile update:", e);
+        }
       } else {
         setErrorMsg(res.error.message || t('profileUpdateError'));
       }
@@ -293,14 +337,21 @@ export default function Register() {
           setDonorHistory(historyRes.data || []);
         }
 
-        setFoundDonor(prev => normalizeDonor({
-          ...prev,
-          total_donations: (prev.total_donations || 0) + 1,
+        const updatedDonor = normalizeDonor({
+          ...foundDonor,
+          total_donations: (foundDonor.total_donations || 0) + 1,
           last_donation_date: newDonationDate,
           is_available: false
-        }));
+        });
+        setFoundDonor(updatedDonor);
         setEditAvailable(false);
         setNewDonationDate(new Date().toISOString().split('T')[0]);
+
+        try {
+          localStorage.setItem('bb_donor_session', JSON.stringify({ donor: updatedDonor, password: searchPassword }));
+        } catch (e) {
+          console.error("Failed to sync donor session on log donation:", e);
+        }
       } else {
         setErrorMsg(res.error.message || t('donationLoggedError'));
       }
@@ -644,212 +695,216 @@ export default function Register() {
             {/* Phone & Password Lookup Form OR Forgot Password Form */}
             <div className={`${foundDonor ? 'md:col-span-5' : 'md:col-span-8 md:col-start-3'} space-y-6 transition-all duration-300`}>
               
-              {!showForgotPassword ? (
-                /* Normal Profile Lookup */
-                <form 
-                  onSubmit={handleLookup} 
-                  className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4"
-                >
-                  <div className="flex items-center gap-2 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
-                    <div className="w-8 h-8 rounded-lg bg-red-500 text-white flex items-center justify-center">
-                      <Search className="w-4 h-4" />
-                    </div>
-                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
-                      {t('findProfile')}
-                    </h3>
-                  </div>
-
-                  {/* Phone */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                      {t('registeredPhoneLabel')}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="tel"
-                        required
-                        placeholder={t('phonePlaceholder')}
-                        value={searchPhone}
-                        onChange={(e) => setSearchPhone(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
-                      />
-                      <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                    </div>
-                  </div>
-
-                  {/* Password */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-                        {t('enterPassword')}
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowForgotPassword(true);
-                          setSuccessMsg('');
-                          setErrorMsg('');
-                        }}
-                        className="text-[11px] font-bold text-red-500 hover:text-red-650 transition-colors cursor-pointer"
-                      >
-                        {t('forgotPassword')}
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type={showSearchPassword ? 'text' : 'password'}
-                        required
-                        placeholder={t('enterPasswordPlaceholder')}
-                        value={searchPassword}
-                        onChange={(e) => setSearchPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
-                      />
-                      <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                      <button
-                        type="button"
-                        onClick={() => setShowSearchPassword(!showSearchPassword)}
-                        className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-650 dark:hover:text-zinc-200 cursor-pointer"
-                      >
-                        {showSearchPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={formLoading}
-                    className="w-full bg-slate-800 hover:bg-slate-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer"
-                  >
-                    {formLoading ? t('verifyingButton') : t('loadProfileButton')}
-                  </button>
-                </form>
-              ) : (
-                /* Password Recovery Form */
-                <form 
-                  onSubmit={handlePasswordRecovery} 
-                  className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 animate-scale-up"
-                >
-                  <div className="flex items-center gap-2 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
-                    <button 
-                      type="button" 
-                      onClick={() => setShowForgotPassword(false)}
-                      className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-850 text-slate-500 cursor-pointer"
-                      title="Go Back"
+              {!foundDonor && (
+                <>
+                  {!showForgotPassword ? (
+                    /* Normal Profile Lookup */
+                    <form 
+                      onSubmit={handleLookup} 
+                      className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4"
                     >
-                      <ArrowLeft className="w-4 h-4" />
-                    </button>
-                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
-                      {t('recoveryTab')}
-                    </h3>
-                  </div>
+                      <div className="flex items-center gap-2 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
+                        <div className="w-8 h-8 rounded-lg bg-red-500 text-white flex items-center justify-center">
+                          <Search className="w-4 h-4" />
+                        </div>
+                        <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
+                          {t('findProfile')}
+                        </h3>
+                      </div>
 
-                  <p className="text-[11px] text-slate-400 dark:text-zinc-500 leading-normal">
-                    {t('recoveryDesc')}
-                  </p>
+                      {/* Phone */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                          {t('registeredPhoneLabel')}
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="tel"
+                            required
+                            placeholder={t('phonePlaceholder')}
+                            value={searchPhone}
+                            onChange={(e) => setSearchPhone(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                          />
+                          <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                        </div>
+                      </div>
 
-                  {/* Recovery Name */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                      {t('registeredFullNameLabel')}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        required
-                        placeholder={t('donorNamePlaceholder')}
-                        value={recoveryName}
-                        onChange={(e) => setRecoveryName(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
-                      />
-                      <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                    </div>
-                  </div>
+                      {/* Password */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+                            {t('enterPassword')}
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowForgotPassword(true);
+                              setSuccessMsg('');
+                              setErrorMsg('');
+                            }}
+                            className="text-[11px] font-bold text-red-500 hover:text-red-650 transition-colors cursor-pointer"
+                          >
+                            {t('forgotPassword')}
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type={showSearchPassword ? 'text' : 'password'}
+                            required
+                            placeholder={t('enterPasswordPlaceholder')}
+                            value={searchPassword}
+                            onChange={(e) => setSearchPassword(e.target.value)}
+                            className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                          />
+                          <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                          <button
+                            type="button"
+                            onClick={() => setShowSearchPassword(!showSearchPassword)}
+                            className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-650 dark:hover:text-zinc-200 cursor-pointer"
+                          >
+                            {showSearchPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
 
-                  {/* Recovery Phone */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                      {t('phone')}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="tel"
-                        required
-                        placeholder={t('phonePlaceholder')}
-                        value={recoveryPhone}
-                        onChange={(e) => setRecoveryPhone(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
-                      />
-                      <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                    </div>
-                  </div>
-
-                  {/* Recovery Blood Group */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                      {t('bloodGroup')}
-                    </label>
-                    <select
-                      value={recoveryBloodGroup}
-                      onChange={(e) => setRecoveryBloodGroup(e.target.value)}
-                      className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
-                    >
-                      {BLOOD_GROUPS.map(g => (
-                        <option key={g} value={g}>{g}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Recovery Date of Birth */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                      {t('dobLabel')}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="date"
-                        required
-                        max={new Date().toISOString().split('T')[0]}
-                        value={recoveryDob}
-                        onChange={(e) => setRecoveryDob(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
-                      />
-                      <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                    </div>
-                  </div>
-
-                  {/* New Password */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                      {t('chooseNewPasswordLabel')}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showRecoveryPassword ? 'text' : 'password'}
-                        required
-                        placeholder={t('recoveryPasswordPlaceholder')}
-                        value={recoveryNewPassword}
-                        onChange={(e) => setRecoveryNewPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
-                      />
-                      <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                       <button
-                        type="button"
-                        onClick={() => setShowRecoveryPassword(!showRecoveryPassword)}
-                        className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-650 dark:hover:text-zinc-200 cursor-pointer"
+                        type="submit"
+                        disabled={formLoading}
+                        className="w-full bg-slate-800 hover:bg-slate-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer"
                       >
-                        {showRecoveryPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {formLoading ? t('verifyingButton') : t('loadProfileButton')}
                       </button>
-                    </div>
-                  </div>
+                    </form>
+                  ) : (
+                    /* Password Recovery Form */
+                    <form 
+                      onSubmit={handlePasswordRecovery} 
+                      className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 animate-scale-up"
+                    >
+                      <div className="flex items-center gap-2 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
+                        <button 
+                          type="button" 
+                          onClick={() => setShowForgotPassword(false)}
+                          className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-850 text-slate-550 cursor-pointer"
+                          title="Go Back"
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                        </button>
+                        <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
+                          {t('recoveryTab')}
+                        </h3>
+                      </div>
 
-                  <button
-                    type="submit"
-                    disabled={formLoading}
-                    className="w-full bg-red-500 hover:bg-red-600 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer"
-                  >
-                    {t('verifyResetPasswordButton')}
-                  </button>
-                </form>
+                      <p className="text-[11px] text-slate-400 dark:text-zinc-500 leading-normal">
+                        {t('recoveryDesc')}
+                      </p>
+
+                      {/* Recovery Name */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                          {t('registeredFullNameLabel')}
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            required
+                            placeholder={t('donorNamePlaceholder')}
+                            value={recoveryName}
+                            onChange={(e) => setRecoveryName(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                          />
+                          <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                        </div>
+                      </div>
+
+                      {/* Recovery Phone */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                          {t('phone')}
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="tel"
+                            required
+                            placeholder={t('phonePlaceholder')}
+                            value={recoveryPhone}
+                            onChange={(e) => setRecoveryPhone(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                          />
+                          <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                        </div>
+                      </div>
+
+                      {/* Recovery Blood Group */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                          {t('bloodGroup')}
+                        </label>
+                        <select
+                          value={recoveryBloodGroup}
+                          onChange={(e) => setRecoveryBloodGroup(e.target.value)}
+                          className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
+                        >
+                          {BLOOD_GROUPS.map(g => (
+                            <option key={g} value={g}>{g}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Recovery Date of Birth */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                          {t('dobLabel')}
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="date"
+                            required
+                            max={new Date().toISOString().split('T')[0]}
+                            value={recoveryDob}
+                            onChange={(e) => setRecoveryDob(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
+                          />
+                          <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                        </div>
+                      </div>
+
+                      {/* New Password */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                          {t('chooseNewPasswordLabel')}
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showRecoveryPassword ? 'text' : 'password'}
+                            required
+                            placeholder={t('recoveryPasswordPlaceholder')}
+                            value={recoveryNewPassword}
+                            onChange={(e) => setRecoveryNewPassword(e.target.value)}
+                            className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                          />
+                          <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                          <button
+                            type="button"
+                            onClick={() => setShowRecoveryPassword(!showRecoveryPassword)}
+                            className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-650 dark:hover:text-zinc-200 cursor-pointer"
+                          >
+                            {showRecoveryPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={formLoading}
+                        className="w-full bg-red-500 hover:bg-red-600 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer"
+                      >
+                        {t('verifyResetPasswordButton')}
+                      </button>
+                    </form>
+                  )}
+                </>
               )}
 
               {/* Profile summary card when found */}
@@ -857,19 +912,39 @@ export default function Register() {
                 <div className="glass-panel border-red-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-5 border relative overflow-hidden space-y-3 sm:space-y-4 animate-slide-up">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full blur-xl -mr-6 -mt-6" />
                   
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500 text-white font-black text-lg sm:text-xl flex items-center justify-center shadow-md">
-                      {foundDonor.blood_group}
+                  <div className="flex items-center justify-between gap-3 relative z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500 text-white font-black text-lg sm:text-xl flex items-center justify-center shadow-md">
+                        {foundDonor.blood_group}
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-slate-900 dark:text-white text-base flex items-center gap-1.5">
+                          {foundDonor.name}
+                          <Sparkles className="w-3.5 h-3.5 text-yellow-500 fill-current animate-pulse" />
+                        </h4>
+                        <span className="text-xs text-slate-400 dark:text-zinc-500 font-semibold">
+                          {getAreaLabel(foundDonor.area, t)} • {foundDonor.phone}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-extrabold text-slate-900 dark:text-white text-base flex items-center gap-1.5">
-                        {foundDonor.name}
-                        <Sparkles className="w-3.5 h-3.5 text-yellow-500 fill-current animate-pulse" />
-                      </h4>
-                      <span className="text-xs text-slate-400 dark:text-zinc-500 font-semibold">
-                        {getAreaLabel(foundDonor.area, t)} • {foundDonor.phone}
-                      </span>
-                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        localStorage.removeItem('bb_donor_session');
+                        setFoundDonor(null);
+                        setSearchPhone('');
+                        setSearchPassword('');
+                        setDonorHistory([]);
+                        setSuccessMsg('');
+                        setErrorMsg('');
+                      }}
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 dark:bg-zinc-900 dark:hover:bg-rose-950/30 text-slate-500 dark:text-zinc-400 hover:text-rose-500 dark:hover:text-rose-400 transition-all duration-200 cursor-pointer flex items-center gap-1 text-[10px] font-bold shrink-0"
+                      title={t('signOutLabel')}
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">{t('signOutLabel')}</span>
+                    </button>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -1104,72 +1179,185 @@ export default function Register() {
 
       {/* Certificate Modal Overlay */}
       {showCertificate && foundDonor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 dark:bg-zinc-950/80 backdrop-blur-sm animate-fade-in print:bg-white print:p-0">
-          <div className="bg-white text-slate-900 rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-amber-250 shadow-2xl relative space-y-6 text-center print:border-0 print:shadow-none print:p-0 print:my-0 print:mx-auto">
+        <div id="certificate-modal-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 dark:bg-zinc-950/80 backdrop-blur-sm animate-fade-in print:bg-white print:p-0">
+          <style>{`
+            @media print {
+              header, footer, nav, aside, .sticky, [role="banner"], button, .print\\:hidden {
+                display: none !important;
+              }
+              @page {
+                size: A4 landscape;
+                margin: 0 !important;
+              }
+              body, html, #root {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                overflow: hidden !important;
+              }
+              main {
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                height: 100% !important;
+              }
+              #certificate-modal-overlay {
+                position: absolute !important;
+                inset: 0 !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                z-index: 9999 !important;
+              }
+              #certificate-print-area {
+                width: 297mm !important;
+                height: 210mm !important;
+                min-width: 297mm !important;
+                min-height: 210mm !important;
+                max-width: 297mm !important;
+                max-height: 210mm !important;
+                padding: 12mm !important;
+                margin: 0 !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                background: white !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              #certificate-border-container {
+                height: 100% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                padding: 10mm !important;
+                box-sizing: border-box !important;
+                border-color: #f59e0b !important;
+              }
+            }
+          `}</style>
+          <div id="certificate-print-area" className="bg-gradient-to-br from-amber-50/40 via-white to-orange-50/20 text-slate-900 rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-amber-200/50 shadow-2xl relative space-y-6 text-center print:border-0 print:shadow-none print:p-0 print:my-0 print:mx-auto">
+            
+            {/* Floating Close Button */}
             <button
               onClick={() => setShowCertificate(false)}
-              className="absolute right-4 top-4 p-1 rounded-xl text-slate-400 hover:text-slate-650 print:hidden cursor-pointer"
+              className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 w-9 h-9 bg-white dark:bg-zinc-900 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-full border border-slate-200 dark:border-zinc-800 flex items-center justify-center shadow-lg transition-all hover:scale-110 hover:rotate-90 z-10 print:hidden cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
             {/* Certificate Border decoration */}
-            <div className="border-4 border-double border-amber-500/60 p-6 sm:p-8 rounded-2xl space-y-6 relative print:border-amber-500">
-              <div className="absolute top-2 left-2 w-8 h-8 border-t-2 border-l-2 border-amber-500" />
-              <div className="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-amber-500" />
-              <div className="absolute bottom-2 left-2 w-8 h-8 border-b-2 border-l-2 border-amber-500" />
-              <div className="absolute bottom-2 right-2 w-8 h-8 border-b-2 border-r-2 border-amber-500" />
+            <div id="certificate-border-container" className="border-4 border-double border-amber-500/60 p-6 sm:p-10 rounded-2xl space-y-6 relative print:border-amber-500 print:p-8 bg-white/70">
+              <div className="absolute top-2.5 left-2.5 w-6 h-6 border-t-2 border-l-2 border-amber-600/80" />
+              <div className="absolute top-2.5 right-2.5 w-6 h-6 border-t-2 border-r-2 border-amber-600/80" />
+              <div className="absolute bottom-2.5 left-2.5 w-6 h-6 border-b-2 border-l-2 border-amber-600/80" />
+              <div className="absolute bottom-2.5 right-2.5 w-6 h-6 border-b-2 border-r-2 border-amber-600/80" />
 
               {/* Content */}
-              <div className="space-y-2">
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-amber-600 block">
+              <div className="space-y-1">
+                {/* Brand Header */}
+                <div className="flex flex-col items-center gap-0.5 pb-3">
+                  <div className="flex items-center gap-1.5">
+                    <Flame className="w-4 h-4 text-red-500 fill-current animate-pulse shrink-0" />
+                    <span className="text-xs font-black tracking-widest text-slate-800 uppercase font-sans">
+                      Bloodify247
+                    </span>
+                  </div>
+                  <span className="text-[8px] uppercase tracking-[0.15em] text-slate-450 font-bold block leading-none">
+                    Powered by GraffixInnovation
+                  </span>
+                </div>
+
+                <span className="text-[11px] sm:text-xs font-black uppercase tracking-[0.25em] text-amber-700 block mb-1 font-sans border-t border-slate-100 pt-3">
                   Certificate of Appreciation
                 </span>
-                <h2 className="font-serif font-black text-2xl sm:text-3xl text-slate-900">
+                <h2 className="font-serif font-black text-3xl sm:text-4xl bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 bg-clip-text text-transparent print:text-amber-600 tracking-wide">
                   LIFE SAVER AWARD
                 </h2>
-                <div className="w-20 h-0.5 bg-amber-500 mx-auto my-2" />
+                
+                {/* Styled Ornament Divider */}
+                <div className="flex items-center justify-center gap-3 my-3">
+                  <div className="w-14 h-[1px] bg-gradient-to-r from-transparent to-amber-500" />
+                  <Award className="w-4 h-4 text-amber-500 shrink-0" />
+                  <div className="w-14 h-[1px] bg-gradient-to-l from-transparent to-amber-500" />
+                </div>
               </div>
 
-              <p className="text-xs text-slate-500 font-medium leading-relaxed italic max-w-md mx-auto">
+              <p className="text-xs text-slate-500 font-semibold leading-relaxed italic max-w-md mx-auto">
                 This certificate is proudly presented to
               </p>
 
-              <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight my-4">
+              <h3 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight my-3 font-serif">
                 {foundDonor.name}
               </h3>
 
-              <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+              <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed font-medium">
                 {language === 'bn' 
                   ? `স্বেচ্ছায় রক্তদান করে মানবতার সেবায় অনন্য ভূমিকা পালনের জন্য এবং সফলভাবে ${foundDonor.total_donations} বার রক্তদান সম্পন্ন করায় আপনাকে এই সম্মাননা স্মারক প্রদান করা হলো।` 
                   : `for their selfless dedication to humanity by donating blood ${foundDonor.total_donations} times. Your noble actions have directly helped save lives and serve as an inspiration to the community.`
                 }
               </p>
 
-              <div className="grid grid-cols-2 gap-4 pt-6 text-left max-w-sm mx-auto border-t border-slate-100">
-                <div>
-                  <span className="text-[10px] text-slate-450 block uppercase font-bold">Blood Group</span>
-                  <strong className="text-sm font-black text-red-500">{foundDonor.blood_group}</strong>
+              {/* Bottom Details Grid with Wax Seal */}
+              <div className="grid grid-cols-3 items-center gap-4 pt-6 max-w-lg mx-auto border-t border-slate-200/80 print:border-slate-300">
+                {/* Left Column: Date Issued */}
+                <div className="text-left space-y-1">
+                  <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Date Issued</span>
+                  <strong className="text-xs font-semibold text-slate-700 block border-b border-slate-200 pb-1">
+                    {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </strong>
+                  <span className="text-[8px] text-slate-400 block uppercase tracking-tight">Certificate Date</span>
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-slate-450 block uppercase font-bold">Last Donation</span>
-                  <strong className="text-xs font-bold text-slate-700">
+
+                {/* Center Column: Red/Gold Wax Seal */}
+                <div className="relative flex justify-center -mt-2">
+                  <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-rose-600 to-red-700 flex items-center justify-center border border-amber-400 shadow-lg z-10 print:border-red-600">
+                    <div className="border border-amber-300/40 rounded-full w-[calc(100%-6px)] h-[calc(100%-6px)] flex flex-col items-center justify-center">
+                      <span className="text-[8px] font-bold text-amber-200/80 uppercase tracking-tight leading-none">Group</span>
+                      <span className="text-lg font-black text-white leading-none mt-0.5 drop-shadow">{foundDonor.blood_group}</span>
+                    </div>
+                  </div>
+                  {/* Seal Ribbons */}
+                  <div className="absolute top-12 flex justify-center gap-1 pointer-events-none print:opacity-85">
+                    <div className="w-3 h-8 bg-red-650/90 rotate-12 transform origin-top shadow-sm rounded-b-sm" />
+                    <div className="w-3 h-8 bg-red-750/90 -rotate-12 transform origin-top shadow-sm rounded-b-sm" />
+                  </div>
+                </div>
+
+                {/* Right Column: Last Donation */}
+                <div className="text-right space-y-1">
+                  <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Last Donation</span>
+                  <strong className="text-xs font-semibold text-slate-700 block border-b border-slate-200 pb-1">
                     {foundDonor.last_donation_date 
                       ? new Date(foundDonor.last_donation_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                       : 'N/A'
                     }
                   </strong>
+                  <span className="text-[8px] text-slate-400 block uppercase tracking-tight">Donation Log</span>
                 </div>
               </div>
             </div>
 
-            {/* Action Button */}
-            <div className="flex gap-2 justify-center print:hidden">
+            {/* Action Buttons */}
+            <div className="flex gap-2.5 justify-center print:hidden">
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold rounded-xl text-xs shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
               >
+                <Save className="w-4 h-4" />
                 Print / Save PDF
               </button>
             </div>

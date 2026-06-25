@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Shield, Key, Eye, EyeOff, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, User, ChevronLeft, ChevronRight, Ban, Hospital } from 'lucide-react';
+import { Shield, Key, Eye, EyeOff, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, User, ChevronLeft, ChevronRight, Ban, Hospital, MessageSquare } from 'lucide-react';
 import { useApp, BLOOD_GROUPS, normalizeDonor, getAreaLabel } from '../context/AppContext';
 
 export default function Admin() {
@@ -16,6 +16,7 @@ export default function Admin() {
     getBlockedPhones,
     getAllHospitalsAdmin,
     approveHospitalAdmin,
+    getSupportRequests,
     t
   } = useApp();
 
@@ -35,34 +36,59 @@ export default function Admin() {
   // Blocked phone states
   const [blockedPhones, setBlockedPhones] = useState([]);
   const [blockedLoading, setBlockedLoading] = useState(false);
+  const [blockedError, setBlockedError] = useState(null);
   const [phoneToBlock, setPhoneToBlock] = useState('');
   const [blockReason, setBlockReason] = useState('');
 
   const fetchBlockedPhones = async () => {
     setBlockedLoading(true);
+    setBlockedError(null);
     const res = await getBlockedPhones();
     if (res.success) {
       setBlockedPhones(res.data || []);
+    } else {
+      setBlockedError(res.error?.message || "Failed to fetch blocked phone numbers.");
     }
     setBlockedLoading(false);
   };
 
   const [hospitals, setHospitals] = useState([]);
   const [hospitalsLoading, setHospitalsLoading] = useState(false);
+  const [hospitalsError, setHospitalsError] = useState(null);
 
   const fetchHospitals = async () => {
     setHospitalsLoading(true);
+    setHospitalsError(null);
     const res = await getAllHospitalsAdmin();
     if (res.data) {
       setHospitals(res.data);
+    } else if (res.error) {
+      setHospitalsError(res.error.message || "Failed to fetch registered hospitals.");
     }
     setHospitalsLoading(false);
+  };
+
+  const [supportRequests, setSupportRequests] = useState([]);
+  const [supportLoading, setSupportLoading] = useState(false);
+  const [supportError, setSupportError] = useState(null);
+
+  const fetchSupportRequests = async () => {
+    setSupportLoading(true);
+    setSupportError(null);
+    const res = await getSupportRequests();
+    if (res.error) {
+      setSupportError(res.error.message || "Failed to fetch support requests.");
+    } else if (res.data) {
+      setSupportRequests(res.data);
+    }
+    setSupportLoading(false);
   };
 
   useEffect(() => {
     if (isAdmin) {
       fetchBlockedPhones();
       fetchHospitals();
+      fetchSupportRequests();
     }
   }, [isAdmin]);
 
@@ -343,7 +369,7 @@ export default function Admin() {
       </div>
 
       {/* Stats Quick Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <button
           onClick={() => setAdminTab('donors')}
           className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
@@ -425,6 +451,27 @@ export default function Admin() {
           </div>
           <div className="p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 text-emerald-500">
             <Hospital className="w-6 h-6" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('support')}
+          className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+            adminTab === 'support'
+              ? 'border-blue-500/40 ring-1 ring-blue-500/10 shadow-md'
+              : 'hover:border-slate-300 dark:hover:border-zinc-700'
+          }`}
+        >
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+              Support Tickets
+            </span>
+            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+              {supportRequests.length}
+            </span>
+          </div>
+          <div className="p-3 rounded-xl bg-blue-500/5 dark:bg-blue-500/10 text-blue-500">
+            <MessageSquare className="w-6 h-6" />
           </div>
         </button>
       </div>
@@ -818,6 +865,13 @@ export default function Admin() {
                 Currently Blocked Phone Numbers
               </h4>
 
+              {blockedError && (
+                <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950/50 text-rose-800 dark:text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span className="font-semibold">{blockedError}</span>
+                </div>
+              )}
+
               {blockedLoading && blockedPhones.length === 0 ? (
                 <p className="text-xs text-slate-400 dark:text-zinc-500 font-semibold py-4">Loading blocked list...</p>
               ) : blockedPhones.length === 0 ? (
@@ -870,6 +924,13 @@ export default function Admin() {
                 Manage registered hospital accounts, verify their status, and approve or revoke stock editing access.
               </p>
             </div>
+
+            {hospitalsError && (
+              <div className="mx-5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950/50 text-rose-800 dark:text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span className="font-semibold">{hospitalsError}</span>
+              </div>
+            )}
 
             {hospitalsLoading ? (
               <div className="p-12 text-center text-slate-400 dark:text-zinc-500 font-semibold text-xs">
@@ -931,6 +992,139 @@ export default function Admin() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {adminTab === 'support' && (
+          <div className="space-y-4">
+            <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 text-left flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
+                  Help & Support Requests
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-zinc-500 mt-1 font-semibold">
+                  View and manage tickets submitted by donors and users seeking help or reporting problems.
+                </p>
+              </div>
+              <button
+                onClick={fetchSupportRequests}
+                disabled={supportLoading}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {supportLoading ? 'Refreshing...' : 'Refresh List'}
+              </button>
+            </div>
+
+            {supportError && (
+              <div className="mx-5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950/50 text-rose-800 dark:text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span className="font-semibold">{supportError}</span>
+              </div>
+            )}
+
+            {supportLoading && supportRequests.length === 0 ? (
+              <div className="p-12 text-center text-slate-400 dark:text-zinc-500 font-semibold text-xs animate-pulse">
+                Loading support requests...
+              </div>
+            ) : supportRequests.length === 0 ? (
+              <div className="p-12 text-center text-slate-550 dark:text-zinc-450 font-semibold text-xs">
+                No support requests or problem reports found.
+              </div>
+            ) : (
+              <div className="animate-fade-in">
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse table-fixed">
+                    <thead>
+                      <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                        <th className="p-4 w-[10%]">Type</th>
+                        <th className="p-4 w-[18%]">Name</th>
+                        <th className="p-4 w-[15%]">Phone</th>
+                        <th className="p-4 w-[17%]">Issue Type</th>
+                        <th className="p-4 w-[28%]">Message</th>
+                        <th className="p-4 w-[12%]">Received At</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                      {supportRequests.map((req) => (
+                        <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                          <td className="p-4">
+                            <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${
+                              req.type === 'problem'
+                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                            }`}>
+                              {req.type === 'problem' ? 'Problem' : 'Support'}
+                            </span>
+                          </td>
+                          <td className="p-4 font-bold text-slate-950 dark:text-white truncate" title={req.name}>
+                            {req.name}
+                          </td>
+                          <td className="p-4">{req.phone}</td>
+                          <td className="p-4">
+                            {req.issue_type ? (
+                              <span className="bg-slate-105 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 px-2 py-0.5 rounded text-xs">
+                                {t(req.issue_type) || req.issue_type}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 dark:text-zinc-650">—</span>
+                            )}
+                          </td>
+                          <td className="p-4 truncate" title={req.message}>
+                            {req.message}
+                          </td>
+                          <td className="p-4 text-xs text-slate-400 dark:text-zinc-500">
+                            {new Date(req.created_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
+                  {supportRequests.map((req) => (
+                    <div key={req.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors text-left">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <span className="font-extrabold text-slate-900 dark:text-white text-base block">
+                            {req.name}
+                          </span>
+                          <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                            {req.phone}
+                          </span>
+                        </div>
+                        <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${
+                          req.type === 'problem'
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                            : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                        }`}>
+                          {req.type === 'problem' ? 'Problem' : 'Support'}
+                        </span>
+                      </div>
+
+                      {req.issue_type && (
+                        <div className="text-xs">
+                          <span className="text-slate-400 dark:text-zinc-500 mr-1.5">Issue:</span>
+                          <span className="bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 px-2 py-0.5 rounded font-bold">
+                            {t(req.issue_type) || req.issue_type}
+                          </span>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-slate-655 dark:text-zinc-350 bg-slate-50 dark:bg-zinc-900/40 p-2.5 rounded-xl border border-slate-200/20 dark:border-zinc-800/30 leading-normal">
+                        {req.message}
+                      </p>
+
+                      <div className="text-[10px] text-slate-400 dark:text-zinc-500">
+                        Received: {new Date(req.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

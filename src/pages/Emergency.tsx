@@ -140,24 +140,42 @@ export default function Emergency() {
       {/* Status Update Modal Overlay */}
       {statusRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 dark:bg-zinc-950/80 backdrop-blur-sm animate-fade-in animate-duration-200">
-          <div className="glass-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 animate-scale-up relative">
+          <div className={`glass-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 border transition-all duration-300 space-y-4 animate-scale-up relative ${
+            selectedStatus === 'needed'
+              ? 'shadow-[0_0_50px_-12px_rgba(244,63,94,0.2)] border-rose-500/20 dark:border-rose-500/30'
+              : selectedStatus === 'responded'
+                ? 'shadow-[0_0_50px_-12px_rgba(245,158,11,0.2)] border-amber-500/20 dark:border-amber-500/30'
+                : 'shadow-[0_0_50px_-12px_rgba(16,185,129,0.2)] border-emerald-500/20 dark:border-emerald-500/30'
+          }`}>
             <button
               onClick={closeStatusModal}
-              className="absolute right-4 top-4 p-1 rounded-xl text-slate-400 hover:text-slate-655 dark:hover:text-zinc-200 cursor-pointer"
+              className="absolute right-4 top-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all duration-300 hover:rotate-90 cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
             <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200/50 dark:border-zinc-800/50">
-              <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center animate-bounce">
-                <Clock className="w-4 h-4" />
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white transition-all duration-300 ${
+                selectedStatus === 'needed'
+                  ? 'bg-rose-500 shadow-md shadow-rose-500/20'
+                  : selectedStatus === 'responded'
+                    ? 'bg-amber-500 shadow-md shadow-amber-500/20'
+                    : 'bg-emerald-500 shadow-md shadow-emerald-500/20'
+              }`}>
+                {selectedStatus === 'needed' ? (
+                  <Flame className="w-4 h-4 animate-pulse" />
+                ) : selectedStatus === 'responded' ? (
+                  <Clock className="w-4 h-4 animate-pulse" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4" />
+                )}
               </div>
               <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
                 {language === 'bn' ? 'অনুরোধের স্ট্যাটাস পরিবর্তন' : 'Update Request Status'}
               </h3>
             </div>
 
-            <p className="text-xs text-slate-500 dark:text-zinc-400 text-left">
+            <p className="text-xs text-slate-500 dark:text-zinc-400 text-left font-medium">
               {language === 'bn' ? 'স্ট্যাটাস আপডেট করুন:' : 'Select the current progress status for your request:'}
             </p>
 
@@ -169,24 +187,88 @@ export default function Emergency() {
             )}
 
             <form onSubmit={handleStatusSubmit} className="space-y-4 text-left">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">
                   {language === 'bn' ? 'স্ট্যাটাস' : 'Status'}
                 </label>
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value as any)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:text-white cursor-pointer"
-                >
-                  <option value="needed">{language === 'bn' ? 'জরুরী প্রয়োজন (Needed Urgent)' : 'Needed Urgent'}</option>
-                  <option value="responded">{language === 'bn' ? 'সাড়া দিয়েছেন (Donors On Way)' : 'Donors On Way'}</option>
-                  <option value="fulfilled">{language === 'bn' ? 'রক্তদান সম্পন্ন (Life Saved!)' : 'Life Saved!'}</option>
-                </select>
+                
+                <div className="grid grid-cols-1 gap-2.5">
+                  {[
+                    {
+                      value: 'needed',
+                      label: language === 'bn' ? 'জরুরী প্রয়োজন (Needed Urgent)' : 'Needed Urgent',
+                      desc: language === 'bn' ? 'রক্তের জন্য জরুরী সন্ধান করা হচ্ছে' : 'Active search for blood donors',
+                      color: 'rose',
+                      icon: Flame,
+                      bgActive: 'bg-rose-50/50 border-rose-500 dark:bg-rose-950/10 dark:border-rose-500',
+                      iconBg: 'bg-rose-100 dark:bg-rose-950/30 text-rose-500',
+                      radioBg: 'border-rose-500 bg-rose-500'
+                    },
+                    {
+                      value: 'responded',
+                      label: language === 'bn' ? 'সাড়া দিয়েছেন (Donors On Way)' : 'Donors On Way',
+                      desc: language === 'bn' ? 'রক্তদাতা রক্ত দেওয়ার জন্য রওনা হয়েছেন' : 'Donor is currently on their way',
+                      color: 'amber',
+                      icon: Clock,
+                      bgActive: 'bg-amber-50/50 border-amber-500 dark:bg-amber-950/10 dark:border-amber-500',
+                      iconBg: 'bg-amber-100 dark:bg-amber-950/30 text-amber-500',
+                      radioBg: 'border-amber-500 bg-amber-500'
+                    },
+                    {
+                      value: 'fulfilled',
+                      label: language === 'bn' ? 'রক্তদান সম্পন্ন (Life Saved!)' : 'Life Saved!',
+                      desc: language === 'bn' ? 'সফলভাবে রক্তদান সম্পন্ন হয়েছে' : 'Blood donation is completed successfully',
+                      color: 'emerald',
+                      icon: CheckCircle2,
+                      bgActive: 'bg-emerald-50/50 border-emerald-500 dark:bg-emerald-950/10 dark:border-emerald-500',
+                      iconBg: 'bg-emerald-100 dark:bg-emerald-950/30 text-emerald-500',
+                      radioBg: 'border-emerald-500 bg-emerald-500'
+                    }
+                  ].map((status) => {
+                    const isSelected = selectedStatus === status.value;
+                    const Icon = status.icon;
+                    return (
+                      <button
+                        key={status.value}
+                        type="button"
+                        onClick={() => setSelectedStatus(status.value as any)}
+                        className={`w-full text-left p-3 rounded-xl border flex items-center justify-between transition-all duration-200 cursor-pointer ${
+                          isSelected
+                            ? `${status.bgActive} border-2 shadow-sm scale-[1.01]`
+                            : 'border-slate-200/60 dark:border-zinc-800/80 bg-slate-50/30 dark:bg-zinc-950/10 hover:bg-slate-50 dark:hover:bg-zinc-900/40'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            isSelected ? status.iconBg : 'bg-slate-100 dark:bg-zinc-900 text-slate-400 dark:text-zinc-500'
+                          }`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className={`text-xs font-extrabold ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-zinc-300'}`}>
+                              {status.label}
+                            </div>
+                            <div className="text-[10px] text-slate-400 dark:text-zinc-550 font-medium">
+                              {status.desc}
+                            </div>
+                          </div>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                          isSelected ? status.radioBg : 'border-slate-300 dark:border-zinc-700'
+                        }`}>
+                          {isSelected && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {!isAdmin ? (
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                  <label className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">
                     {t('enterDeletionPassword')}
                   </label>
                   <div className="relative">
@@ -196,37 +278,63 @@ export default function Emergency() {
                       placeholder={t('enterPasswordPlaceholder')}
                       value={statusPasscode}
                       onChange={(e) => setStatusPasscode(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:text-white"
+                      className={`w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 dark:text-white transition-all ${
+                        selectedStatus === 'needed'
+                          ? 'focus:ring-rose-500 focus:border-rose-500'
+                          : selectedStatus === 'responded'
+                            ? 'focus:ring-amber-500 focus:border-amber-500'
+                            : 'focus:ring-emerald-500 focus:border-emerald-500'
+                      }`}
                     />
-                    <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                    <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <button
                       type="button"
                       onClick={() => setShowStatusPassword(!showStatusPassword)}
-                      className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-655 cursor-pointer"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-655 cursor-pointer p-0.5 rounded"
                     >
                       {showStatusPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-900/30">
-                  {t('adminAuthSuccessText')}
-                </p>
+                <div className="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-250/60 dark:border-emerald-900/30 p-3 rounded-xl flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold leading-normal">
+                    {t('adminAuthSuccessText')}
+                  </p>
+                </div>
               )}
 
-              <div className="flex gap-2 pt-2 justify-end">
+              <div className="flex gap-2.5 pt-2.5 justify-end border-t border-slate-100 dark:border-zinc-900">
                 <button
                   type="button"
                   onClick={closeStatusModal}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-300 rounded-xl text-xs font-extrabold transition-all duration-200 active:scale-[0.98] cursor-pointer"
                 >
                   {t('cancelButton')}
                 </button>
                 <button
                   type="submit"
                   disabled={statusLoading}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+                  className={`px-5 py-2.5 text-white rounded-xl text-xs font-extrabold transition-all duration-200 active:scale-[0.98] shadow-sm flex items-center justify-center gap-1.5 cursor-pointer ${
+                    selectedStatus === 'needed'
+                      ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/10'
+                      : selectedStatus === 'responded'
+                        ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/10'
+                        : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10'
+                  }`}
                 >
+                  {statusLoading ? (
+                    <Clock className="w-3.5 h-3.5 animate-pulse" />
+                  ) : (
+                    selectedStatus === 'needed' ? (
+                      <Flame className="w-3.5 h-3.5" />
+                    ) : selectedStatus === 'responded' ? (
+                      <Clock className="w-3.5 h-3.5" />
+                    ) : (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    )
+                  )}
                   {statusLoading ? t('processingButton') : (language === 'bn' ? 'স্ট্যাটাস আপডেট করুন' : 'Update Status')}
                 </button>
               </div>

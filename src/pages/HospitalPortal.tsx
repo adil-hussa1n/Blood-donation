@@ -55,7 +55,7 @@ export default function HospitalPortal() {
           setTimeout(() => {
             // Update context state
             setCurrentHospital(updatedSession);
-            window.sessionStorage.setItem('bb_hospital_session', JSON.stringify(updatedSession));
+            window.localStorage.setItem('bb_hospital_session', JSON.stringify(updatedSession));
             setApprovalMessage('');
           }, 3000);
           

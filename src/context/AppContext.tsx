@@ -95,6 +95,7 @@ interface AppContextType {
   getBlockedPhones: () => Promise<{ success: boolean; data: any[]; error?: any }>;
   getAllHospitalsAdmin: () => Promise<{ data?: any[]; error?: any }>;
   approveHospitalAdmin: (hospitalId: string, isVerified: boolean) => Promise<{ success: boolean; error?: any }>;
+  getSupportRequests: () => Promise<{ data?: any[]; error?: any }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -205,7 +206,7 @@ export const TRANSLATIONS = {
     managementPortal: 'Donor Management Portal',
     portalDesc: 'Register as a new donor or manage your profile and update your donation history securely.',
     newDonorTab: 'New Donor',
-    updateProfileTab: 'Update Profile',
+    updateProfileTab: 'Sign In',
     fullName: 'Full Name',
     phoneUnique: 'Phone Number (Unique)',
     choosePassword: 'Choose Account Password (min. 4 chars)',
@@ -542,7 +543,7 @@ export const TRANSLATIONS = {
     managementPortal: 'রক্তদাতা ব্যবস্থাপনা পোর্টাল',
     portalDesc: 'নতুন রক্তদাতা হিসেবে নিবন্ধন করুন বা আপনার প্রোফাইল ও রক্তদানের তথ্য আপডেট করুন।',
     newDonorTab: 'নতুন রক্তদাতা',
-    updateProfileTab: 'প্রোফাইল আপডেট',
+    updateProfileTab: 'সাইন ইন',
     fullName: 'পূর্ণ নাম',
     phoneUnique: 'ফোন নম্বর (ইউনিক)',
     choosePassword: 'অ্যাকাউন্ট পাসওয়ার্ড (নূন্যতম ৪ অক্ষর)',
@@ -853,7 +854,7 @@ export const getAreaLabel = (area, t) => {
   const key = 'area_' + area.toLowerCase().replace(/[^a-z0-9]/g, '');
   const translated = t(key);
   if (translated !== key) return translated;
-  
+
   // Custom check for general hospital mock data or any matching text containing Beanibazar Sadar/Upazila
   if (area.includes('Beanibazar Upazila (General Hospital)')) {
     return area.replace('Beanibazar Upazila (General Hospital)', t('area_beanibazarupazila_hospital') || 'Beanibazar Upazila (General Hospital)');
@@ -861,7 +862,7 @@ export const getAreaLabel = (area, t) => {
   if (area.includes('Beanibazar Sadar (General Hospital)')) {
     return area.replace('Beanibazar Sadar (General Hospital)', t('area_beanibazarupazila_hospital') || 'Beanibazar Upazila (General Hospital)');
   }
-  
+
   return area;
 };
 
@@ -874,7 +875,7 @@ export const AppProvider = ({ children }) => {
       return [];
     }
   });
-  
+
   const [emergencyRequests, setEmergencyRequests] = useState(() => {
     try {
       const cached = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
@@ -896,7 +897,7 @@ export const AppProvider = ({ children }) => {
   const [loading, setLoading] = useState(() => {
     try {
       const hasCached = (localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors')) ||
-                        (localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests'));
+        (localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests'));
       return !hasCached;
     } catch (e) {
       return true;
@@ -934,7 +935,7 @@ export const AppProvider = ({ children }) => {
 
   const [currentHospital, setCurrentHospital] = useState(() => {
     try {
-      const cached = sessionStorage.getItem('bb_hospital_session');
+      const cached = localStorage.getItem('bb_hospital_session');
       return cached ? JSON.parse(cached) : null;
     } catch (e) {
       return null;
@@ -1048,7 +1049,7 @@ export const AppProvider = ({ children }) => {
     } catch (err) {
       console.error("Error fetching data:", err);
       setError(err.message || "Something went wrong while loading data.");
-      
+
       // Load offline cache on throw error
       try {
         const cachedDonors = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
@@ -1057,7 +1058,7 @@ export const AppProvider = ({ children }) => {
         if (cachedDonors) setDonors(JSON.parse(cachedDonors).map(normalizeDonor));
         if (cachedRequests) setEmergencyRequests(JSON.parse(cachedRequests));
         if (cachedInventory) setHospitalInventory(JSON.parse(cachedInventory));
-      } catch (e) {}
+      } catch (e) { }
     } finally {
       setLoading(false);
     }
@@ -1126,8 +1127,8 @@ export const AppProvider = ({ children }) => {
   };
 
   const [adminCredentials, setAdminCredentials] = useState(() => {
-    const savedUser = sessionStorage.getItem('adminUser');
-    const savedPass = sessionStorage.getItem('adminPass');
+    const savedUser = localStorage.getItem('adminUser');
+    const savedPass = localStorage.getItem('adminPass');
     return savedUser && savedPass ? { username: savedUser, password: savedPass } : null;
   });
 
@@ -1137,8 +1138,8 @@ export const AppProvider = ({ children }) => {
     if (res.success) {
       setIsAdmin(true);
       setAdminCredentials({ username, password });
-      sessionStorage.setItem('adminUser', username);
-      sessionStorage.setItem('adminPass', password);
+      localStorage.setItem('adminUser', username);
+      localStorage.setItem('adminPass', password);
       localStorage.setItem('isAdmin', 'true');
       return true;
     } else {
@@ -1150,8 +1151,8 @@ export const AppProvider = ({ children }) => {
   const logoutAdmin = () => {
     setIsAdmin(false);
     setAdminCredentials(null);
-    sessionStorage.removeItem('adminUser');
-    sessionStorage.removeItem('adminPass');
+    localStorage.removeItem('adminUser');
+    localStorage.removeItem('adminPass');
     localStorage.removeItem('isAdmin');
   };
 
@@ -1325,7 +1326,7 @@ export const AppProvider = ({ children }) => {
       return false;
     }
     setCurrentHospital(data);
-    sessionStorage.setItem('bb_hospital_session', JSON.stringify(data));
+    localStorage.setItem('bb_hospital_session', JSON.stringify(data));
     await refreshData(true);
     return true;
   };
@@ -1336,7 +1337,7 @@ export const AppProvider = ({ children }) => {
 
   const logoutHospital = () => {
     setCurrentHospital(null);
-    sessionStorage.removeItem('bb_hospital_session');
+    localStorage.removeItem('bb_hospital_session');
   };
 
   const updateHospitalStockBulk = async (stocks: any[]) => {
@@ -1375,6 +1376,14 @@ export const AppProvider = ({ children }) => {
     }
     await refreshData(true);
     return { success: true };
+  };
+
+  const getSupportRequests = async () => {
+    if (!isAdmin) return { data: [], error: { message: 'Unauthorized' } };
+    setError(null);
+    const adminUser = adminCredentials?.username || '';
+    const adminPass = adminCredentials?.password || '';
+    return await dbService.getSupportRequests(adminUser, adminPass);
   };
 
   return (
@@ -1416,7 +1425,8 @@ export const AppProvider = ({ children }) => {
         getBlockedPhones,
         getAllHospitalsAdmin,
         approveHospitalAdmin,
-        checkHospitalUsernameAvailable
+        checkHospitalUsernameAvailable,
+        getSupportRequests
       }}
     >
       {children}

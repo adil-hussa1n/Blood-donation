@@ -5,7 +5,7 @@ import Layout from './components/Layout';
 
 // Route-based code splitting: each page is loaded on-demand
 // This reduces initial JS payload from ~585KB to ~200KB
-const Home = React.lazy(() => import('./pages/Home'));
+const Home = React.lazy(() => import('./pages/Home.tsx'));
 const Register = React.lazy(() => import('./pages/Register'));
 const Emergency = React.lazy(() => import('./pages/Emergency'));
 const Admin = React.lazy(() => import('./pages/Admin'));
