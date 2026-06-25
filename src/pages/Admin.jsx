@@ -993,6 +993,7 @@ export default function Admin() {
               ) : blockedPhones.length === 0 ? (
                 <p className="text-xs text-slate-400 dark:text-zinc-500 font-semibold py-4">No blocked phone numbers.</p>
               ) : (
+              <>
               {/* Blocked phones — Desktop table */}
               <div className="hidden md:block overflow-x-auto border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl">
                 <table className="w-full text-left text-xs border-collapse">
@@ -1055,6 +1056,7 @@ export default function Admin() {
                   </div>
                 ))}
               </div>
+              </>
               )}
             </div>
           </div>
