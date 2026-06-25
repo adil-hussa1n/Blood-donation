@@ -1,31 +1,32 @@
 import { supabase, isDemoMode } from './supabase';
+import { Donor, EmergencyRequest, SupportRequest, DonationEvent, HospitalInventory } from '../types';
 
 // Safe localStorage wrapper to prevent crashes in private browsing modes where storage is blocked
-const localStorage = (() => {
-  const memoryStorage = {};
+const localStore = (() => {
+  const memoryStorage: Record<string, string> = {};
   return {
-    getItem(key) {
+    getItem(key: string): string | null {
       try {
         return window.localStorage.getItem(key);
       } catch (e) {
         return memoryStorage[key] || null;
       }
     },
-    setItem(key, value) {
+    setItem(key: string, value: string): void {
       try {
         window.localStorage.setItem(key, value);
       } catch (e) {
         memoryStorage[key] = String(value);
       }
     },
-    removeItem(key) {
+    removeItem(key: string): void {
       try {
         window.localStorage.removeItem(key);
       } catch (e) {
         delete memoryStorage[key];
       }
     },
-    clear() {
+    clear(): void {
       try {
         window.localStorage.clear();
       } catch (e) {
@@ -36,7 +37,7 @@ const localStorage = (() => {
 })();
 
 // Helper to generate UUIDs in demo mode
-const generateUUID = () => {
+const generateUUID = (): string => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -44,11 +45,10 @@ const generateUUID = () => {
   });
 };
 
-// Seed initial data for Demo Mode
-const resolveRegistrationTotalDonations = (donorData) => {
+const resolveRegistrationTotalDonations = (donorData: Partial<Donor>): number => {
   const raw = donorData.total_donations;
-  if (raw !== undefined && raw !== null && raw !== '') {
-    const parsed = Number.parseInt(raw, 10);
+  if (raw !== undefined && raw !== null && (raw as any) !== '') {
+    const parsed = Number.parseInt(raw as any, 10);
     if (!Number.isNaN(parsed)) {
       return Math.min(Math.max(parsed, 0), 999);
     }
@@ -57,26 +57,26 @@ const resolveRegistrationTotalDonations = (donorData) => {
 };
 
 const initDemoDB = () => {
-  if (!localStorage.getItem('bb_demo_cleared')) {
-    localStorage.removeItem('bb_donors');
-    localStorage.removeItem('bb_donation_history');
-    localStorage.removeItem('bb_emergency_requests');
-    localStorage.removeItem('bb_donors_cache');
-    localStorage.removeItem('bb_emergencies_cache');
-    localStorage.setItem('bb_demo_cleared', 'true');
+  if (!localStore.getItem('bb_demo_cleared')) {
+    localStore.removeItem('bb_donors');
+    localStore.removeItem('bb_donation_history');
+    localStore.removeItem('bb_emergency_requests');
+    localStore.removeItem('bb_donors_cache');
+    localStore.removeItem('bb_emergencies_cache');
+    localStore.setItem('bb_demo_cleared', 'true');
   }
 
-  if (!localStorage.getItem('bb_donors')) {
-    localStorage.setItem('bb_donors', JSON.stringify([]));
-    localStorage.setItem('bb_donation_history', JSON.stringify([]));
-    localStorage.setItem('bb_emergency_requests', JSON.stringify([]));
+  if (!localStore.getItem('bb_donors')) {
+    localStore.setItem('bb_donors', JSON.stringify([]));
+    localStore.setItem('bb_donation_history', JSON.stringify([]));
+    localStore.setItem('bb_emergency_requests', JSON.stringify([]));
   }
   
-  if (!localStorage.getItem('bb_admins')) {
+  if (!localStore.getItem('bb_admins')) {
     const mockAdmins = [
       { id: 'admin-1', username: 'adilhussa1n', password: 'Adil@1267' }
     ];
-    localStorage.setItem('bb_admins', JSON.stringify(mockAdmins));
+    localStore.setItem('bb_admins', JSON.stringify(mockAdmins));
   }
 };
 
@@ -86,7 +86,7 @@ if (isDemoMode) {
 
 const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
 
-const normalizeFunctionError = async (error) => {
+const normalizeFunctionError = async (error: any) => {
   if (!error) return null;
 
   let message = error.message || 'Request failed.';
@@ -97,7 +97,7 @@ const normalizeFunctionError = async (error) => {
       const payload = await response.clone().json();
       message = payload?.error?.message || payload?.message || message;
     } catch (err) {
-      // Keep Supabase's original message when the function response is not JSON.
+      // Keep Supabase's original message
     }
   }
 
@@ -111,21 +111,21 @@ export const dbService = {
   async getDonors() {
     if (isDemoMode) {
       await delay();
-      const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
-      return { data: donors, error: null };
+      const donors = JSON.parse(localStore.getItem('bb_donors') || '[]');
+      return { data: donors as Donor[], error: null };
     } else {
       const { data, error } = await supabase
         .from('donors')
         .select('id, name, phone, blood_group, area, last_donation_date, is_available, total_donations, lifetime_donation_count, created_at')
         .order('created_at', { ascending: false });
-      return { data, error };
+      return { data: data as Donor[], error };
     }
   },
 
-  async getDonorByPhone(phone) {
+  async getDonorByPhone(phone: string) {
     if (isDemoMode) {
       await delay();
-      const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
+      const donors = JSON.parse(localStore.getItem('bb_donors') || '[]') as Donor[];
       const donor = donors.find(d => d.phone.trim() === phone.trim());
       return { data: donor || null, error: donor ? null : { message: 'Donor profile not found.' } };
     } else {
@@ -138,14 +138,14 @@ export const dbService = {
       if (!error && !data) {
         return { data: null, error: { message: 'Donor profile not found.' } };
       }
-      return { data, error };
+      return { data: data as Donor, error };
     }
   },
 
-  async registerDonor(donorData, honeypot) {
+  async registerDonor(donorData: Partial<Donor>, honeypot?: string) {
     if (isDemoMode) {
       await delay();
-      const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
+      const donors = JSON.parse(localStore.getItem('bb_donors') || '[]') as Donor[];
       
       const exists = donors.find(d => d.phone === donorData.phone);
       if (exists) {
@@ -153,18 +153,18 @@ export const dbService = {
       }
 
       // Check if blocked in demo mode
-      const blocked = JSON.parse(localStorage.getItem('bb_blocked_donors') || '[]');
-      if (blocked.find(b => b.phone.trim() === donorData.phone.trim())) {
+      const blocked = JSON.parse(localStore.getItem('bb_blocked_donors') || '[]');
+      if (blocked.find((b: any) => b.phone.trim() === donorData.phone?.trim())) {
         return { data: null, error: { message: 'This phone number has been blocked. Please contact the administrator.' } };
       }
 
       const donationCount = resolveRegistrationTotalDonations(donorData);
-      const newDonor = {
+      const newDonor: Donor = {
         id: generateUUID(),
-        name: donorData.name,
-        phone: donorData.phone,
-        blood_group: donorData.blood_group,
-        area: donorData.area,
+        name: donorData.name || '',
+        phone: donorData.phone || '',
+        blood_group: donorData.blood_group || '',
+        area: donorData.area || '',
         last_donation_date: donorData.last_donation_date || null,
         is_available: donorData.is_available ?? true,
         total_donations: donationCount,
@@ -175,13 +175,13 @@ export const dbService = {
       };
 
       donors.unshift(newDonor);
-      localStorage.setItem('bb_donors', JSON.stringify(donors));
+      localStore.setItem('bb_donors', JSON.stringify(donors));
 
       return { data: newDonor, error: null };
     } else {
       const lifetimeCount = resolveRegistrationTotalDonations(donorData);
 
-      // Prefer SQL RPC (works without redeploying edge functions)
+      // Prefer SQL RPC
       const { data: rpcDonor, error: rpcError } = await supabase.rpc('register_donor_secure', {
         p_name: donorData.name,
         p_phone: donorData.phone,
@@ -197,7 +197,7 @@ export const dbService = {
 
       if (!rpcError && rpcDonor) {
         const donor = typeof rpcDonor === 'string' ? JSON.parse(rpcDonor) : rpcDonor;
-        return { data: donor, error: null };
+        return { data: donor as Donor, error: null };
       }
 
       if (rpcError) {
@@ -217,23 +217,22 @@ export const dbService = {
         return { data: null, error: normalizedError };
       }
       const donor = responseBody?.data ?? responseBody;
-      return { data: donor, error: null };
+      return { data: donor as Donor, error: null };
     }
   },
 
-  async updateDonorAvailability(id, is_available, password) {
+  async updateDonorAvailability(id: string, is_available: boolean, password?: string) {
     if (isDemoMode) {
       await delay();
-      const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
+      const donors = JSON.parse(localStore.getItem('bb_donors') || '[]') as Donor[];
       const index = donors.findIndex(d => d.id === id);
       if (index !== -1) {
         donors[index].is_available = is_available;
-        localStorage.setItem('bb_donors', JSON.stringify(donors));
+        localStore.setItem('bb_donors', JSON.stringify(donors));
         return { data: donors[index], error: null };
       }
       return { data: null, error: { message: 'Donor not found' } };
     } else {
-      // Invoke secure update Edge Function
       const { data, error } = await supabase.functions.invoke('secure-update-donor', {
         body: { action: 'update_availability', id, password, payload: { is_available } }
       });
@@ -241,10 +240,10 @@ export const dbService = {
     }
   },
 
-  async updateDonorProfile(id, profileData, password) {
+  async updateDonorProfile(id: string, profileData: Partial<Donor>, password?: string) {
     if (isDemoMode) {
       await delay();
-      const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
+      const donors = JSON.parse(localStore.getItem('bb_donors') || '[]') as Donor[];
       const index = donors.findIndex(d => d.id === id);
       if (index !== -1) {
         if (profileData.phone && profileData.phone !== donors[index].phone) {
@@ -258,33 +257,31 @@ export const dbService = {
           ...donors[index],
           ...profileData
         };
-        localStorage.setItem('bb_donors', JSON.stringify(donors));
+        localStore.setItem('bb_donors', JSON.stringify(donors));
         return { data: donors[index], error: null };
       }
       return { data: null, error: { message: 'Donor not found' } };
     } else {
-      // Invoke secure update Edge Function
       const { data, error } = await supabase.functions.invoke('secure-update-donor', {
         body: { action: 'update_profile', id, password, payload: profileData }
       });
-      return { data, error: await normalizeFunctionError(error) };
+      return { data: data as Donor, error: await normalizeFunctionError(error) };
     }
   },
 
-  async deleteDonor(id, adminUsername, adminPassword) {
+  async deleteDonor(id: string, adminUsername?: string, adminPassword?: string) {
     if (isDemoMode) {
       await delay();
-      let donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
+      let donors = JSON.parse(localStore.getItem('bb_donors') || '[]') as Donor[];
       donors = donors.filter(d => d.id !== id);
-      localStorage.setItem('bb_donors', JSON.stringify(donors));
+      localStore.setItem('bb_donors', JSON.stringify(donors));
 
-      let history = JSON.parse(localStorage.getItem('bb_donation_history') || '[]');
+      let history = JSON.parse(localStore.getItem('bb_donation_history') || '[]') as DonationEvent[];
       history = history.filter(h => h.donor_id !== id);
-      localStorage.setItem('bb_donation_history', JSON.stringify(history));
+      localStore.setItem('bb_donation_history', JSON.stringify(history));
 
       return { success: true, error: null };
     } else {
-      // Invoke secure delete Edge Function
       const { error } = await supabase.functions.invoke('secure-delete-record', {
         body: { type: 'donor', id, adminUsername, adminPassword }
       });
@@ -293,10 +290,10 @@ export const dbService = {
     }
   },
 
-  async resetDonorPassword(name, phone, blood_group, dob, new_password) {
+  async resetDonorPassword(name: string, phone: string, blood_group: string, dob: string, new_password: string) {
     if (isDemoMode) {
       await delay();
-      const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
+      const donors = JSON.parse(localStore.getItem('bb_donors') || '[]') as Donor[];
       const index = donors.findIndex(
         d => d.name.trim().toLowerCase() === name.trim().toLowerCase() && 
              d.phone.trim() === phone.trim() && 
@@ -306,13 +303,12 @@ export const dbService = {
 
       if (index !== -1) {
         donors[index].password = new_password;
-        localStorage.setItem('bb_donors', JSON.stringify(donors));
+        localStore.setItem('bb_donors', JSON.stringify(donors));
         return { success: true, error: null };
       }
       return { success: false, error: { message: 'Verification failed. No donor matched the provided Name, Phone, Blood Group, and Date of Birth.' } };
     } else {
-      // First try RPC
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('reset_donor_password_secure', {
+      const { error: rpcError } = await supabase.rpc('reset_donor_password_secure', {
         p_name: name,
         p_phone: phone,
         p_blood_group: blood_group,
@@ -331,7 +327,6 @@ export const dbService = {
         return { success: false, error: { message: rpcMessage } };
       }
 
-      // Fallback (Edge Function)
       const { error } = await supabase.functions.invoke('secure-update-donor', {
         body: { action: 'reset_password', name, phone, blood_group, dob, new_password }
       });
@@ -340,11 +335,11 @@ export const dbService = {
     }
   },
 
-  async blockDonorByPhone(phone, adminUsername, adminPassword, reason) {
+  async blockDonorByPhone(phone: string, adminUsername?: string, adminPassword?: string, reason?: string) {
     if (isDemoMode) {
       await delay();
-      const blocked = JSON.parse(localStorage.getItem('bb_blocked_donors') || '[]');
-      const exists = blocked.find(b => b.phone === phone);
+      const blocked = JSON.parse(localStore.getItem('bb_blocked_donors') || '[]');
+      const exists = blocked.find((b: any) => b.phone === phone);
       if (!exists) {
         blocked.push({
           phone,
@@ -352,11 +347,11 @@ export const dbService = {
           blocked_by: adminUsername,
           blocked_at: new Date().toISOString()
         });
-        localStorage.setItem('bb_blocked_donors', JSON.stringify(blocked));
+        localStore.setItem('bb_blocked_donors', JSON.stringify(blocked));
       }
       return { success: true, error: null };
     } else {
-      const { data, error } = await supabase.rpc('block_donor_by_phone', {
+      const { error } = await supabase.rpc('block_donor_by_phone', {
         p_phone: phone,
         p_admin_username: adminUsername,
         p_admin_password: adminPassword,
@@ -369,15 +364,15 @@ export const dbService = {
     }
   },
 
-  async unblockDonorByPhone(phone, adminUsername, adminPassword) {
+  async unblockDonorByPhone(phone: string, adminUsername?: string, adminPassword?: string) {
     if (isDemoMode) {
       await delay();
-      let blocked = JSON.parse(localStorage.getItem('bb_blocked_donors') || '[]');
-      blocked = blocked.filter(b => b.phone !== phone);
-      localStorage.setItem('bb_blocked_donors', JSON.stringify(blocked));
+      let blocked = JSON.parse(localStore.getItem('bb_blocked_donors') || '[]');
+      blocked = blocked.filter((b: any) => b.phone !== phone);
+      localStore.setItem('bb_blocked_donors', JSON.stringify(blocked));
       return { success: true, error: null };
     } else {
-      const { data, error } = await supabase.rpc('unblock_donor_by_phone', {
+      const { error } = await supabase.rpc('unblock_donor_by_phone', {
         p_phone: phone,
         p_admin_username: adminUsername,
         p_admin_password: adminPassword
@@ -389,10 +384,10 @@ export const dbService = {
     }
   },
 
-  async getBlockedPhones(adminUsername, adminPassword) {
+  async getBlockedPhones(adminUsername?: string, adminPassword?: string) {
     if (isDemoMode) {
       await delay();
-      const blocked = JSON.parse(localStorage.getItem('bb_blocked_donors') || '[]');
+      const blocked = JSON.parse(localStore.getItem('bb_blocked_donors') || '[]');
       return { success: true, data: blocked, error: null };
     } else {
       const { data, error } = await supabase.rpc('get_blocked_phones', {
@@ -406,10 +401,10 @@ export const dbService = {
     }
   },
 
-  async verifyDonor(phone, password) {
+  async verifyDonor(phone: string, password?: string) {
     if (isDemoMode) {
       await delay();
-      const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
+      const donors = JSON.parse(localStore.getItem('bb_donors') || '[]') as Donor[];
       const donor = donors.find(
         d => d.phone.trim() === phone.trim() && d.password === password
       );
@@ -432,13 +427,13 @@ export const dbService = {
   // ==========================================
   // DONATION HISTORY
   // ==========================================
-  async getDonationHistory(donorId) {
+  async getDonationHistory(donorId: string) {
     if (isDemoMode) {
       await delay();
-      const history = JSON.parse(localStorage.getItem('bb_donation_history') || '[]');
+      const history = JSON.parse(localStore.getItem('bb_donation_history') || '[]') as DonationEvent[];
       const filtered = history
         .filter(h => h.donor_id === donorId)
-        .sort((a, b) => new Date(b.donation_date) - new Date(a.donation_date));
+        .sort((a, b) => new Date(b.donation_date).getTime() - new Date(a.donation_date).getTime());
       return { data: filtered, error: null };
     } else {
       const { data, error } = await supabase
@@ -446,34 +441,34 @@ export const dbService = {
         .select('*')
         .eq('donor_id', donorId)
         .order('donation_date', { ascending: false });
-      return { data, error };
+      return { data: data as DonationEvent[], error };
     }
   },
 
-  async addDonationEvent(donorId, donationDate, password) {
+  async addDonationEvent(donorId: string, donationDate: string, password?: string) {
     if (isDemoMode) {
       await delay();
-      const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
+      const donors = JSON.parse(localStore.getItem('bb_donors') || '[]') as Donor[];
       const donorIndex = donors.findIndex(d => d.id === donorId);
 
       if (donorIndex === -1) {
         return { data: null, error: { message: 'Donor not found' } };
       }
 
-      const history = JSON.parse(localStorage.getItem('bb_donation_history') || '[]');
-      const newEvent = {
+      const history = JSON.parse(localStore.getItem('bb_donation_history') || '[]') as DonationEvent[];
+      const newEvent: DonationEvent = {
         id: generateUUID(),
         donor_id: donorId,
         donation_date: donationDate
       };
       
       history.push(newEvent);
-      localStorage.setItem('bb_donation_history', JSON.stringify(history));
+      localStore.setItem('bb_donation_history', JSON.stringify(history));
 
       const donorEvents = history.filter(h => h.donor_id === donorId);
-      const latestDate = donorEvents.reduce((latest, current) => {
+      const latestDate = donorEvents.reduce((latest: string | null, current) => {
         if (!latest) return current.donation_date;
-        return new Date(current.donation_date) > new Date(latest) ? current.donation_date : latest;
+        return new Date(current.donation_date).getTime() > new Date(latest).getTime() ? current.donation_date : latest;
       }, null);
 
       const newCount = ((donors[donorIndex].lifetime_donation_count ?? donors[donorIndex].total_donations) || 0) + 1;
@@ -482,7 +477,7 @@ export const dbService = {
       donors[donorIndex].last_donation_date = latestDate;
       donors[donorIndex].is_available = false;
 
-      localStorage.setItem('bb_donors', JSON.stringify(donors));
+      localStore.setItem('bb_donors', JSON.stringify(donors));
 
       return { data: newEvent, error: null };
     } else {
@@ -519,57 +514,259 @@ export const dbService = {
   async getEmergencyRequests() {
     if (isDemoMode) {
       await delay();
-      const requests = JSON.parse(localStorage.getItem('bb_emergency_requests') || '[]');
-      requests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const requests = JSON.parse(localStore.getItem('bb_emergency_requests') || '[]') as EmergencyRequest[];
+      requests.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       return { data: requests, error: null };
     } else {
       const { data, error } = await supabase
         .from('emergency_requests')
-        .select('id, blood_group, area, contact, note, created_at')
+        .select('id, blood_group, area, contact, note, status, created_at')
         .order('created_at', { ascending: false });
-      return { data, error };
+      return { data: data as EmergencyRequest[], error };
     }
   },
 
-  async createEmergencyRequest(requestData, honeypot) {
+  async createEmergencyRequest(requestData: Partial<EmergencyRequest>, honeypot?: string) {
     if (isDemoMode) {
       await delay();
-      const requests = JSON.parse(localStorage.getItem('bb_emergency_requests') || '[]');
-      const donors = JSON.parse(localStorage.getItem('bb_donors') || '[]');
-      const matchedDonor = donors.find(d => d.phone.trim() === requestData.contact.trim());
+      const requests = JSON.parse(localStore.getItem('bb_emergency_requests') || '[]') as EmergencyRequest[];
+      const donors = JSON.parse(localStore.getItem('bb_donors') || '[]') as Donor[];
+      const matchedDonor = donors.find(d => d.phone.trim() === requestData.contact?.trim());
       const finalPasscode = matchedDonor ? matchedDonor.password : (requestData.passcode || '1234');
 
-      const newRequest = {
+      const newRequest: EmergencyRequest = {
         id: generateUUID(),
-        blood_group: requestData.blood_group,
-        area: requestData.area,
-        contact: requestData.contact,
+        blood_group: requestData.blood_group || '',
+        area: requestData.area || '',
+        contact: requestData.contact || '',
         note: requestData.note || '',
         passcode: finalPasscode,
+        status: 'needed',
         created_at: new Date().toISOString()
       };
 
       requests.unshift(newRequest);
-      localStorage.setItem('bb_emergency_requests', JSON.stringify(requests));
+      localStore.setItem('bb_emergency_requests', JSON.stringify(requests));
       return { data: newRequest, error: null };
     } else {
-      // Invoke secure insert Edge Function
       const { data, error } = await supabase.functions.invoke('secure-insert-emergency', {
         body: { requestData, honeypot }
       });
-      return { data, error: await normalizeFunctionError(error) };
+      return { data: data as EmergencyRequest, error: await normalizeFunctionError(error) };
     }
   },
 
-  async deleteEmergencyRequest(id, adminUsername, adminPassword, userPasscode) {
+  async updateEmergencyRequestStatus(id: string, status: 'needed' | 'responded' | 'fulfilled', userPasscode?: string, adminUsername?: string, adminPassword?: string) {
     if (isDemoMode) {
       await delay();
-      let requests = JSON.parse(localStorage.getItem('bb_emergency_requests') || '[]');
-      requests = requests.filter(r => r.id !== id);
-      localStorage.setItem('bb_emergency_requests', JSON.stringify(requests));
+      const requests = JSON.parse(localStore.getItem('bb_emergency_requests') || '[]') as EmergencyRequest[];
+      const index = requests.findIndex(r => r.id === id);
+      if (index !== -1) {
+        requests[index].status = status;
+        localStore.setItem('bb_emergency_requests', JSON.stringify(requests));
+        return { data: requests[index], error: null };
+      }
+      return { data: null, error: { message: 'Emergency request not found' } };
+    } else {
+      const { data, error } = await supabase.rpc('update_emergency_status', {
+        p_id: id,
+        p_status: status,
+        p_passcode: userPasscode || null,
+        p_admin_username: adminUsername || null,
+        p_admin_password: adminPassword || null
+      });
+      return { data, error };
+    }
+  },
+
+  async getHospitalInventory() {
+    if (isDemoMode) {
+      await delay();
+      const inventory = JSON.parse(localStore.getItem('bb_hospital_inventory') || '[]') as any[];
+      const hospitals = JSON.parse(localStore.getItem('bb_hospitals') || '[]') as any[];
+      const data = inventory.map(item => {
+        const h = hospitals.find(x => x.id === item.hospital_id);
+        return {
+          ...item,
+          hospitals: h || null
+        };
+      });
+      return { data, error: null };
+    } else {
+      const { data, error } = await supabase
+        .from('hospital_inventory')
+        .select(`
+          id,
+          hospital_id,
+          blood_group,
+          stock_status,
+          updated_at,
+          hospitals (
+            id,
+            name,
+            area,
+            contact,
+            is_verified
+          )
+        `)
+        .order('updated_at', { ascending: false });
+      return { data: data as any[], error };
+    }
+  },
+
+  async checkHospitalUsernameAvailable(username: string) {
+    if (isDemoMode) {
+      await delay();
+      const hospitals = JSON.parse(localStore.getItem('bb_hospitals') || '[]') as any[];
+      const exists = hospitals.find(h => h.username?.toLowerCase() === username.trim().toLowerCase());
+      return { available: !exists, error: null };
+    } else {
+      const { data, error } = await supabase.rpc('check_hospital_username_available', {
+        p_username: username.trim()
+      });
+      if (error) return { available: false, error };
+      return { available: !!data, error: null };
+    }
+  },
+
+  async registerHospital(hospitalData: { name: string; username: string; area: string; contact: string; password?: string }) {
+    if (isDemoMode) {
+      await delay();
+      const hospitals = JSON.parse(localStore.getItem('bb_hospitals') || '[]') as any[];
+      const existsUsername = hospitals.find(h => h.username?.toLowerCase() === hospitalData.username.toLowerCase());
+      const existsName = hospitals.find(h => h.name.toLowerCase() === hospitalData.name.toLowerCase());
+      const existsContact = hospitals.find(h => h.contact === hospitalData.contact);
+      
+      if (existsUsername) {
+        return { data: null, error: { message: 'Username not available.' } };
+      }
+      if (existsName || existsContact) {
+        return { data: null, error: { message: 'Hospital name or contact number already registered.' } };
+      }
+      const newHospital = {
+        id: generateUUID(),
+        name: hospitalData.name,
+        username: hospitalData.username.toLowerCase().trim(),
+        area: hospitalData.area,
+        contact: hospitalData.contact,
+        password: hospitalData.password || '123456',
+        is_verified: false,
+        created_at: new Date().toISOString()
+      };
+      hospitals.unshift(newHospital);
+      localStore.setItem('bb_hospitals', JSON.stringify(hospitals));
+      return { data: newHospital, error: null };
+    } else {
+      const { data, error } = await supabase.rpc('register_hospital', {
+        p_name: hospitalData.name,
+        p_username: hospitalData.username,
+        p_area: hospitalData.area,
+        p_contact: hospitalData.contact,
+        p_password: hospitalData.password || '123456'
+      });
+      if (error) return { data: null, error };
+      return { data: typeof data === 'string' ? JSON.parse(data) : data, error: null };
+    }
+  },
+
+  async loginHospital(username: string, password?: string) {
+    if (isDemoMode) {
+      await delay();
+      const hospitals = JSON.parse(localStore.getItem('bb_hospitals') || '[]') as any[];
+      const hospital = hospitals.find(h => h.username?.toLowerCase() === username.trim().toLowerCase() && h.password === password);
+      if (!hospital) {
+        return { data: null, error: { message: 'Invalid username or password.' } };
+      }
+      return { data: hospital, error: null };
+    } else {
+      const { data, error } = await supabase.rpc('verify_hospital', {
+        p_username: username.trim(),
+        p_password: password
+      });
+      if (error) return { data: null, error };
+      return { data: typeof data === 'string' ? JSON.parse(data) : data, error: null };
+    }
+  },
+
+  async updateHospitalStockBulk(hospitalId: string, stocks: { blood_group: string; stock_status: string }[], password?: string) {
+    if (isDemoMode) {
+      await delay();
+      const inventory = JSON.parse(localStore.getItem('bb_hospital_inventory') || '[]') as any[];
+      
+      stocks.forEach(stock => {
+        const index = inventory.findIndex(item => item.hospital_id === hospitalId && item.blood_group === stock.blood_group);
+        const updatedItem = {
+          id: index !== -1 ? inventory[index].id : generateUUID(),
+          hospital_id: hospitalId,
+          blood_group: stock.blood_group,
+          stock_status: stock.stock_status,
+          updated_at: new Date().toISOString()
+        };
+        if (index !== -1) {
+          inventory[index] = updatedItem;
+        } else {
+          inventory.unshift(updatedItem);
+        }
+      });
+
+      localStore.setItem('bb_hospital_inventory', JSON.stringify(inventory));
       return { success: true, error: null };
     } else {
-      // Invoke secure delete Edge Function
+      const { data, error } = await supabase.rpc('update_hospital_stock_bulk', {
+        p_hospital_id: hospitalId,
+        p_stocks: stocks,
+        p_password: password
+      });
+      if (error) return { success: false, error };
+      return { success: true, error: null };
+    }
+  },
+
+  async getAllHospitalsAdmin() {
+    if (isDemoMode) {
+      await delay();
+      const hospitals = JSON.parse(localStore.getItem('bb_hospitals') || '[]') as any[];
+      return { data: hospitals, error: null };
+    } else {
+      const { data, error } = await supabase
+        .from('hospitals')
+        .select('*')
+        .order('name', { ascending: true });
+      return { data, error };
+    }
+  },
+
+  async approveHospitalAdmin(hospitalId: string, isVerified: boolean, adminUsername?: string, adminPassword?: string) {
+    if (isDemoMode) {
+      await delay();
+      const hospitals = JSON.parse(localStore.getItem('bb_hospitals') || '[]') as any[];
+      const index = hospitals.findIndex(h => h.id === hospitalId);
+      if (index !== -1) {
+        hospitals[index].is_verified = isVerified;
+        localStore.setItem('bb_hospitals', JSON.stringify(hospitals));
+        return { success: true, error: null };
+      }
+      return { success: false, error: { message: 'Hospital not found' } };
+    } else {
+      const { data, error } = await supabase.rpc('approve_hospital_admin', {
+        p_hospital_id: hospitalId,
+        p_is_verified: isVerified,
+        p_admin_username: adminUsername,
+        p_admin_password: adminPassword
+      });
+      if (error) return { success: false, error };
+      return { success: true, error: null };
+    }
+  },
+
+  async deleteEmergencyRequest(id: string, adminUsername?: string, adminPassword?: string, userPasscode?: string) {
+    if (isDemoMode) {
+      await delay();
+      let requests = JSON.parse(localStore.getItem('bb_emergency_requests') || '[]') as EmergencyRequest[];
+      requests = requests.filter(r => r.id !== id);
+      localStore.setItem('bb_emergency_requests', JSON.stringify(requests));
+      return { success: true, error: null };
+    } else {
       const { error } = await supabase.functions.invoke('secure-delete-record', {
         body: { type: 'emergency', id, adminUsername, adminPassword, userPasscode }
       });
@@ -578,11 +775,11 @@ export const dbService = {
     }
   },
 
-  async checkIfBlocked(phone) {
+  async checkIfBlocked(phone: string) {
     if (isDemoMode) {
       await delay();
-      const blocked = JSON.parse(localStorage.getItem('bb_blocked_donors') || '[]');
-      const exists = blocked.find(b => b.phone.trim() === phone.trim());
+      const blocked = JSON.parse(localStore.getItem('bb_blocked_donors') || '[]');
+      const exists = blocked.find((b: any) => b.phone.trim() === phone.trim());
       return { data: !!exists, error: null };
     } else {
       const { data, error } = await supabase.rpc('is_phone_blocked', {
@@ -595,16 +792,16 @@ export const dbService = {
     }
   },
 
-  async submitSupportRequest(requestData) {
+  async submitSupportRequest(requestData: SupportRequest) {
     if (isDemoMode) {
       await delay();
-      const requests = JSON.parse(localStorage.getItem('bb_support_requests') || '[]');
+      const requests = JSON.parse(localStore.getItem('bb_support_requests') || '[]');
       requests.push({
         id: generateUUID(),
         ...requestData,
         created_at: new Date().toISOString()
       });
-      localStorage.setItem('bb_support_requests', JSON.stringify(requests));
+      localStore.setItem('bb_support_requests', JSON.stringify(requests));
       return { success: true, error: null };
     } else {
       const { error } = await supabase
@@ -620,18 +817,17 @@ export const dbService = {
   // ==========================================
   // ADMIN AUTHENTICATION
   // ==========================================
-  async verifyAdminCredentials(username, password) {
+  async verifyAdminCredentials(username: string, password?: string) {
     if (isDemoMode) {
       await delay();
-      const admins = JSON.parse(localStorage.getItem('bb_admins') || '[]');
+      const admins = JSON.parse(localStore.getItem('bb_admins') || '[]');
       const match = admins.find(
-        a => a.username.trim().toLowerCase() === username.trim().toLowerCase() && 
+        (a: any) => a.username.trim().toLowerCase() === username.trim().toLowerCase() && 
              a.password === password
       );
       return { success: !!match, error: match ? null : { message: 'Invalid Admin credentials.' } };
     } else {
       try {
-        // Securely verify admin credentials via RPC instead of select *
         const { data, error } = await supabase.rpc('verify_admin', {
           p_username: username.trim(),
           p_password: password

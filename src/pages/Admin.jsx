@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Shield, Key, Eye, EyeOff, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, User, ChevronLeft, ChevronRight, Ban } from 'lucide-react';
+import { Shield, Key, Eye, EyeOff, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, User, ChevronLeft, ChevronRight, Ban, Hospital } from 'lucide-react';
 import { useApp, BLOOD_GROUPS, normalizeDonor, getAreaLabel } from '../context/AppContext';
 
 export default function Admin() {
@@ -14,6 +14,8 @@ export default function Admin() {
     blockDonorByPhone,
     unblockDonorByPhone,
     getBlockedPhones,
+    getAllHospitalsAdmin,
+    approveHospitalAdmin,
     t
   } = useApp();
 
@@ -45,11 +47,38 @@ export default function Admin() {
     setBlockedLoading(false);
   };
 
+  const [hospitals, setHospitals] = useState([]);
+  const [hospitalsLoading, setHospitalsLoading] = useState(false);
+
+  const fetchHospitals = async () => {
+    setHospitalsLoading(true);
+    const res = await getAllHospitalsAdmin();
+    if (res.data) {
+      setHospitals(res.data);
+    }
+    setHospitalsLoading(false);
+  };
+
   useEffect(() => {
     if (isAdmin) {
       fetchBlockedPhones();
+      fetchHospitals();
     }
   }, [isAdmin]);
+
+  const handleToggleHospitalVerification = async (hospitalId, currentStatus) => {
+    const nextStatus = !currentStatus;
+    const action = nextStatus ? 'approve' : 'revoke';
+    if (!confirm(`Are you sure you want to ${action} verification for this clinic?`)) return;
+
+    const res = await approveHospitalAdmin(hospitalId, nextStatus);
+    if (res.success) {
+      alert(`Clinic ${nextStatus ? 'approved' : 'revoked'} successfully.`);
+      await fetchHospitals();
+    } else {
+      alert("Failed to change verification: " + (res.error?.message || "unknown error"));
+    }
+  };
 
   const handleBlockPhone = async (e) => {
     e.preventDefault();
@@ -375,6 +404,27 @@ export default function Admin() {
           </div>
           <div className="p-3 rounded-xl bg-zinc-500/5 dark:bg-zinc-500/10 text-zinc-500">
             <Ban className="w-6 h-6" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('hospitals')}
+          className={`glass-panel p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+            adminTab === 'hospitals'
+              ? 'border-emerald-500/40 ring-1 ring-emerald-500/10 shadow-md'
+              : 'hover:border-slate-300 dark:hover:border-zinc-700'
+          }`}
+        >
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+              Manage Clinics
+            </span>
+            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+              {hospitals.length}
+            </span>
+          </div>
+          <div className="p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 text-emerald-500">
+            <Hospital className="w-6 h-6" />
           </div>
         </button>
       </div>
@@ -807,6 +857,82 @@ export default function Admin() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {adminTab === 'hospitals' && (
+          <div className="space-y-4">
+            <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 text-left">
+              <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
+                Clinic & Hospital Verification Console
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-500 mt-1 font-semibold">
+                Manage registered hospital accounts, verify their status, and approve or revoke stock editing access.
+              </p>
+            </div>
+
+            {hospitalsLoading ? (
+              <div className="p-12 text-center text-slate-400 dark:text-zinc-500 font-semibold text-xs">
+                Loading hospital records...
+              </div>
+            ) : hospitals.length === 0 ? (
+              <div className="p-12 text-center text-slate-550 dark:text-zinc-450 font-semibold text-xs">
+                No clinics or hospitals registered yet.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-100 dark:divide-zinc-800">
+                  <thead className="bg-slate-50/50 dark:bg-zinc-950/40">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Hospital / Clinic Name</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Area Union</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Contact Number</th>
+                      <th className="px-6 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Verification Status</th>
+                      <th className="px-6 py-4 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-zinc-850">
+                    {hospitals.map((h) => (
+                      <tr key={h.id} className="hover:bg-slate-50/40 dark:hover:bg-zinc-900/10 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-left">
+                          <span className="font-extrabold text-sm text-slate-900 dark:text-white block">{h.name}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500">ID: {h.id}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-xs text-slate-655 dark:text-zinc-450">
+                          {getAreaLabel(h.area, t)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-xs text-slate-655 dark:text-zinc-450">
+                          {h.contact}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          {h.is_verified ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-500">
+                              <CheckCircle className="w-3.5 h-3.5" /> Approved
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-500">
+                              <AlertTriangle className="w-3.5 h-3.5 animate-pulse" /> Pending
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-semibold">
+                          <button
+                            onClick={() => handleToggleHospitalVerification(h.id, h.is_verified)}
+                            className={`px-3 py-1.5 rounded-xl font-bold transition-all text-[10px] uppercase tracking-wider cursor-pointer ${
+                              h.is_verified
+                                ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                                : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/15'
+                            }`}
+                          >
+                            {h.is_verified ? 'Revoke Approval' : 'Approve Clinic'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

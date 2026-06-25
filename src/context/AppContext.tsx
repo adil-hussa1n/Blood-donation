@@ -57,7 +57,47 @@ const sessionStorage = (() => {
   };
 })();
 
-const AppContext = createContext(undefined);
+interface AppContextType {
+  donors: any[];
+  emergencyRequests: any[];
+  hospitalInventory: any[];
+  loading: boolean;
+  error: string | null;
+  theme: 'light' | 'dark' | string;
+  isAdmin: boolean;
+  isDemoMode: boolean;
+  language: 'en' | 'bn' | string;
+  setLanguage: (lang: string) => void;
+  t: (key: string, variables?: Record<string, any>) => string;
+  toggleTheme: () => void;
+  loginAdmin: (username: string, password?: string) => Promise<boolean>;
+  logoutAdmin: () => void;
+  verifyDonorCredentials: (phone: string, password?: string) => Promise<{ success: boolean; donor?: any; error?: any }>;
+  resetDonorPassword: (name: string, phone: string, bloodGroup: string, dob: string, newPassword?: string) => Promise<{ success: boolean; error?: any }>;
+  registerDonor: (donorData: any, honeypot?: string) => Promise<{ success: boolean; data?: any; error?: any }>;
+  updateDonorAvailability: (id: string, isAvailable: boolean, password?: string) => Promise<{ success: boolean; data?: any; error?: any }>;
+  updateDonorProfile: (id: string, profileData: any, password?: string) => Promise<{ success: boolean; data?: any; error?: any }>;
+  addDonationHistory: (donorId: string, donationDate: string, password?: string) => Promise<{ success: boolean; data?: any; error?: any }>;
+  deleteDonor: (id: string) => Promise<{ success: boolean; error?: any }>;
+  createEmergencyRequest: (requestData: any, honeypot?: string) => Promise<{ success: boolean; data?: any; error?: any }>;
+  deleteEmergencyRequest: (id: string, userPasscode?: string) => Promise<{ success: boolean; error?: any }>;
+  updateEmergencyRequestStatus: (id: string, status: 'needed' | 'responded' | 'fulfilled' | string, userPasscode?: string) => Promise<{ success: boolean; data?: any; error?: any }>;
+  currentHospital: any;
+  setCurrentHospital: (hospital: any) => void;
+  registerHospital: (hospitalData: any) => Promise<{ success: boolean; data?: any; error?: any }>;
+  loginHospital: (username: string, password?: string) => Promise<boolean>;
+  checkHospitalUsernameAvailable: (username: string) => Promise<{ available: boolean; error?: any }>;
+  logoutHospital: () => void;
+  updateHospitalStockBulk: (stocks: any[]) => Promise<{ success: boolean; error?: any }>;
+  refreshData: (silent?: boolean) => Promise<void>;
+  blockDonorByPhone: (phone: string, reason?: string) => Promise<{ success: boolean; error?: any }>;
+  unblockDonorByPhone: (phone: string) => Promise<{ success: boolean; error?: any }>;
+  getBlockedPhones: () => Promise<{ success: boolean; data: any[]; error?: any }>;
+  getAllHospitalsAdmin: () => Promise<{ data?: any[]; error?: any }>;
+  approveHospitalAdmin: (hospitalId: string, isVerified: boolean) => Promise<{ success: boolean; error?: any }>;
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AREAS = [
   'Sylhet City Corporation',
@@ -88,6 +128,52 @@ export const TRANSLATIONS = {
     emergencyRequests: 'Emergency Requests',
     adminDashboard: 'Admin Dashboard',
     logoutAdmin: 'Logout Admin',
+    hospitalsStock: 'Hospital Stock',
+
+    // Hospital Stock & Portal additions
+    hospitalsStockTitle: 'Hospital Blood Stocks',
+    hospitalsStockDesc: 'Check live stock levels and shortages across registered clinics and blood banks in Sylhet.',
+    searchHospitalPlaceholder: 'Search hospital by name...',
+    showShortageAlerts: 'Show only shortage alerts',
+    noHospitalStocksFound: 'No Hospital Stocks Found',
+    noHospitalStocksFoundDesc: 'Try adjusting your search query, selecting another area, or checking back later.',
+    callClinic: 'Call Clinic',
+    contactLabel: 'Contact',
+    shortageLabel: 'Shortage',
+    lowLabel: 'Low',
+    stableLabel: 'Stable',
+    updatedLabel: 'Updated',
+    donateToClinic: 'Donate to this clinic',
+    clinicProfileLabel: 'Clinic / Hospital Profile',
+    approvedLabel: 'Approved',
+    pendingApprovalLabel: 'Pending Approval',
+    signOutLabel: 'Sign Out',
+    accountVerificationStatusPending: 'Account Verification Status: Pending',
+    clinicVerificationDesc: 'Your clinic registration has been submitted successfully. To secure patient safety and avoid fake stock reports, your profile is restricted from modifying blood stocks until verified by an administrator.',
+    contactSupportVerify: 'Contact Support to Verify Hospital / Clinic Account',
+    bloodStockDashboardTitle: 'Blood Stock Management Dashboard',
+    bloodStockDashboardDesc: 'Select status for each blood group. Set groups experiencing shortages to \'Low\' or \'Critical\' to notify matching community donors.',
+    saveStockChangesButton: 'Save Stock Changes',
+    hospitalStockPortalTitle: 'Hospital Stock Portal',
+    hospitalStockPortalDesc: 'Register your clinic or sign in to update local blood shortage status warnings.',
+    signInTab: 'Sign In',
+    registerClinicTab: 'Register Clinic',
+    uniqueUsernameLabel: 'Unique Username',
+    choosePasswordLabelPortal: 'Choose Password',
+    registeringLabelPortal: 'Registering...',
+    registerClinicAccountButton: 'Register Clinic Account',
+    usernameRequirementsMsg: 'Username must be 3-15 chars (letters, numbers, underscore).',
+    checkingAvailabilityMsg: 'Checking availability...',
+    usernameAvailableMsg: 'Username is available!',
+    usernameNotAvailableMsg: 'Username not available.',
+    invalidCredentialsMsgPortal: 'Invalid username or password.',
+    registrationSuccessPendingMsg: 'Registration submitted successfully! Verification Status: Pending. Please Contact Support to Verify Hospital / Clinic Account.',
+    savingChangesMsg: 'Saving changes...',
+    saveSuccessMsgPortal: 'All blood stock levels updated successfully!',
+    saveErrorMsgPortal: 'Failed to update stock.',
+    accountApprovedMsg: 'Account Approved! Loading your profile dashboard...',
+
+    hospitalPortal: 'Hospital Portal',
 
     // Hero & Search
     findDonors: 'Find Blood Donors',
@@ -378,6 +464,52 @@ export const TRANSLATIONS = {
     emergencyRequests: 'জরুরি রক্তের অনুরোধ',
     adminDashboard: 'অ্যাডমিন ড্যাশবোর্ড',
     logoutAdmin: 'লগআউট অ্যাডমিন',
+    hospitalsStock: 'হাসপাতাল স্টক',
+
+    // Hospital Stock & Portal additions
+    hospitalsStockTitle: 'হাসপাতাল রক্তের স্টকসমূহ',
+    hospitalsStockDesc: 'সিলেটের নিবন্ধিত ক্লিনিক এবং ব্লাড ব্যাংকের লাইভ স্টকের স্তর এবং ঘাটতি পরীক্ষা করুন।',
+    searchHospitalPlaceholder: 'হাসপাতালের নাম দিয়ে খুঁজুন...',
+    showShortageAlerts: 'শুধুমাত্র সংকট সতর্কতা দেখান',
+    noHospitalStocksFound: 'কোনো হাসপাতালের স্টক পাওয়া যায়নি',
+    noHospitalStocksFoundDesc: 'আপনার অনুসন্ধানের শব্দ পরিবর্তন করুন, অন্য এলাকা নির্বাচন করুন বা পরে আবার চেষ্টা করুন।',
+    callClinic: 'ক্লিনিকে কল করুন',
+    contactLabel: 'যোগাযোগ',
+    shortageLabel: 'জরুরী সংকট',
+    lowLabel: 'স্বল্পতা',
+    stableLabel: 'স্বাভাবিক',
+    updatedLabel: 'আপডেট করা হয়েছে',
+    donateToClinic: 'এই ক্লিনিকে রক্তদান করুন',
+    clinicProfileLabel: 'ক্লিনিক / হাসপাতাল প্রোফাইল',
+    approvedLabel: 'অনুমোদিত',
+    pendingApprovalLabel: 'অনুমোদনের অপেক্ষায়',
+    signOutLabel: 'লগ আউট',
+    accountVerificationStatusPending: 'অ্যাকাউন্টের অবস্থা: অনুমোদনের অপেক্ষায়',
+    clinicVerificationDesc: 'আপনার ক্লিনিক নিবন্ধন সফলভাবে জমা দেওয়া হয়েছে। রোগীর সুরক্ষা নিশ্চিত করতে এবং ভুয়া স্টক রিপোর্ট এড়াতে, অ্যাডমিন কর্তৃক যাচাই না হওয়া পর্যন্ত আপনার প্রোফাইলটি রক্তের স্টক পরিবর্তন করা থেকে সীমাবদ্ধ থাকবে।',
+    contactSupportVerify: 'হাসপাতাল / ক্লিনিক অ্যাকাউন্ট যাচাই করতে সাপোর্টের সাথে যোগাযোগ করুন',
+    bloodStockDashboardTitle: 'রক্তের স্টক ম্যানেজমেন্ট ড্যাশবোর্ড',
+    bloodStockDashboardDesc: 'প্রতিটি রক্তের গ্রুপের জন্য স্ট্যাটাস নির্বাচন করুন। সিলেটের স্থানীয় দাতাদের অবহিত করতে যে রক্তের গ্রুপগুলোর সংকট রয়েছে তা \'Low\' বা \'Critical\' এ সেট করুন।',
+    saveStockChangesButton: 'স্টক পরিবর্তন সংরক্ষণ করুন',
+    hospitalStockPortalTitle: 'হাসপাতাল স্টক পোর্টাল',
+    hospitalStockPortalDesc: 'আপনার ক্লিনিক নিবন্ধন করুন বা স্থানীয় রক্তের ঘাটতি সতর্কবার্তা আপডেট করতে লগইন করুন।',
+    signInTab: 'সাইন ইন',
+    registerClinicTab: 'ক্লিনিক নিবন্ধন',
+    uniqueUsernameLabel: 'ইউনিক ইউজারনেম',
+    choosePasswordLabelPortal: 'পাসওয়ার্ড নির্বাচন করুন',
+    registeringLabelPortal: 'নিবন্ধন করা হচ্ছে...',
+    registerClinicAccountButton: 'ক্লিনিক অ্যাকাউন্ট নিবন্ধন করুন',
+    usernameRequirementsMsg: 'ইউজারনেম ৩-১৫ অক্ষরের হতে হবে (অক্ষর, সংখ্যা, আন্ডারস্কোর)।',
+    checkingAvailabilityMsg: 'যাচাই করা হচ্ছে...',
+    usernameAvailableMsg: 'ইউজারনেমটি উপলব্ধ রয়েছে!',
+    usernameNotAvailableMsg: 'ইউজারনেমটি উপলব্ধ নেই।',
+    invalidCredentialsMsgPortal: 'ভুল ইউজারনেম বা পাসওয়ার্ড।',
+    registrationSuccessPendingMsg: 'নিবন্ধন সফলভাবে জমা হয়েছে! অ্যাকাউন্টের অবস্থা: পেন্ডিং। হাসপাতাল / ক্লিনিক অ্যাকাউন্ট যাচাই করতে দয়া করে সাপোর্টের সাথে যোগাযোগ করুন।',
+    savingChangesMsg: 'সংরক্ষণ করা হচ্ছে...',
+    saveSuccessMsgPortal: 'সব রক্তের গ্রুপের স্টক সফলভাবে আপডেট করা হয়েছে!',
+    saveErrorMsgPortal: 'স্টক আপডেট করতে ব্যর্থ হয়েছে।',
+    accountApprovedMsg: 'অ্যাকাউন্ট অনুমোদিত হয়েছে! প্রোফাইল ড্যাশবোর্ড লোড হচ্ছে...',
+
+    hospitalPortal: 'হাসপাতাল পোর্টাল',
 
     // Hero & Search
     findDonors: 'রক্তদাতা অনুসন্ধান',
@@ -750,6 +882,15 @@ export const AppProvider = ({ children }) => {
     }
   });
 
+  const [hospitalInventory, setHospitalInventory] = useState(() => {
+    try {
+      const cached = localStorage.getItem('bb_hospital_inventory_cache') || localStorage.getItem('bb_hospital_inventory');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
   const [loading, setLoading] = useState(() => {
     try {
       const hasCached = (localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors')) ||
@@ -789,6 +930,15 @@ export const AppProvider = ({ children }) => {
     return localStorage.getItem('isAdmin') === 'true';
   });
 
+  const [currentHospital, setCurrentHospital] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('bb_hospital_session');
+      return cached ? JSON.parse(cached) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
   useEffect(() => {
     const root = window.document.documentElement;
     if (theme === 'dark') {
@@ -823,7 +973,7 @@ export const AppProvider = ({ children }) => {
       const donorsFetch = Promise.race([
         dbService.getDonors(),
         timeout(3500)
-      ]).then((res) => {
+      ]).then((res: any) => {
         if (res) {
           if (res.error) throw new Error(res.error.message);
           const data = res.data || [];
@@ -842,7 +992,7 @@ export const AppProvider = ({ children }) => {
       const emergenciesFetch = Promise.race([
         dbService.getEmergencyRequests(),
         timeout(3500)
-      ]).then(async (res) => {
+      ]).then(async (res: any) => {
         if (res) {
           if (res.error) throw new Error(res.error.message);
           let data = res.data || [];
@@ -871,8 +1021,27 @@ export const AppProvider = ({ children }) => {
         }
       });
 
-      // Execute both in parallel
-      await Promise.all([donorsFetch, emergenciesFetch]);
+      // Fetch Hospital Inventory with a 3.5s timeout, load immediately when resolved
+      const inventoryFetch = Promise.race([
+        dbService.getHospitalInventory(),
+        timeout(3500)
+      ]).then((res: any) => {
+        if (res) {
+          if (res.error) throw new Error(res.error.message);
+          const data = res.data || [];
+          setHospitalInventory(data);
+          if (!isDemoMode && data.length > 0) {
+            localStorage.setItem('bb_hospital_inventory_cache', JSON.stringify(data));
+          }
+        } else {
+          console.warn("Hospital inventory database fetch timed out. Using offline cache.");
+          const cachedInventory = localStorage.getItem('bb_hospital_inventory_cache') || localStorage.getItem('bb_hospital_inventory');
+          if (cachedInventory) setHospitalInventory(JSON.parse(cachedInventory));
+        }
+      });
+
+      // Execute all in parallel
+      await Promise.all([donorsFetch, emergenciesFetch, inventoryFetch]);
 
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -882,8 +1051,10 @@ export const AppProvider = ({ children }) => {
       try {
         const cachedDonors = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
         const cachedRequests = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
+        const cachedInventory = localStorage.getItem('bb_hospital_inventory_cache') || localStorage.getItem('bb_hospital_inventory');
         if (cachedDonors) setDonors(JSON.parse(cachedDonors).map(normalizeDonor));
         if (cachedRequests) setEmergencyRequests(JSON.parse(cachedRequests));
+        if (cachedInventory) setHospitalInventory(JSON.parse(cachedInventory));
       } catch (e) {}
     } finally {
       setLoading(false);
@@ -1119,11 +1290,97 @@ export const AppProvider = ({ children }) => {
     return { success: true };
   };
 
+  const updateEmergencyRequestStatus = async (id, status, userPasscode) => {
+    setError(null);
+    const adminUser = adminCredentials?.username || '';
+    const adminPass = adminCredentials?.password || '';
+    const { data, error } = await dbService.updateEmergencyRequestStatus(id, status, userPasscode, adminUser, adminPass);
+    if (error) {
+      setError(error.message);
+      return { success: false, error };
+    }
+    setEmergencyRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+    return { success: true, data };
+  };
+
+
+
+  const registerHospital = async (hospitalData: any) => {
+    setError(null);
+    const { data, error } = await dbService.registerHospital(hospitalData);
+    if (error) {
+      setError(error.message);
+      return { success: false, error };
+    }
+    return { success: true, data };
+  };
+
+  const loginHospital = async (username: string, pass?: string) => {
+    setError(null);
+    const { data, error } = await dbService.loginHospital(username, pass);
+    if (error) {
+      setError(error.message);
+      return false;
+    }
+    setCurrentHospital(data);
+    sessionStorage.setItem('bb_hospital_session', JSON.stringify(data));
+    await refreshData(true);
+    return true;
+  };
+
+  const checkHospitalUsernameAvailable = async (username: string) => {
+    return await dbService.checkHospitalUsernameAvailable(username);
+  };
+
+  const logoutHospital = () => {
+    setCurrentHospital(null);
+    sessionStorage.removeItem('bb_hospital_session');
+  };
+
+  const updateHospitalStockBulk = async (stocks: any[]) => {
+    if (!currentHospital) {
+      setError("Not authenticated as a hospital.");
+      return { success: false, error: { message: "Not authenticated" } };
+    }
+    setError(null);
+    const res = await dbService.updateHospitalStockBulk(currentHospital.id, stocks, currentHospital.password);
+    if (!res.success) {
+      setError(res.error?.message || "Failed to update stocks.");
+      return res;
+    }
+    await refreshData(true);
+    return res;
+  };
+
+  const getAllHospitalsAdmin = async () => {
+    setError(null);
+    const { data, error } = await dbService.getAllHospitalsAdmin();
+    if (error) {
+      setError(error.message);
+      return { data: [], error };
+    }
+    return { data, error: null };
+  };
+
+  const approveHospitalAdmin = async (hospitalId: string, isVerified: boolean) => {
+    setError(null);
+    const adminUser = adminCredentials?.username || '';
+    const adminPass = adminCredentials?.password || '';
+    const res = await dbService.approveHospitalAdmin(hospitalId, isVerified, adminUser, adminPass);
+    if (res.error) {
+      setError(res.error.message);
+      return { success: false, error: res.error };
+    }
+    await refreshData(true);
+    return { success: true };
+  };
+
   return (
     <AppContext.Provider
       value={{
         donors,
         emergencyRequests,
+        hospitalInventory,
         loading,
         error,
         theme,
@@ -1144,10 +1401,20 @@ export const AppProvider = ({ children }) => {
         deleteDonor,
         createEmergencyRequest,
         deleteEmergencyRequest,
+        updateEmergencyRequestStatus,
+        currentHospital,
+        setCurrentHospital,
+        registerHospital,
+        loginHospital,
+        logoutHospital,
+        updateHospitalStockBulk,
         refreshData,
         blockDonorByPhone,
         unblockDonorByPhone,
-        getBlockedPhones
+        getBlockedPhones,
+        getAllHospitalsAdmin,
+        approveHospitalAdmin,
+        checkHospitalUsernameAvailable
       }}
     >
       {children}

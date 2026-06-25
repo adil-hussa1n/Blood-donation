@@ -10,6 +10,8 @@ const Register = React.lazy(() => import('./pages/Register'));
 const Emergency = React.lazy(() => import('./pages/Emergency'));
 const Admin = React.lazy(() => import('./pages/Admin'));
 const Support = React.lazy(() => import('./pages/Support'));
+const HospitalPortal = React.lazy(() => import('./pages/HospitalPortal'));
+const HospitalsDirectory = React.lazy(() => import('./pages/HospitalsDirectory'));
 
 // Lightweight loading fallback for lazy-loaded routes
 function RouteLoader() {
@@ -36,6 +38,8 @@ export default function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/emergency" element={<Emergency />} />
               <Route path="/support" element={<Support />} />
+              <Route path="/hospitals" element={<HospitalPortal />} />
+              <Route path="/hospitals-stock" element={<HospitalsDirectory />} />
               
               {/* Obfuscated Admin route */}
               <Route path="/adil" element={<Admin />} />

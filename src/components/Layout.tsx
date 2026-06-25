@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Sparkles, Languages } from 'lucide-react';
+import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, LucideIcon, Hospital, Building } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
-export default function Layout({ children }) {
+interface NavigationItem {
+  nameKey: string;
+  name: string;
+  path: string;
+  icon: LucideIcon;
+}
+
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+export default function Layout({ children }: LayoutProps) {
   const { theme, toggleTheme, isAdmin, logoutAdmin, isDemoMode, language, setLanguage, t } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMenuAnimKey, setMobileMenuAnimKey] = useState(0);
@@ -20,14 +31,15 @@ export default function Layout({ children }) {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Obfuscated navigation - Admin panel is accessed only by going to /adil manually
-  const navigation = [
+  const navigation: NavigationItem[] = [
     { nameKey: 'searchDonors', name: 'Search Donors', path: '/', icon: Heart },
     { nameKey: 'registerUpdate', name: 'Register / Update', path: '/register', icon: UserPlus },
     { nameKey: 'emergencyRequests', name: 'Emergency Requests', path: '/emergency', icon: Flame },
+    { nameKey: 'hospitalsStock', name: 'Hospital Stock', path: '/hospitals-stock', icon: Hospital },
+    { nameKey: 'hospitalPortal', name: 'Hospital Portal', path: '/hospitals', icon: Building },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <div className="min-h-screen flex flex-col transition-colors duration-300">
@@ -49,7 +61,7 @@ export default function Layout({ children }) {
               <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/20 group-hover:scale-105 transition-all duration-300">
                 <svg className="w-6 h-6 animate-pulse" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
                   <path d="M50 12C50 12 22 45 22 65C22 80.46 34.54 93 50 93C65.46 93 78 80.46 78 65C78 45 50 12 50 12Z" fill="#ffffff" />
-                  <path d="M32 65h10l4-18 5 32 4-22 4 8h9" stroke="#ef4444" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M32 65h10l4-18 5 32 4-22 4 8h9" stroke="#ef4444" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 
               </div>
@@ -102,7 +114,7 @@ export default function Layout({ children }) {
             <div className="flex items-center gap-2">
               {/* Language Selector */}
               <button
-                onClick={() => setLanguage(prev => (prev === 'en' ? 'bn' : 'en'))}
+                onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-all duration-200 border border-slate-200/50 dark:border-zinc-800/50 shadow-sm text-xs font-bold cursor-pointer"
                 title={language === 'en' ? 'Switch to Bangla' : 'ইংরেজিতে পরিবর্তন করুন'}
               >

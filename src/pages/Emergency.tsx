@@ -1,18 +1,29 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Flame, AlertTriangle, CheckCircle2, Megaphone, Phone, MapPin, ClipboardList, MessageCircle, Calendar, Trash2, Key, X, Clock, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useApp, AREAS, BLOOD_GROUPS, calculateHoursSince, getAreaLabel } from '../context/AppContext';
-import { dbService } from '../services/db';
+import { Flame, AlertTriangle, CheckCircle2, Phone, MapPin, ClipboardList, MessageCircle, Calendar, Trash2, Key, X, Clock, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useApp, AREAS, BLOOD_GROUPS, getAreaLabel } from '../context/AppContext';
+import TimelineTrack from '../components/TimelineTrack';
+import EmergencyForm from '../components/EmergencyForm';
+import { EmergencyRequest } from '../types';
 
 export default function Emergency() {
-  const { emergencyRequests, createEmergencyRequest, deleteEmergencyRequest, loading, error, isAdmin, language, t } = useApp();
+  const { emergencyRequests, deleteEmergencyRequest, updateEmergencyRequestStatus, loading, isAdmin, language, t } = useApp();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [feedBloodFilter, setFeedBloodFilter] = useState('');
   const [feedAreaFilter, setFeedAreaFilter] = useState('');
 
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const calculateHoursSince = (dateString: string | null | undefined) => {
+    if (!dateString) return 0;
+    const diffMs = Date.now() - new Date(dateString).getTime();
+    return diffMs / (1000 * 60 * 60);
+  };
+
   const bloodGroupCounts = useMemo(() => {
-    const counts = Object.fromEntries(BLOOD_GROUPS.map((group) => [group, 0]));
-    emergencyRequests.forEach((req) => {
+    const counts = Object.fromEntries((BLOOD_GROUPS as string[]).map((group) => [group, 0]));
+    (emergencyRequests as EmergencyRequest[]).forEach((req) => {
       if (counts[req.blood_group] !== undefined) {
         counts[req.blood_group] += 1;
       }
@@ -21,7 +32,7 @@ export default function Emergency() {
   }, [emergencyRequests]);
 
   const filteredEmergencyRequests = useMemo(() => {
-    return emergencyRequests.filter((req) => {
+    return (emergencyRequests as EmergencyRequest[]).filter((req) => {
       const matchBlood = !feedBloodFilter || req.blood_group === feedBloodFilter;
       const matchArea = !feedAreaFilter || req.area === feedAreaFilter;
       return matchBlood && matchArea;
@@ -40,104 +51,55 @@ export default function Emergency() {
     return filteredEmergencyRequests.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredEmergencyRequests, currentPage]);
 
-  // Form state
-  const [bloodGroup, setBloodGroup] = useState('O+');
-  const [area, setArea] = useState('Sylhet City Corporation');
-  const [contact, setContact] = useState('');
-  const [note, setNote] = useState('');
-  const [passcode, setPasscode] = useState(''); // Stores the general password
-
-  const [formLoading, setFormLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-
-  // Security elements
-  const [honeypot, setHoneypot] = useState('');
-  const [formLoadTime, setFormLoadTime] = useState(Date.now());
-
-  useEffect(() => {
-    setFormLoadTime(Date.now());
-  }, []);
-
-  // Password visibility for creation
-  const [showCreatePassword, setShowCreatePassword] = useState(false);
-
   // Delete modal state
-  const [deletingRequest, setDeletingRequest] = useState(null); // { id, passcode, group }
-  const [enteredPasscode, setEnteredPasscode] = useState(''); // Stores password entered during delete
+  const [deletingRequest, setDeletingRequest] = useState<EmergencyRequest | null>(null);
+  const [enteredPasscode, setEnteredPasscode] = useState('');
   const [showDeletePassword, setShowDeletePassword] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const handlePostRequest = async (e) => {
+  // Status modal state
+  const [statusRequest, setStatusRequest] = useState<EmergencyRequest | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<'needed' | 'responded' | 'fulfilled'>('needed');
+  const [statusPasscode, setStatusPasscode] = useState('');
+  const [showStatusPassword, setShowStatusPassword] = useState(false);
+  const [statusError, setStatusError] = useState('');
+  const [statusLoading, setStatusLoading] = useState(false);
+
+  const openStatusModal = (req: EmergencyRequest) => {
+    setStatusRequest(req);
+    setSelectedStatus(req.status || 'needed');
+    setStatusPasscode('');
+    setStatusError('');
+    setShowStatusPassword(false);
+  };
+
+  const closeStatusModal = () => {
+    setStatusRequest(null);
+  };
+
+  const handleStatusSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormLoading(true);
-    setSuccessMsg('');
-    setErrorMsg('');
-
-    // 1. Bot check: Honeypot
-    if (honeypot.trim() !== '') {
-      setErrorMsg("Verification failed. Bot detected.");
-      setFormLoading(false);
-      return;
-    }
-
-    // 2. Bot check: Time elapsed
-    const timeElapsed = Date.now() - formLoadTime;
-    if (timeElapsed < 2000) {
-      setErrorMsg("Submission too fast. Please wait.");
-      setFormLoading(false);
-      return;
-    }
-
-    // Phone validation
-    const contactTrimmed = contact.trim();
-    const phoneRegex = /^01[3-9]\d{8}$/;
-    if (!phoneRegex.test(contactTrimmed)) {
-      setErrorMsg("Invalid phone number. Must be a valid 11-digit Bangladeshi number starting with 013-019.");
-      setFormLoading(false);
-      return;
-    }
-
-    // Password validation (at least 4 characters)
-    const passwordInput = passcode.trim();
-    if (passwordInput.length < 4) {
-      setErrorMsg(t('passwordLengthError'));
-      setFormLoading(false);
-      return;
-    }
-
-    // Verification check is deferred to the server-side Edge Function to maximize security and load speed
-
-    const requestData = {
-      blood_group: bloodGroup,
-      area: area.trim(),
-      contact: contactTrimmed,
-      note: note.trim(),
-      passcode: passwordInput // Stored in passcode column
-    };
+    if (!statusRequest) return;
+    setStatusError('');
+    setStatusLoading(true);
 
     try {
-      const res = await createEmergencyRequest(requestData, honeypot);
+      const res = await updateEmergencyRequestStatus(statusRequest.id, selectedStatus, statusPasscode);
       if (res.success) {
-        setSuccessMsg(t('postSuccessMsg', { bloodGroup }));
-        // Reset form inputs
-        setContact('');
-        setNote('');
-        setPasscode('');
-        setHoneypot('');
-        setFormLoadTime(Date.now()); // reset open timer
+        closeStatusModal();
+        setSuccessMsg(language === 'bn' ? 'স্ট্যাটাস সফলভাবে আপডেট করা হয়েছে।' : 'Status updated successfully.');
       } else {
-        setErrorMsg(res.error.message || t('postErrorMsg'));
+        setStatusError(res.error?.message || 'Failed to update status.');
       }
     } catch (err) {
-      setErrorMsg(t('unexpectedError'));
+      setStatusError(t('unexpectedError'));
     } finally {
-      setFormLoading(false);
+      setStatusLoading(false);
     }
   };
 
-  const openDeleteModal = (req) => {
+  const openDeleteModal = (req: EmergencyRequest) => {
     setDeletingRequest(req);
     setEnteredPasscode('');
     setDeleteError('');
@@ -148,7 +110,7 @@ export default function Emergency() {
     setDeletingRequest(null);
   };
 
-  const handleDeleteSubmit = async (e) => {
+  const handleDeleteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!deletingRequest) return;
     setDeleteError('');
@@ -175,31 +137,128 @@ export default function Emergency() {
   return (
     <div className="space-y-8 relative">
 
-      {/* Delete Confirmation Modal Overlay */}
-      {deletingRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 dark:bg-zinc-950/80 backdrop-blur-sm animate-fade-in">
+      {/* Status Update Modal Overlay */}
+      {statusRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 dark:bg-zinc-950/80 backdrop-blur-sm animate-fade-in animate-duration-200">
           <div className="glass-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 animate-scale-up relative">
             <button
-              onClick={closeDeleteModal}
-              className="absolute right-4 top-4 p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+              onClick={closeStatusModal}
+              className="absolute right-4 top-4 p-1 rounded-xl text-slate-400 hover:text-slate-655 dark:hover:text-zinc-200 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200/50 dark:border-zinc-800/50">
-              <div className="w-8 h-8 rounded-lg bg-rose-500 text-white flex items-center justify-center">
-                <Trash2 className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center animate-bounce">
+                <Clock className="w-4 h-4" />
               </div>
               <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
-                {t('deleteRequest')}
+                {language === 'bn' ? 'অনুরোধের স্ট্যাটাস পরিবর্তন' : 'Update Request Status'}
               </h3>
             </div>
 
             <p className="text-xs text-slate-500 dark:text-zinc-400 text-left">
-              {t('deletingRequestText')}{' '}
-              <strong className="text-slate-800 dark:text-zinc-200">{deletingRequest.blood_group}</strong>
-              {' '}{t('bloodAtText')}{' '}
-              <strong className="text-slate-800 dark:text-zinc-200">{getAreaLabel(deletingRequest.area, t)}</strong>.
+              {language === 'bn' ? 'স্ট্যাটাস আপডেট করুন:' : 'Select the current progress status for your request:'}
+            </p>
+
+            {statusError && (
+              <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 text-rose-800 dark:text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2 font-semibold">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{statusError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleStatusSubmit} className="space-y-4 text-left">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                  {language === 'bn' ? 'স্ট্যাটাস' : 'Status'}
+                </label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value as any)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:text-white cursor-pointer"
+                >
+                  <option value="needed">{language === 'bn' ? 'জরুরী প্রয়োজন (Needed Urgent)' : 'Needed Urgent'}</option>
+                  <option value="responded">{language === 'bn' ? 'সাড়া দিয়েছেন (Donors On Way)' : 'Donors On Way'}</option>
+                  <option value="fulfilled">{language === 'bn' ? 'রক্তদান সম্পন্ন (Life Saved!)' : 'Life Saved!'}</option>
+                </select>
+              </div>
+
+              {!isAdmin ? (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                    {t('enterDeletionPassword')}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showStatusPassword ? 'text' : 'password'}
+                      required
+                      placeholder={t('enterPasswordPlaceholder')}
+                      value={statusPasscode}
+                      onChange={(e) => setStatusPasscode(e.target.value)}
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:text-white"
+                    />
+                    <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                    <button
+                      type="button"
+                      onClick={() => setShowStatusPassword(!showStatusPassword)}
+                      className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-655 cursor-pointer"
+                    >
+                      {showStatusPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-900/30">
+                  {t('adminAuthSuccessText')}
+                </p>
+              )}
+
+              <div className="flex gap-2 pt-2 justify-end">
+                <button
+                  type="button"
+                  onClick={closeStatusModal}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  {t('cancelButton')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={statusLoading}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+                >
+                  {statusLoading ? t('processingButton') : (language === 'bn' ? 'স্ট্যাটাস আপডেট করুন' : 'Update Status')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Modal Overlay */}
+      {deletingRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 dark:bg-zinc-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="glass-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 animate-scale-up relative">
+            <button
+              onClick={closeDeleteModal}
+              className="absolute right-4 top-4 p-1 rounded-xl text-slate-400 hover:text-slate-655 dark:hover:text-zinc-200 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200/50 dark:border-zinc-800/50">
+              <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
+                {t('deleteRequest')} ({deletingRequest.blood_group})
+              </h3>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-zinc-400 text-left leading-relaxed">
+              {language === 'bn'
+                ? 'রক্তের অনুরোধটি মুছে ফেলার জন্য অনুরোধ পোস্ট করার সময় যে ৪ সংখ্যার বা তার বেশি পাসওয়ার্ড সেট করেছিলেন সেটি দিন।'
+                : 'To delete this emergency request, please verify the deletion passcode you defined when creating it.'}
             </p>
 
             {deleteError && (
@@ -228,7 +287,7 @@ export default function Emergency() {
                     <button
                       type="button"
                       onClick={() => setShowDeletePassword(!showDeletePassword)}
-                      className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-250"
+                      className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-655 dark:hover:text-zinc-250 cursor-pointer"
                     >
                       {showDeletePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -292,136 +351,7 @@ export default function Emergency() {
 
         {/* Left: Request Form */}
         <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
-          <form
-            onSubmit={handlePostRequest}
-            className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-5 text-left"
-          >
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
-              <div className="w-8 h-8 rounded-lg bg-red-500 text-white flex items-center justify-center">
-                <Megaphone className="w-4 h-4" />
-              </div>
-              <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
-                {t('createRequestTitle')}
-              </h3>
-            </div>
-
-            {/* Blood group */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                {t('bloodGroup')}
-              </label>
-              <select
-                value={bloodGroup}
-                onChange={(e) => setBloodGroup(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
-              >
-                {BLOOD_GROUPS.map(g => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Location / Area */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                {t('selectAreaLabel')}
-              </label>
-              <div className="relative">
-                <select
-                  value={area}
-                  onChange={(e) => setArea(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
-                >
-                  {AREAS.map((a) => (
-                    <option key={a} value={a}>
-                      {getAreaLabel(a, t)}
-                    </option>
-                  ))}
-                </select>
-                <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-              </div>
-            </div>
-
-            {/* Contact Phone */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                {t('emergencyPhone')}
-              </label>
-              <div className="relative">
-                <input
-                  type="tel"
-                  required
-                  placeholder={t('phonePlaceholder')}
-                  value={contact}
-                  onChange={(e) => setContact(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
-                />
-                <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-              </div>
-            </div>
-
-            {/* Deletion / Account Password */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                {t('accountDeletionPassword')}
-              </label>
-              <div className="relative">
-                <input
-                  type={showCreatePassword ? 'text' : 'password'}
-                  required
-                  placeholder={t('passwordPlaceholder')}
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
-                />
-                <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                <button
-                  type="button"
-                  onClick={() => setShowCreatePassword(!showCreatePassword)}
-                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer"
-                >
-                  {showCreatePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <span className="text-[10px] text-slate-400 dark:text-zinc-500 block leading-tight">
-                {t('passwordHelper')}
-              </span>
-            </div>
-
-            {/* Note */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                {t('additionalDetails')}
-              </label>
-              <textarea
-                rows="3"
-                placeholder={t('notePlaceholder')}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white resize-none"
-              />
-            </div>
-
-            {/* Honeypot Field */}
-            <div className="absolute opacity-0 w-0 h-0 pointer-events-none" aria-hidden="true">
-              <input
-                type="text"
-                name="website"
-                value={honeypot}
-                onChange={(e) => setHoneypot(e.target.value)}
-                tabIndex={-1}
-                autoComplete="off"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={formLoading}
-              className="w-full bg-red-500 hover:bg-red-600 text-white font-extrabold py-3 px-4 rounded-xl shadow-lg shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer"
-            >
-              {formLoading ? t('postingButton') : t('postRequestButton')}
-            </button>
-          </form>
+          <EmergencyForm onSuccess={setSuccessMsg} onError={setErrorMsg} />
         </div>
 
         {/* Right: Requests Board */}
@@ -452,7 +382,7 @@ export default function Emergency() {
                       setFeedBloodFilter('');
                       setFeedAreaFilter('');
                     }}
-                    className="text-xs font-semibold text-red-500 hover:text-red-650 flex items-center gap-0.5 cursor-pointer"
+                    className="text-xs font-semibold text-red-500 hover:text-red-655 flex items-center gap-0.5 cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                     {t('clearButton')}
@@ -479,7 +409,7 @@ export default function Emergency() {
                       {emergencyRequests.length}
                     </span>
                   </button>
-                  {BLOOD_GROUPS.map((group) => {
+                  {(BLOOD_GROUPS as string[]).map((group: string) => {
                     const count = bloodGroupCounts[group] || 0;
                     const active = feedBloodFilter === group;
                     return (
@@ -517,7 +447,7 @@ export default function Emergency() {
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all dark:text-white appearance-none cursor-pointer"
                   >
                     <option value="">{t('allAreas')}</option>
-                    {AREAS.map((a) => (
+                    {(AREAS as string[]).map((a) => (
                       <option key={a} value={a}>
                         {getAreaLabel(a, t)}
                       </option>
@@ -572,7 +502,7 @@ export default function Emergency() {
                   setFeedBloodFilter('');
                   setFeedAreaFilter('');
                 }}
-                className="inline-flex items-center gap-1.5 text-sm font-bold text-red-500 hover:text-red-650 cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-sm font-bold text-red-500 hover:text-red-655 cursor-pointer"
               >
                 <X className="w-4 h-4" />
                 {t('resetFiltersButton')}
@@ -585,11 +515,11 @@ export default function Emergency() {
                 <table className="w-full text-left text-sm border-collapse table-fixed">
                   <thead>
                     <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
-                      <th className="p-4 w-[12%]">{t('bloodNeededHeader')}</th>
+                      <th className="p-4 w-[10%]">{t('bloodNeededHeader')}</th>
                       <th className="p-4 w-[20%]">{t('hospitalAreaHeader')}</th>
-                      <th className="p-4 w-[15%]">{t('contactPhoneHeader')}</th>
-                      <th className="p-4 w-[25%]">{t('noteDetailsHeader')}</th>
-                      <th className="p-4 w-[13%]">{t('postedDateHeader')}</th>
+                      <th className="p-4 w-[13%]">{t('contactPhoneHeader')}</th>
+                      <th className="p-4 w-[32%]">{t('noteDetailsHeader')}</th>
+                      <th className="p-4 w-[10%]">{t('postedDateHeader')}</th>
                       <th className="p-4 w-[15%] text-center">{t('actionsHeader')}</th>
                     </tr>
                   </thead>
@@ -626,9 +556,12 @@ export default function Emergency() {
                             </span>
                           </td>
                           <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={getAreaLabel(req.area, t)}>{getAreaLabel(req.area, t)}</td>
-                          <td className="p-4 text-slate-600 dark:text-zinc-400 font-semibold truncate overflow-hidden">{req.contact}</td>
-                          <td className="p-4 truncate overflow-hidden text-xs font-semibold text-slate-600 dark:text-zinc-300" title={req.note}>
-                            {req.note || t('noDescription')}
+                          <td className="p-4 text-slate-650 dark:text-zinc-400 font-semibold truncate overflow-hidden">{req.contact}</td>
+                          <td className="p-4 text-xs font-semibold text-slate-600 dark:text-zinc-300">
+                            <div className="space-y-1.5">
+                              <div className="truncate max-w-[280px]" title={req.note || t('noDescription')}>{req.note || t('noDescription')}</div>
+                              <TimelineTrack status={req.status || 'needed'} language={language} />
+                            </div>
                           </td>
                           <td className="p-4 text-xs text-slate-400 dark:text-zinc-500">
                             {hours < 1
@@ -657,8 +590,15 @@ export default function Emergency() {
                                 <MessageCircle className="w-4 h-4" />
                               </a>
                               <button
+                                onClick={() => openStatusModal(req)}
+                                className="p-2 bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/30 dark:hover:bg-amber-955/50 text-amber-600 dark:text-amber-400 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                title={language === 'bn' ? 'স্ট্যাটাস আপডেট করুন' : 'Update Status'}
+                              >
+                                <Clock className="w-4 h-4" />
+                              </button>
+                              <button
                                 onClick={() => openDeleteModal(req)}
-                                className="p-2 bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                className="p-2 bg-rose-100 hover:bg-rose-200 dark:bg-rose-955/30 dark:hover:bg-rose-955/50 text-rose-600 dark:text-rose-400 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
                                 title={t('deleteRequest')}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -711,7 +651,10 @@ export default function Emergency() {
                             <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight">
                               {t('emergencyBloodNeeded', { bloodGroup: req.blood_group })}
                             </h4>
-                            <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-semibold flex items-center gap-1 mt-0.5">
+                            <div className="mt-2">
+                              <TimelineTrack status={req.status || 'needed'} language={language} />
+                            </div>
+                            <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-semibold flex items-center gap-1 mt-1.5">
                               <MapPin className="w-3.5 h-3.5 text-red-500/50" />
                               {getAreaLabel(req.area, t)}
                             </span>
@@ -738,7 +681,7 @@ export default function Emergency() {
                       <div className="text-[11px] text-slate-400 dark:text-zinc-500 flex items-center gap-1">
                         <Phone className="w-3.5 h-3.5 text-slate-400/80" />
                         <span>
-                          {t('contactNumberLabel')}
+                          {t('contactNumberLabel')}{' '}
                           <strong className="text-slate-800 dark:text-zinc-200 font-semibold">{req.contact}</strong>
                         </span>
                       </div>
@@ -755,14 +698,21 @@ export default function Emergency() {
                           href={`https://wa.me/${waPhone}?text=${waMessage}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-650 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-sm"
+                          className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-655 text-white py-2 px-3 rounded-xl text-xs font-bold shadow-sm"
                         >
                           <MessageCircle className="w-3.5 h-3.5" />
                           {t('whatsapp')}
                         </a>
                         <button
+                          onClick={() => openStatusModal(req)}
+                          className="p-2 bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/30 dark:hover:bg-amber-955/50 text-amber-600 dark:text-amber-400 rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                          title={language === 'bn' ? 'স্ট্যাটাস আপডেট করুন' : 'Update Status'}
+                        >
+                          <Clock className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => openDeleteModal(req)}
-                          className="p-2 bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-xl shadow-sm transition-all cursor-pointer"
+                          className="p-2 bg-rose-100 hover:bg-rose-200 dark:bg-rose-955/30 dark:hover:bg-rose-955/50 text-rose-650 dark:text-rose-450 rounded-xl shadow-sm transition-all cursor-pointer"
                           title={t('deleteRequest')}
                         >
                           <Trash2 className="w-4 h-4" />

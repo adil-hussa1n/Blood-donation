@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || '';
 
 // Check if keys are properly provided
 const isConfigured = 
@@ -22,4 +22,4 @@ if (isDemoMode) {
   );
 }
 
-export const supabase = isDemoMode ? null : createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = isDemoMode ? null as any : createClient(supabaseUrl, supabaseAnonKey);

@@ -1,10 +1,15 @@
-import React from 'react';
 import { Heart, CheckCircle2, Trophy, Flame } from 'lucide-react';
 import { calculateDaysSince, normalizeDonor, useApp } from '../context/AppContext';
+import { Donor, EmergencyRequest } from '../types';
 
-export default function QuickStats({ donors, emergencyRequests }) {
+interface QuickStatsProps {
+  donors: Donor[];
+  emergencyRequests: EmergencyRequest[];
+}
+
+export default function QuickStats({ donors, emergencyRequests }: QuickStatsProps) {
   const { language } = useApp();
-  const normalizedDonors = donors.map(normalizeDonor);
+  const normalizedDonors = donors.map(normalizeDonor) as Donor[];
   const totalDonors = normalizedDonors.length;
 
   const availableDonors = normalizedDonors.filter(d => {

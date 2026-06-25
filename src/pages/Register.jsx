@@ -18,6 +18,7 @@ export default function Register() {
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showSearchPassword, setShowSearchPassword] = useState(false);
   const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
+  const [showCertificate, setShowCertificate] = useState(false);
 
   // Security elements
   const [honeypot, setHoneypot] = useState('');
@@ -897,6 +898,16 @@ export default function Register() {
                       </strong>
                     </div>
                   </div>
+                  {foundDonor.total_donations > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCertificate(true)}
+                      className="w-full mt-2 py-2 px-3 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/35 border border-red-200/50 dark:border-red-900/30 text-red-650 dark:text-red-400 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-yellow-500 fill-current" />
+                      {language === 'bn' ? 'প্রশংসাপত্র ডাউনলোড করুন' : 'Download Appreciation Certificate'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1090,6 +1101,81 @@ export default function Register() {
           </>
         )}
       </div>
+
+      {/* Certificate Modal Overlay */}
+      {showCertificate && foundDonor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 dark:bg-zinc-950/80 backdrop-blur-sm animate-fade-in print:bg-white print:p-0">
+          <div className="bg-white text-slate-900 rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-amber-250 shadow-2xl relative space-y-6 text-center print:border-0 print:shadow-none print:p-0 print:my-0 print:mx-auto">
+            <button
+              onClick={() => setShowCertificate(false)}
+              className="absolute right-4 top-4 p-1 rounded-xl text-slate-400 hover:text-slate-650 print:hidden cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Certificate Border decoration */}
+            <div className="border-4 border-double border-amber-500/60 p-6 sm:p-8 rounded-2xl space-y-6 relative print:border-amber-500">
+              <div className="absolute top-2 left-2 w-8 h-8 border-t-2 border-l-2 border-amber-500" />
+              <div className="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-amber-500" />
+              <div className="absolute bottom-2 left-2 w-8 h-8 border-b-2 border-l-2 border-amber-500" />
+              <div className="absolute bottom-2 right-2 w-8 h-8 border-b-2 border-r-2 border-amber-500" />
+
+              {/* Content */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-amber-600 block">
+                  Certificate of Appreciation
+                </span>
+                <h2 className="font-serif font-black text-2xl sm:text-3xl text-slate-900">
+                  LIFE SAVER AWARD
+                </h2>
+                <div className="w-20 h-0.5 bg-amber-500 mx-auto my-2" />
+              </div>
+
+              <p className="text-xs text-slate-500 font-medium leading-relaxed italic max-w-md mx-auto">
+                This certificate is proudly presented to
+              </p>
+
+              <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight my-4">
+                {foundDonor.name}
+              </h3>
+
+              <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                {language === 'bn' 
+                  ? `স্বেচ্ছায় রক্তদান করে মানবতার সেবায় অনন্য ভূমিকা পালনের জন্য এবং সফলভাবে ${foundDonor.total_donations} বার রক্তদান সম্পন্ন করায় আপনাকে এই সম্মাননা স্মারক প্রদান করা হলো।` 
+                  : `for their selfless dedication to humanity by donating blood ${foundDonor.total_donations} times. Your noble actions have directly helped save lives and serve as an inspiration to the community.`
+                }
+              </p>
+
+              <div className="grid grid-cols-2 gap-4 pt-6 text-left max-w-sm mx-auto border-t border-slate-100">
+                <div>
+                  <span className="text-[10px] text-slate-450 block uppercase font-bold">Blood Group</span>
+                  <strong className="text-sm font-black text-red-500">{foundDonor.blood_group}</strong>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-450 block uppercase font-bold">Last Donation</span>
+                  <strong className="text-xs font-bold text-slate-700">
+                    {foundDonor.last_donation_date 
+                      ? new Date(foundDonor.last_donation_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : 'N/A'
+                    }
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="flex gap-2 justify-center print:hidden">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                Print / Save PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
