@@ -17,6 +17,7 @@ export default function Admin() {
     getAllHospitalsAdmin,
     approveHospitalAdmin,
     getSupportRequests,
+    showToast,
     t
   } = useApp();
 
@@ -39,6 +40,11 @@ export default function Admin() {
   const [blockedError, setBlockedError] = useState(null);
   const [phoneToBlock, setPhoneToBlock] = useState('');
   const [blockReason, setBlockReason] = useState('');
+
+  // Inline Confirmation Banner States
+  const [confirmUnblockPhone, setConfirmUnblockPhone] = useState(null);
+  const [confirmBlockData, setConfirmBlockData] = useState(null);
+  const [confirmClinicVerification, setConfirmClinicVerification] = useState(null);
 
   const fetchBlockedPhones = async () => {
     setBlockedLoading(true);
@@ -92,52 +98,60 @@ export default function Admin() {
     }
   }, [isAdmin]);
 
-  const handleToggleHospitalVerification = async (hospitalId, currentStatus) => {
+  const handleToggleHospitalVerification = (hospitalId, name, currentStatus) => {
     const nextStatus = !currentStatus;
-    const action = nextStatus ? 'approve' : 'revoke';
-    if (!confirm(`Are you sure you want to ${action} verification for this clinic?`)) return;
+    setConfirmClinicVerification({ id: hospitalId, name, nextStatus });
+  };
 
+  const executeClinicVerification = async (hospitalId, nextStatus) => {
     const res = await approveHospitalAdmin(hospitalId, nextStatus);
     if (res.success) {
-      alert(`Clinic ${nextStatus ? 'approved' : 'revoked'} successfully.`);
+      showToast(`Clinic ${nextStatus ? 'approved' : 'revoked'} successfully.`, 'success');
       await fetchHospitals();
     } else {
-      alert("Failed to change verification: " + (res.error?.message || "unknown error"));
+      showToast("Failed to change verification: " + (res.error?.message || "unknown error"), 'error');
     }
   };
 
-  const handleBlockPhone = async (e) => {
+  const handleBlockPhone = (e) => {
     e.preventDefault();
     if (!phoneToBlock.trim()) return;
 
     const phoneRegex = /^01[3-9]\d{8}$/;
     if (!phoneRegex.test(phoneToBlock.trim())) {
-      alert("Invalid phone number. Must be a valid 11-digit Bangladeshi number starting with 013-019.");
+      showToast("Invalid phone number. Must be a valid 11-digit Bangladeshi number starting with 013-019.", 'warning');
       return;
     }
 
+    setConfirmBlockData({ phone: phoneToBlock.trim(), reason: blockReason.trim() });
+  };
+
+  const executeBlock = async (phone, reason) => {
     setBlockedLoading(true);
-    const res = await blockDonorByPhone(phoneToBlock.trim(), blockReason.trim() || 'Blocked by admin');
+    const res = await blockDonorByPhone(phone, reason || 'Blocked by admin');
     if (res.success) {
       setPhoneToBlock('');
       setBlockReason('');
       await fetchBlockedPhones();
-      alert("Phone number blocked successfully.");
+      showToast("Phone number blocked successfully.", 'success');
     } else {
-      alert("Failed to block phone: " + (res.error?.message || "unknown error"));
+      showToast("Failed to block phone: " + (res.error?.message || "unknown error"), 'error');
     }
     setBlockedLoading(false);
   };
 
-  const handleUnblockPhone = async (phone) => {
-    if (!confirm(`Are you sure you want to unblock ${phone}?`)) return;
+  const handleUnblockPhone = (phone) => {
+    setConfirmUnblockPhone(phone);
+  };
+
+  const executeUnblock = async (phone) => {
     setBlockedLoading(true);
     const res = await unblockDonorByPhone(phone);
     if (res.success) {
       await fetchBlockedPhones();
-      alert("Phone number unblocked successfully.");
+      showToast("Phone number unblocked successfully.", 'success');
     } else {
-      alert("Failed to unblock phone: " + (res.error?.message || "unknown error"));
+      showToast("Failed to unblock phone: " + (res.error?.message || "unknown error"), 'error');
     }
     setBlockedLoading(false);
   };
@@ -185,12 +199,12 @@ export default function Admin() {
       if (confirmDeleteType === 'donor') {
         const res = await deleteDonor(confirmDeleteId);
         if (!res.success) {
-          alert(t('errorDeletingDonorPrefix') + res.error);
+          showToast(t('errorDeletingDonorPrefix') + res.error, 'error');
         }
       } else if (confirmDeleteType === 'emergency') {
         const res = await deleteEmergencyRequest(confirmDeleteId);
         if (!res.success) {
-          alert(t('errorDeletingRequestPrefix') + res.error);
+          showToast(t('errorDeletingRequestPrefix') + res.error, 'error');
         }
       }
     } catch (err) {
@@ -491,17 +505,119 @@ export default function Admin() {
           <div className="flex gap-2 self-end sm:self-center">
             <button
               onClick={cancelDeleteConfirm}
-              className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold transition-all"
+              className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
             >
               {t('cancelButton')}
             </button>
             <button
               onClick={executeDelete}
               disabled={deleting}
-              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md"
+              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
               {deleting ? t('deletingButton') : t('confirmDeleteButton')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Block Confirmation Alert Banner */}
+      {confirmBlockData && (
+        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-300 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+            <div className="text-left">
+              <h4 className="font-bold text-sm">Are you absolutely sure?</h4>
+              <p className="text-xs text-rose-700/80 dark:text-rose-300/80 mt-0.5">
+                You are about to block the phone number <span className="font-extrabold">{confirmBlockData.phone}</span>. If they have an active session, they will be logged out and prohibited from registering or creating emergency posts.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 self-end sm:self-center">
+            <button
+              onClick={() => setConfirmBlockData(null)}
+              className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                const data = confirmBlockData;
+                setConfirmBlockData(null);
+                await executeBlock(data.phone, data.reason);
+              }}
+              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md cursor-pointer"
+            >
+              <Ban className="w-3.5 h-3.5" />
+              Confirm Block
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Unblock Confirmation Alert Banner */}
+      {confirmUnblockPhone && (
+        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-900 text-amber-800 dark:text-amber-350 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="text-left">
+              <h4 className="font-bold text-sm">Are you sure?</h4>
+              <p className="text-xs text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+                You are about to unblock the phone number <span className="font-bold">{confirmUnblockPhone}</span>. This will restore their access to register, login, and post emergency requests.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 self-end sm:self-center">
+            <button
+              onClick={() => setConfirmUnblockPhone(null)}
+              className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                const phone = confirmUnblockPhone;
+                setConfirmUnblockPhone(null);
+                await executeUnblock(phone);
+              }}
+              className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md cursor-pointer"
+            >
+              <CheckCircle className="w-3.5 h-3.5" />
+              Confirm Unblock
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Clinic Verification Confirmation Alert Banner */}
+      {confirmClinicVerification && (
+        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-300 dark:border-blue-900 text-blue-800 dark:text-blue-300 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+            <div className="text-left">
+              <h4 className="font-bold text-sm">Are you sure?</h4>
+              <p className="text-xs text-blue-700/80 dark:text-blue-300/80 mt-0.5">
+                You are about to <span className="font-extrabold uppercase">{confirmClinicVerification.nextStatus ? 'approve' : 'revoke'}</span> verification for the clinic <span className="font-bold">"{confirmClinicVerification.name}"</span>.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 self-end sm:self-center">
+            <button
+              onClick={() => setConfirmClinicVerification(null)}
+              className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                const clinic = confirmClinicVerification;
+                setConfirmClinicVerification(null);
+                await executeClinicVerification(clinic.id, clinic.nextStatus);
+              }}
+              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md cursor-pointer"
+            >
+              <CheckCircle className="w-3.5 h-3.5" />
+              Confirm Changes
             </button>
           </div>
         </div>
@@ -978,7 +1094,7 @@ export default function Admin() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-semibold">
                           <button
-                            onClick={() => handleToggleHospitalVerification(h.id, h.is_verified)}
+                            onClick={() => handleToggleHospitalVerification(h.id, h.name, h.is_verified)}
                             className={`px-3 py-1.5 rounded-xl font-bold transition-all text-[10px] uppercase tracking-wider cursor-pointer ${
                               h.is_verified
                                 ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400'

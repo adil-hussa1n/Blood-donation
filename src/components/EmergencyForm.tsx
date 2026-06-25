@@ -8,7 +8,7 @@ interface EmergencyFormProps {
 }
 
 export default function EmergencyForm({ onSuccess, onError }: EmergencyFormProps) {
-  const { createEmergencyRequest, t } = useApp();
+  const { createEmergencyRequest, checkIfBlocked, language, t } = useApp();
 
   const [bloodGroup, setBloodGroup] = useState('O+');
   const [area, setArea] = useState('Sylhet City Corporation');
@@ -54,6 +54,22 @@ export default function EmergencyForm({ onSuccess, onError }: EmergencyFormProps
       onError("Invalid phone number. Must be a valid 11-digit Bangladeshi number starting with 013-019.");
       setFormLoading(false);
       return;
+    }
+
+    // Check if phone number is blocked
+    try {
+      const blockRes = await checkIfBlocked(contactTrimmed);
+      if (blockRes.data === true) {
+        onError(
+          language === 'bn'
+            ? 'এই ফোন নম্বরটি ব্লক করা হয়েছে। পোস্ট তৈরি করা সম্ভব নয়।'
+            : 'This phone number has been blocked by the administrator. Posting is not allowed.'
+        );
+        setFormLoading(false);
+        return;
+      }
+    } catch (e) {
+      console.error("Failed to check block status:", e);
     }
 
     // 4. Passcode validation

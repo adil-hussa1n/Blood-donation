@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { dbService } from '../services/db';
 import { supabase, isDemoMode } from '../services/supabase';
 
@@ -96,6 +97,8 @@ interface AppContextType {
   getAllHospitalsAdmin: () => Promise<{ data?: any[]; error?: any }>;
   approveHospitalAdmin: (hospitalId: string, isVerified: boolean) => Promise<{ success: boolean; error?: any }>;
   getSupportRequests: () => Promise<{ data?: any[]; error?: any }>;
+  showToast: (message: string, type?: 'success' | 'error' | 'warning') => void;
+  checkIfBlocked: (phone: string) => Promise<{ data: boolean; error?: any }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -952,11 +955,52 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Fetch data
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
+    setToast({ message, type });
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   // Fetch data
   const refreshData = async (silent = false) => {
     if (!silent) setLoading(true);
     setError(null);
+
+    // Check if the currently logged-in donor is blocked
+    try {
+      const cached = localStorage.getItem('bb_donor_session');
+      if (cached) {
+        const session = JSON.parse(cached);
+        if (session && session.donor && session.donor.phone) {
+          const blockRes = await dbService.checkIfBlocked(session.donor.phone);
+          if (blockRes.data === true) {
+            localStorage.removeItem('bb_donor_session');
+            showToast(
+              language === 'bn' 
+                ? 'আপনার অ্যাকাউন্টটি নিষ্ক্রিয় করা হয়েছে। আরও তথ্যের জন্য সহায়তায় যোগাযোগ করুন।' 
+                : 'Your account has been deactivated. Please contact support.', 
+              'error'
+            );
+            setTimeout(() => {
+              window.location.reload();
+            }, 3000);
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to check active donor block status:", e);
+    }
+
     try {
       if (!isDemoMode && supabase) {
         try {
@@ -1386,6 +1430,10 @@ export const AppProvider = ({ children }) => {
     return await dbService.getSupportRequests(adminUser, adminPass);
   };
 
+  const checkIfBlocked = async (phone: string) => {
+    return await dbService.checkIfBlocked(phone);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -1426,10 +1474,34 @@ export const AppProvider = ({ children }) => {
         getAllHospitalsAdmin,
         approveHospitalAdmin,
         checkHospitalUsernameAvailable,
-        getSupportRequests
+        getSupportRequests,
+        showToast,
+        checkIfBlocked
       }}
     >
       {children}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999] animate-slide-up p-1 pointer-events-auto">
+          <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-xl backdrop-blur-md max-w-sm ${
+            toast.type === 'success' 
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+              : toast.type === 'error'
+                ? 'bg-rose-500/10 border-rose-500/20 text-rose-650 dark:text-rose-400'
+                : 'bg-amber-500/10 border-amber-500/20 text-amber-650 dark:text-amber-400'
+          }`}>
+            {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500" />}
+            {toast.type === 'error' && <AlertTriangle className="w-5 h-5 shrink-0 text-rose-500" />}
+            {toast.type === 'warning' && <AlertTriangle className="w-5 h-5 shrink-0 text-amber-500" />}
+            <span className="text-xs font-bold leading-normal">{toast.message}</span>
+            <button 
+              onClick={() => setToast(null)}
+              className="ml-auto text-slate-400 hover:text-slate-655 dark:hover:text-zinc-350 transition-colors p-1"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </AppContext.Provider>
   );
 };
