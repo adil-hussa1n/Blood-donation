@@ -354,10 +354,10 @@ export default function HospitalPortal() {
                           {bg}
                         </span>
                         <span className="text-sm font-extrabold text-slate-800 dark:text-zinc-200">
-                          Blood Stock
+                          {t('bloodStockLabel')}
                         </span>
                       </div>
-
+ 
                       {/* Segmented Status Pill Selector */}
                       <div className="flex bg-slate-100 dark:bg-zinc-900/60 p-1 rounded-xl border border-slate-200/20 dark:border-zinc-800/20">
                         <button
@@ -369,7 +369,7 @@ export default function HospitalPortal() {
                               : 'text-slate-500 dark:text-zinc-450 hover:text-slate-800 dark:hover:text-zinc-250'
                           }`}
                         >
-                          Stable
+                          {t('stableLabel')}
                         </button>
                         <button
                           type="button"
@@ -380,7 +380,7 @@ export default function HospitalPortal() {
                               : 'text-slate-500 dark:text-zinc-450 hover:text-slate-800 dark:hover:text-zinc-250'
                           }`}
                         >
-                          Low
+                          {t('lowLabel')}
                         </button>
                         <button
                           type="button"
@@ -391,7 +391,7 @@ export default function HospitalPortal() {
                               : 'text-slate-500 dark:text-zinc-450 hover:text-slate-800 dark:hover:text-zinc-250'
                           }`}
                         >
-                          Shortage
+                          {t('shortageLabel')}
                         </button>
                       </div>
                     </div>
