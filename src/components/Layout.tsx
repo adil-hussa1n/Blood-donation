@@ -109,23 +109,23 @@ export default function Layout({ children }: LayoutProps) {
             </nav>
 
             {/* Actions (Theme toggle + Mobile menu) */}
-            <div className="flex items-center lg:gap-1.5 xl:gap-2">
+            <div className="flex items-center gap-1.5 lg:gap-1.5 xl:gap-2">
               {/* Language Selector */}
               <button
                 onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}
-                className="flex items-center lg:gap-1 xl:gap-1.5 lg:px-2 lg:py-1.5 xl:px-3 xl:py-2 rounded-xl text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-all duration-200 border border-slate-200/50 dark:border-zinc-800/50 shadow-sm text-xs font-bold cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-2 lg:gap-1 lg:px-2 lg:py-1.5 xl:gap-1.5 xl:px-3 xl:py-2 rounded-xl text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-all duration-200 border border-slate-200/50 dark:border-zinc-800/50 shadow-sm text-xs font-bold cursor-pointer"
                 title={language === 'en' ? 'Switch to Bangla' : 'ইংরেজিতে পরিবর্তন করুন'}
               >
-                <Languages className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-                <span className="text-[10px] tracking-tight">{language === 'en' ? 'EN' : 'বাং'}</span>
+                <Languages className="w-4 h-4 lg:w-3.5 lg:h-3.5 text-red-500 animate-pulse" />
+                <span className="text-xs lg:text-[10px] tracking-tight">{language === 'en' ? 'EN' : 'বাং'}</span>
               </button>
 
               <button
                 onClick={toggleTheme}
-                className="lg:p-2 xl:p-2.5 rounded-xl text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-all duration-200 border border-slate-200/50 dark:border-zinc-800/50 shadow-sm cursor-pointer"
+                className="p-2.5 lg:p-2 xl:p-2.5 rounded-xl text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-all duration-200 border border-slate-200/50 dark:border-zinc-800/50 shadow-sm cursor-pointer"
                 aria-label="Toggle Theme"
               >
-                {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                {theme === 'dark' ? <Sun className="w-4 h-4 lg:w-3.5 lg:h-3.5" /> : <Moon className="w-4 h-4 lg:w-3.5 lg:h-3.5" />}
               </button>
 
               {isAdmin && (
@@ -140,16 +140,16 @@ export default function Layout({ children }: LayoutProps) {
               {/* Hamburger Menu */}
               <button
                 onClick={toggleMobileMenu}
-                className="lg:hidden relative p-2.5 rounded-xl text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-colors duration-200 border border-slate-200/50 dark:border-zinc-800/50 cursor-pointer"
+                className="lg:hidden relative p-3 rounded-xl text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-colors duration-200 border border-slate-200/50 dark:border-zinc-800/50 cursor-pointer"
                 aria-expanded={mobileMenuOpen}
                 aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
               >
                 <Menu
-                  className={`w-4 h-4 mobile-menu-icon absolute inset-0 m-auto ${mobileMenuOpen ? 'mobile-menu-icon--menu-hidden' : 'mobile-menu-icon--menu'
+                  className={`w-5 h-5 mobile-menu-icon absolute inset-0 m-auto ${mobileMenuOpen ? 'mobile-menu-icon--menu-hidden' : 'mobile-menu-icon--menu'
                     }`}
                 />
                 <X
-                  className={`w-4 h-4 mobile-menu-icon absolute inset-0 m-auto ${mobileMenuOpen ? 'mobile-menu-icon--close-visible' : 'mobile-menu-icon--close'
+                  className={`w-5 h-5 mobile-menu-icon absolute inset-0 m-auto ${mobileMenuOpen ? 'mobile-menu-icon--close-visible' : 'mobile-menu-icon--close'
                     }`}
                 />
               </button>

@@ -993,38 +993,68 @@ export default function Admin() {
               ) : blockedPhones.length === 0 ? (
                 <p className="text-xs text-slate-400 dark:text-zinc-500 font-semibold py-4">No blocked phone numbers.</p>
               ) : (
-                <div className="overflow-x-auto border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">
-                        <th className="p-3">Phone</th>
-                        <th className="p-3">Reason</th>
-                        <th className="p-3">Blocked By</th>
-                        <th className="p-3">Blocked At</th>
-                        <th className="p-3 text-center">Action</th>
+              {/* Blocked phones — Desktop table */}
+              <div className="hidden md:block overflow-x-auto border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">
+                      <th className="p-3">Phone</th>
+                      <th className="p-3">Reason</th>
+                      <th className="p-3">Blocked By</th>
+                      <th className="p-3">Blocked At</th>
+                      <th className="p-3 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-zinc-900 text-slate-700 dark:text-zinc-350">
+                    {blockedPhones.map((b) => (
+                      <tr key={b.phone} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                        <td className="p-3 font-bold">{b.phone}</td>
+                        <td className="p-3">{b.reason || 'Blocked by admin'}</td>
+                        <td className="p-3">{b.blocked_by || 'Admin'}</td>
+                        <td className="p-3">{b.blocked_at ? new Date(b.blocked_at).toLocaleString() : 'N/A'}</td>
+                        <td className="p-3 text-center">
+                          <button
+                            onClick={() => handleUnblockPhone(b.phone)}
+                            disabled={blockedLoading}
+                            className="px-2.5 py-1 bg-green-500/15 hover:bg-green-500/25 text-green-600 dark:text-green-400 rounded-lg text-[10px] font-extrabold cursor-pointer transition-all border border-green-500/20 hover:scale-[1.02]"
+                          >
+                            Unblock
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-zinc-900 text-slate-700 dark:text-zinc-350">
-                      {blockedPhones.map((b) => (
-                        <tr key={b.phone} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
-                          <td className="p-3 font-bold">{b.phone}</td>
-                          <td className="p-3">{b.reason || 'Blocked by admin'}</td>
-                          <td className="p-3">{b.blocked_by || 'Admin'}</td>
-                          <td className="p-3">{b.blocked_at ? new Date(b.blocked_at).toLocaleString() : 'N/A'}</td>
-                          <td className="p-3 text-center">
-                            <button
-                              onClick={() => handleUnblockPhone(b.phone)}
-                              disabled={blockedLoading}
-                              className="px-2.5 py-1 bg-green-500/15 hover:bg-green-500/25 text-green-600 dark:text-green-400 rounded-lg text-[10px] font-extrabold cursor-pointer transition-all border border-green-500/20 hover:scale-[1.02]"
-                            >
-                              Unblock
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Blocked phones — Mobile cards */}
+              <div className="md:hidden space-y-3">
+                {blockedPhones.map((b) => (
+                  <div key={b.phone} className="glass-panel border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl p-4 space-y-3">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="space-y-0.5">
+                        <span className="font-black text-slate-900 dark:text-white text-base block">{b.phone}</span>
+                        <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">{b.reason || 'Blocked by admin'}</span>
+                      </div>
+                      <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15">
+                        BLOCKED
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
+                      <span className="text-[10px] text-slate-400 dark:text-zinc-500">
+                        {b.blocked_at ? new Date(b.blocked_at).toLocaleString() : 'N/A'}
+                      </span>
+                      <button
+                        onClick={() => handleUnblockPhone(b.phone)}
+                        disabled={blockedLoading}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/15 hover:bg-green-500/25 text-green-600 dark:text-green-400 rounded-xl text-xs font-extrabold cursor-pointer transition-all border border-green-500/20"
+                      >
+                        Unblock
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
               )}
             </div>
           </div>
@@ -1057,57 +1087,100 @@ export default function Admin() {
                 No clinics or hospitals registered yet.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-100 dark:divide-zinc-800">
-                  <thead className="bg-slate-50/50 dark:bg-zinc-950/40">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Hospital / Clinic Name</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Area Union</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Contact Number</th>
-                      <th className="px-6 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Verification Status</th>
-                      <th className="px-6 py-4 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-zinc-850">
-                    {hospitals.map((h) => (
-                      <tr key={h.id} className="hover:bg-slate-50/40 dark:hover:bg-zinc-900/10 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-left">
-                          <span className="font-extrabold text-sm text-slate-900 dark:text-white block">{h.name}</span>
-                          <span className="text-[10px] text-slate-400 dark:text-zinc-500">ID: {h.id}</span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-xs text-slate-655 dark:text-zinc-450">
-                          {getAreaLabel(h.area, t)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-xs text-slate-655 dark:text-zinc-450">
-                          {h.contact}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          {h.is_verified ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-500">
-                              <CheckCircle className="w-3.5 h-3.5" /> Approved
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-500">
-                              <AlertTriangle className="w-3.5 h-3.5 animate-pulse" /> Pending
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-semibold">
-                          <button
-                            onClick={() => handleToggleHospitalVerification(h.id, h.name, h.is_verified)}
-                            className={`px-3 py-1.5 rounded-xl font-bold transition-all text-[10px] uppercase tracking-wider cursor-pointer ${
-                              h.is_verified
-                                ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                                : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/15'
-                            }`}
-                          >
-                            {h.is_verified ? 'Revoke Approval' : 'Approve Clinic'}
-                          </button>
-                        </td>
+              <div>
+                {/* Hospitals — Desktop table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-100 dark:divide-zinc-800">
+                    <thead className="bg-slate-50/50 dark:bg-zinc-950/40">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Hospital / Clinic Name</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Area Union</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Contact Number</th>
+                        <th className="px-6 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Verification Status</th>
+                        <th className="px-6 py-4 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-zinc-850">
+                      {hospitals.map((h) => (
+                        <tr key={h.id} className="hover:bg-slate-50/40 dark:hover:bg-zinc-900/10 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-left">
+                            <span className="font-extrabold text-sm text-slate-900 dark:text-white block">{h.name}</span>
+                            <span className="text-[10px] text-slate-400 dark:text-zinc-500">ID: {h.id}</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-xs text-slate-655 dark:text-zinc-450">
+                            {getAreaLabel(h.area, t)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-xs text-slate-655 dark:text-zinc-450">
+                            {h.contact}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            {h.is_verified ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-500">
+                                <CheckCircle className="w-3.5 h-3.5" /> Approved
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-500">
+                                <AlertTriangle className="w-3.5 h-3.5 animate-pulse" /> Pending
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-semibold">
+                            <button
+                              onClick={() => handleToggleHospitalVerification(h.id, h.name, h.is_verified)}
+                              className={`px-3 py-1.5 rounded-xl font-bold transition-all text-[10px] uppercase tracking-wider cursor-pointer ${
+                                h.is_verified
+                                  ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                                  : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/15'
+                              }`}
+                            >
+                              {h.is_verified ? 'Revoke Approval' : 'Approve Clinic'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Hospitals — Mobile cards */}
+                <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-800">
+                  {hospitals.map((h) => (
+                    <div key={h.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="space-y-0.5 min-w-0">
+                          <span className="font-extrabold text-slate-900 dark:text-white text-sm block truncate">{h.name}</span>
+                          <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-red-500/60 shrink-0" />
+                            {getAreaLabel(h.area, t)}
+                          </span>
+                        </div>
+                        {h.is_verified ? (
+                          <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-500">
+                            <CheckCircle className="w-3 h-3" /> Approved
+                          </span>
+                        ) : (
+                          <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-500">
+                            <AlertTriangle className="w-3 h-3 animate-pulse" /> Pending
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <span className="text-xs font-bold text-slate-600 dark:text-zinc-400">{h.contact}</span>
+                        <button
+                          onClick={() => handleToggleHospitalVerification(h.id, h.name, h.is_verified)}
+                          className={`px-3 py-1.5 rounded-xl font-bold transition-all text-xs cursor-pointer ${
+                            h.is_verified
+                              ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                              : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/15'
+                          }`}
+                        >
+                          {h.is_verified ? 'Revoke' : 'Approve'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
