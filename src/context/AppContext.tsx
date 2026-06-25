@@ -970,6 +970,52 @@ export const AppProvider = ({ children }) => {
     }
   }, [toast]);
 
+  // Real-time block check: poll every 15 seconds for the logged-in donor.
+  // If the admin has blocked their phone since they last logged in, immediately
+  // clear their session and reload so they are kicked out without delay.
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const checkBlock = async () => {
+      try {
+        const cached = localStorage.getItem('bb_donor_session');
+        if (!cached) return;
+        const session = JSON.parse(cached);
+        if (!session?.donor?.phone) return;
+
+        const blockRes = await dbService.checkIfBlocked(session.donor.phone);
+        if (blockRes.data === true) {
+          // Immediately wipe session and kick the user out
+          localStorage.removeItem('bb_donor_session');
+          if (intervalId) clearInterval(intervalId);
+          showToast(
+            localStorage.getItem('language') === 'bn'
+              ? 'আপনার অ্যাকাউন্টটি নিষ্ক্রিয় করা হয়েছে। আরও তথ্যের জন্য সহায়তায় যোগাযোগ করুন।'
+              : 'Your account has been deactivated by the administrator.',
+            'error'
+          );
+          setTimeout(() => {
+            window.location.reload();
+          }, 2500);
+        }
+      } catch (e) {
+        // Silently ignore network errors to avoid noise
+      }
+    };
+
+    // Only start polling if there is an active donor session
+    const hasDonorSession = !!localStorage.getItem('bb_donor_session');
+    if (hasDonorSession && !isDemoMode) {
+      // Run once immediately, then every 15 seconds
+      checkBlock();
+      intervalId = setInterval(checkBlock, 15000);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Fetch data
   const refreshData = async (silent = false) => {
     if (!silent) setLoading(true);
