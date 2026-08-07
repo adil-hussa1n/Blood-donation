@@ -61,7 +61,6 @@ const sessionStorage = (() => {
 interface AppContextType {
   donors: any[];
   emergencyRequests: any[];
-  hospitalInventory: any[];
   loading: boolean;
   error: string | null;
   theme: 'light' | 'dark' | string;
@@ -83,19 +82,10 @@ interface AppContextType {
   createEmergencyRequest: (requestData: any, honeypot?: string) => Promise<{ success: boolean; data?: any; error?: any }>;
   deleteEmergencyRequest: (id: string, userPasscode?: string) => Promise<{ success: boolean; error?: any }>;
   updateEmergencyRequestStatus: (id: string, status: 'needed' | 'responded' | 'fulfilled' | string, userPasscode?: string) => Promise<{ success: boolean; data?: any; error?: any }>;
-  currentHospital: any;
-  setCurrentHospital: (hospital: any) => void;
-  registerHospital: (hospitalData: any) => Promise<{ success: boolean; data?: any; error?: any }>;
-  loginHospital: (username: string, password?: string) => Promise<boolean>;
-  checkHospitalUsernameAvailable: (username: string) => Promise<{ available: boolean; error?: any }>;
-  logoutHospital: () => void;
-  updateHospitalStockBulk: (stocks: any[]) => Promise<{ success: boolean; error?: any }>;
   refreshData: (silent?: boolean) => Promise<void>;
   blockDonorByPhone: (phone: string, reason?: string) => Promise<{ success: boolean; error?: any }>;
   unblockDonorByPhone: (phone: string) => Promise<{ success: boolean; error?: any }>;
   getBlockedPhones: () => Promise<{ success: boolean; data: any[]; error?: any }>;
-  getAllHospitalsAdmin: () => Promise<{ data?: any[]; error?: any }>;
-  approveHospitalAdmin: (hospitalId: string, isVerified: boolean) => Promise<{ success: boolean; error?: any }>;
   getSupportRequests: () => Promise<{ data?: any[]; error?: any }>;
   showToast: (message: string, type?: 'success' | 'error' | 'warning') => void;
   checkIfBlocked: (phone: string) => Promise<{ data: boolean; error?: any }>;
@@ -276,7 +266,7 @@ export const TRANSLATIONS = {
     // Footers
     developedBy: 'Design & Developed By',
     dedicatedTo: 'Dedicated to saving lives in Sylhet, Bangladesh.',
-    projectOf: 'A project of GraffixInnovation',
+    projectOf: 'Emergency Blood Donation Network',
 
     // Form Alerts & Errors
     invalidPhoneError: 'Please enter a valid phone number (10 to 15 digits).',
@@ -389,7 +379,7 @@ export const TRANSLATIONS = {
 
     // Admin Dashboard Additions
     adminAuthTitle: 'Admin Authentication',
-    adminPortalSub: 'GraffixInnovation Admin Portal',
+    adminPortalSub: 'Bloodify247 Admin Portal',
     adminDescLogin: 'Please enter administrator credentials to manage records.',
     adminLoginError: 'Invalid Administrator Credentials. Please check Admin ID and Password.',
     adminConnError: 'Authentication failed. Connection error.',
@@ -397,7 +387,7 @@ export const TRANSLATIONS = {
     adminIdPlaceholder: 'Enter Admin ID...',
     authenticatingButton: 'Authenticating...',
     adminDashboardTitle: 'Administration Dashboard',
-    moderatorControlsText: 'GraffixInnovation Moderator Controls',
+    moderatorControlsText: 'System Moderator Controls',
     exitAdminButton: 'Exit Admin',
     manageDonorsTab: 'Manage Donors',
     manageEmergenciesTab: 'Manage Emergencies',
@@ -602,7 +592,7 @@ export const TRANSLATIONS = {
     // Footers
     developedBy: 'ডিজাইন ও ডেভেলপমেন্টে',
     dedicatedTo: 'সিলেট, বাংলাদেশে জীবন বাঁচাতে নিবেদিত।',
-    projectOf: 'গ্রাফিক্স ইনোভেশন এর একটি প্রজেক্ট',
+    projectOf: 'জরুরী রক্তদান নেটওয়ার্ক',
 
     // Form Alerts & Errors
     invalidPhoneError: 'অনুগ্রহ করে একটি সঠিক ফোন নম্বর লিখুন (১০ থেকে ১৫ ডিজিট)।',
@@ -715,7 +705,7 @@ export const TRANSLATIONS = {
 
     // Admin Dashboard Additions
     adminAuthTitle: 'অ্যাডমিন লগইন',
-    adminPortalSub: 'গ্রাফিক্স ইনোভেশন অ্যাডমিন পোর্টাল',
+    adminPortalSub: 'ব্লাডিফাই২৪৭ অ্যাডমিন পোর্টাল',
     adminDescLogin: 'রেকর্ড পরিচালনা করতে অ্যাডমিনিস্ট্রেটর শংসাপত্র লিখুন।',
     adminLoginError: 'অবৈধ অ্যাডমিনিস্ট্রেটর শংসাপত্র। অ্যাডমিন আইডি এবং পাসওয়ার্ড যাচাই করুন।',
     adminConnError: 'যাচাইকরণ ব্যর্থ হয়েছে। সংযোগ ত্রুটি।',
@@ -723,7 +713,7 @@ export const TRANSLATIONS = {
     adminIdPlaceholder: 'অ্যাডমিন আইডি লিখুন...',
     authenticatingButton: 'যাচাই হচ্ছে...',
     adminDashboardTitle: 'অ্যাডমিনিস্ট্রেশন ড্যাশবোর্ড',
-    moderatorControlsText: 'গ্রাফিক্স ইনোভেশন মডারেটর নিয়ন্ত্রণ',
+    moderatorControlsText: 'সিস্টেম মডারেটর নিয়ন্ত্রণ',
     exitAdminButton: 'অ্যাডমিন প্রস্থান',
     manageDonorsTab: 'রক্তদাতা পরিচালনা',
     manageEmergenciesTab: 'জরুরি অনুরোধ পরিচালনা',
@@ -888,15 +878,6 @@ export const AppProvider = ({ children }) => {
     }
   });
 
-  const [hospitalInventory, setHospitalInventory] = useState(() => {
-    try {
-      const cached = localStorage.getItem('bb_hospital_inventory_cache') || localStorage.getItem('bb_hospital_inventory');
-      return cached ? JSON.parse(cached) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-
   const [loading, setLoading] = useState(() => {
     try {
       const hasCached = (localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors')) ||
@@ -934,15 +915,6 @@ export const AppProvider = ({ children }) => {
 
   const [isAdmin, setIsAdmin] = useState(() => {
     return localStorage.getItem('isAdmin') === 'true';
-  });
-
-  const [currentHospital, setCurrentHospital] = useState(() => {
-    try {
-      const cached = localStorage.getItem('bb_hospital_session');
-      return cached ? JSON.parse(cached) : null;
-    } catch (e) {
-      return null;
-    }
   });
 
   useEffect(() => {
@@ -1114,27 +1086,8 @@ export const AppProvider = ({ children }) => {
         }
       });
 
-      // Fetch Hospital Inventory with a 3.5s timeout, load immediately when resolved
-      const inventoryFetch = Promise.race([
-        dbService.getHospitalInventory(),
-        timeout(3500)
-      ]).then((res: any) => {
-        if (res) {
-          if (res.error) throw new Error(res.error.message);
-          const data = res.data || [];
-          setHospitalInventory(data);
-          if (!isDemoMode && data.length > 0) {
-            localStorage.setItem('bb_hospital_inventory_cache', JSON.stringify(data));
-          }
-        } else {
-          console.warn("Hospital inventory database fetch timed out. Using offline cache.");
-          const cachedInventory = localStorage.getItem('bb_hospital_inventory_cache') || localStorage.getItem('bb_hospital_inventory');
-          if (cachedInventory) setHospitalInventory(JSON.parse(cachedInventory));
-        }
-      });
-
       // Execute all in parallel
-      await Promise.all([donorsFetch, emergenciesFetch, inventoryFetch]);
+      await Promise.all([donorsFetch, emergenciesFetch]);
 
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -1144,10 +1097,8 @@ export const AppProvider = ({ children }) => {
       try {
         const cachedDonors = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
         const cachedRequests = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
-        const cachedInventory = localStorage.getItem('bb_hospital_inventory_cache') || localStorage.getItem('bb_hospital_inventory');
         if (cachedDonors) setDonors(JSON.parse(cachedDonors).map(normalizeDonor));
         if (cachedRequests) setEmergencyRequests(JSON.parse(cachedRequests));
-        if (cachedInventory) setHospitalInventory(JSON.parse(cachedInventory));
       } catch (e) { }
     } finally {
       setLoading(false);
@@ -1398,76 +1349,6 @@ export const AppProvider = ({ children }) => {
 
 
 
-  const registerHospital = async (hospitalData: any) => {
-    setError(null);
-    const { data, error } = await dbService.registerHospital(hospitalData);
-    if (error) {
-      setError(error.message);
-      return { success: false, error };
-    }
-    return { success: true, data };
-  };
-
-  const loginHospital = async (username: string, pass?: string) => {
-    setError(null);
-    const { data, error } = await dbService.loginHospital(username, pass);
-    if (error) {
-      setError(error.message);
-      return false;
-    }
-    setCurrentHospital(data);
-    localStorage.setItem('bb_hospital_session', JSON.stringify(data));
-    await refreshData(true);
-    return true;
-  };
-
-  const checkHospitalUsernameAvailable = async (username: string) => {
-    return await dbService.checkHospitalUsernameAvailable(username);
-  };
-
-  const logoutHospital = () => {
-    setCurrentHospital(null);
-    localStorage.removeItem('bb_hospital_session');
-  };
-
-  const updateHospitalStockBulk = async (stocks: any[]) => {
-    if (!currentHospital) {
-      setError("Not authenticated as a hospital.");
-      return { success: false, error: { message: "Not authenticated" } };
-    }
-    setError(null);
-    const res = await dbService.updateHospitalStockBulk(currentHospital.id, stocks, currentHospital.password);
-    if (!res.success) {
-      setError(res.error?.message || "Failed to update stocks.");
-      return res;
-    }
-    await refreshData(true);
-    return res;
-  };
-
-  const getAllHospitalsAdmin = async () => {
-    setError(null);
-    const { data, error } = await dbService.getAllHospitalsAdmin();
-    if (error) {
-      setError(error.message);
-      return { data: [], error };
-    }
-    return { data, error: null };
-  };
-
-  const approveHospitalAdmin = async (hospitalId: string, isVerified: boolean) => {
-    setError(null);
-    const adminUser = adminCredentials?.username || '';
-    const adminPass = adminCredentials?.password || '';
-    const res = await dbService.approveHospitalAdmin(hospitalId, isVerified, adminUser, adminPass);
-    if (res.error) {
-      setError(res.error.message);
-      return { success: false, error: res.error };
-    }
-    await refreshData(true);
-    return { success: true };
-  };
-
   const getSupportRequests = async () => {
     if (!isAdmin) return { data: [], error: { message: 'Unauthorized' } };
     setError(null);
@@ -1485,7 +1366,6 @@ export const AppProvider = ({ children }) => {
       value={{
         donors,
         emergencyRequests,
-        hospitalInventory,
         loading,
         error,
         theme,
@@ -1507,19 +1387,10 @@ export const AppProvider = ({ children }) => {
         createEmergencyRequest,
         deleteEmergencyRequest,
         updateEmergencyRequestStatus,
-        currentHospital,
-        setCurrentHospital,
-        registerHospital,
-        loginHospital,
-        logoutHospital,
-        updateHospitalStockBulk,
         refreshData,
         blockDonorByPhone,
         unblockDonorByPhone,
         getBlockedPhones,
-        getAllHospitalsAdmin,
-        approveHospitalAdmin,
-        checkHospitalUsernameAvailable,
         getSupportRequests,
         showToast,
         checkIfBlocked

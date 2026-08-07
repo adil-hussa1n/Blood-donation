@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, LucideIcon, Hospital, Building } from 'lucide-react';
+import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, LucideIcon } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface NavigationItem {
@@ -35,8 +35,6 @@ export default function Layout({ children }: LayoutProps) {
     { nameKey: 'searchDonors', name: 'Search Donors', path: '/', icon: Heart },
     { nameKey: 'registerUpdate', name: 'Register / Update', path: '/register', icon: UserPlus },
     { nameKey: 'emergencyRequests', name: 'Emergency Requests', path: '/emergency', icon: Flame },
-    { nameKey: 'hospitalsStock', name: 'Hospital Stock', path: '/hospitals-stock', icon: Hospital },
-    { nameKey: 'hospitalPortal', name: 'Hospital Portal', path: '/hospitals', icon: Building },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -70,7 +68,7 @@ export default function Layout({ children }: LayoutProps) {
                   Bloodify247
                 </span>
                 <span className="text-[10px] sm:text-[11px] font-bold tracking-wider text-red-500 dark:text-red-400">
-                  By GraffixInnovation
+                  Save Lives 24/7
                 </span>
               </div>
             </Link>
@@ -239,27 +237,22 @@ export default function Layout({ children }: LayoutProps) {
               </Link>
             </div>
             <span className="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-400 font-semibold tracking-wide">
-              Design & Developed By{' '}
+              Designed & Developed by{' '}
               <a
-                href="https://www.graffixinnovation.com/"
+                href="https://www.adilhussa1n.online"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:underline transition-all font-bold"
+                className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:underline transition-all font-extrabold"
               >
-                GraffixInnovation
+                ADIL HUSSAIN
               </a>
             </span>
           </div>
           <div className="text-[10px] sm:text-xs text-slate-400 dark:text-zinc-500 flex flex-col items-center md:items-end gap-1">
             <span>{t('dedicatedTo')}</span>
-            <a
-              href="https://www.graffixinnovation.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-extrabold text-red-500 dark:text-red-400 uppercase tracking-widest text-[8px] sm:text-[9px] bg-red-500/5 dark:bg-red-500/10 hover:bg-red-500/10 dark:hover:bg-red-500/20 px-2 sm:px-2.5 py-0.5 rounded-full border border-red-500/10 hover:border-red-500/20 transition-all"
-            >
-              A project of GraffixInnovation
-            </a>
+            <span className="font-extrabold text-red-500 dark:text-red-400 uppercase tracking-widest text-[8px] sm:text-[9px] bg-red-500/5 dark:bg-red-500/10 px-2 sm:px-2.5 py-0.5 rounded-full border border-red-500/10">
+              Save Lives • 24/7 Service
+            </span>
           </div>
         </div>
       </footer>

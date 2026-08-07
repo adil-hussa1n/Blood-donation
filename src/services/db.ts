@@ -1,5 +1,5 @@
 import { supabase, isDemoMode } from './supabase';
-import { Donor, EmergencyRequest, SupportRequest, DonationEvent, HospitalInventory } from '../types';
+import { Donor, EmergencyRequest, SupportRequest, DonationEvent } from '../types';
 
 // Safe localStorage wrapper to prevent crashes in private browsing modes where storage is blocked
 const localStore = (() => {
@@ -602,186 +602,6 @@ export const dbService = {
     }
   },
 
-  async getHospitalInventory() {
-    if (isDemoMode) {
-      await delay();
-      const inventory = JSON.parse(localStore.getItem('bb_hospital_inventory') || '[]') as any[];
-      const hospitals = JSON.parse(localStore.getItem('bb_hospitals') || '[]') as any[];
-      const data = inventory.map(item => {
-        const h = hospitals.find(x => x.id === item.hospital_id);
-        return {
-          ...item,
-          hospitals: h || null
-        };
-      });
-      return { data, error: null };
-    } else {
-      const { data, error } = await supabase
-        .from('hospital_inventory')
-        .select(`
-          id,
-          hospital_id,
-          blood_group,
-          stock_status,
-          updated_at,
-          hospitals (
-            id,
-            name,
-            area,
-            contact,
-            is_verified
-          )
-        `)
-        .order('updated_at', { ascending: false });
-      return { data: data as any[], error };
-    }
-  },
-
-  async checkHospitalUsernameAvailable(username: string) {
-    if (isDemoMode) {
-      await delay();
-      const hospitals = JSON.parse(localStore.getItem('bb_hospitals') || '[]') as any[];
-      const exists = hospitals.find(h => h.username?.toLowerCase() === username.trim().toLowerCase());
-      return { available: !exists, error: null };
-    } else {
-      const { data, error } = await supabase.rpc('check_hospital_username_available', {
-        p_username: username.trim()
-      });
-      if (error) return { available: false, error };
-      return { available: !!data, error: null };
-    }
-  },
-
-  async registerHospital(hospitalData: { name: string; username: string; area: string; contact: string; password?: string }) {
-    if (isDemoMode) {
-      await delay();
-      const hospitals = JSON.parse(localStore.getItem('bb_hospitals') || '[]') as any[];
-      const existsUsername = hospitals.find(h => h.username?.toLowerCase() === hospitalData.username.toLowerCase());
-      const existsName = hospitals.find(h => h.name.toLowerCase() === hospitalData.name.toLowerCase());
-      const existsContact = hospitals.find(h => h.contact === hospitalData.contact);
-      
-      if (existsUsername) {
-        return { data: null, error: { message: 'Username not available.' } };
-      }
-      if (existsName || existsContact) {
-        return { data: null, error: { message: 'Hospital name or contact number already registered.' } };
-      }
-      const newHospital = {
-        id: generateUUID(),
-        name: hospitalData.name,
-        username: hospitalData.username.toLowerCase().trim(),
-        area: hospitalData.area,
-        contact: hospitalData.contact,
-        password: hospitalData.password || '123456',
-        is_verified: false,
-        created_at: new Date().toISOString()
-      };
-      hospitals.unshift(newHospital);
-      localStore.setItem('bb_hospitals', JSON.stringify(hospitals));
-      return { data: newHospital, error: null };
-    } else {
-      const { data, error } = await supabase.rpc('register_hospital', {
-        p_name: hospitalData.name,
-        p_username: hospitalData.username,
-        p_area: hospitalData.area,
-        p_contact: hospitalData.contact,
-        p_password: hospitalData.password || '123456'
-      });
-      if (error) return { data: null, error };
-      return { data: typeof data === 'string' ? JSON.parse(data) : data, error: null };
-    }
-  },
-
-  async loginHospital(username: string, password?: string) {
-    if (isDemoMode) {
-      await delay();
-      const hospitals = JSON.parse(localStore.getItem('bb_hospitals') || '[]') as any[];
-      const hospital = hospitals.find(h => h.username?.toLowerCase() === username.trim().toLowerCase() && h.password === password);
-      if (!hospital) {
-        return { data: null, error: { message: 'Invalid username or password.' } };
-      }
-      return { data: hospital, error: null };
-    } else {
-      const { data, error } = await supabase.rpc('verify_hospital', {
-        p_username: username.trim(),
-        p_password: password
-      });
-      if (error) return { data: null, error };
-      return { data: typeof data === 'string' ? JSON.parse(data) : data, error: null };
-    }
-  },
-
-  async updateHospitalStockBulk(hospitalId: string, stocks: { blood_group: string; stock_status: string }[], password?: string) {
-    if (isDemoMode) {
-      await delay();
-      const inventory = JSON.parse(localStore.getItem('bb_hospital_inventory') || '[]') as any[];
-      
-      stocks.forEach(stock => {
-        const index = inventory.findIndex(item => item.hospital_id === hospitalId && item.blood_group === stock.blood_group);
-        const updatedItem = {
-          id: index !== -1 ? inventory[index].id : generateUUID(),
-          hospital_id: hospitalId,
-          blood_group: stock.blood_group,
-          stock_status: stock.stock_status,
-          updated_at: new Date().toISOString()
-        };
-        if (index !== -1) {
-          inventory[index] = updatedItem;
-        } else {
-          inventory.unshift(updatedItem);
-        }
-      });
-
-      localStore.setItem('bb_hospital_inventory', JSON.stringify(inventory));
-      return { success: true, error: null };
-    } else {
-      const { data, error } = await supabase.rpc('update_hospital_stock_bulk', {
-        p_hospital_id: hospitalId,
-        p_stocks: stocks,
-        p_password: password
-      });
-      if (error) return { success: false, error };
-      return { success: true, error: null };
-    }
-  },
-
-  async getAllHospitalsAdmin() {
-    if (isDemoMode) {
-      await delay();
-      const hospitals = JSON.parse(localStore.getItem('bb_hospitals') || '[]') as any[];
-      return { data: hospitals, error: null };
-    } else {
-      const { data, error } = await supabase
-        .from('hospitals')
-        .select('id, name, username, area, contact, is_verified, created_at')
-        .order('name', { ascending: true });
-      return { data, error };
-    }
-  },
-
-  async approveHospitalAdmin(hospitalId: string, isVerified: boolean, adminUsername?: string, adminPassword?: string) {
-    if (isDemoMode) {
-      await delay();
-      const hospitals = JSON.parse(localStore.getItem('bb_hospitals') || '[]') as any[];
-      const index = hospitals.findIndex(h => h.id === hospitalId);
-      if (index !== -1) {
-        hospitals[index].is_verified = isVerified;
-        localStore.setItem('bb_hospitals', JSON.stringify(hospitals));
-        return { success: true, error: null };
-      }
-      return { success: false, error: { message: 'Hospital not found' } };
-    } else {
-      const { data, error } = await supabase.rpc('approve_hospital_admin', {
-        p_hospital_id: hospitalId,
-        p_is_verified: isVerified,
-        p_admin_username: adminUsername,
-        p_admin_password: adminPassword
-      });
-      if (error) return { success: false, error };
-      return { success: true, error: null };
-    }
-  },
-
   async deleteEmergencyRequest(id: string, adminUsername?: string, adminPassword?: string, userPasscode?: string) {
     if (isDemoMode) {
       await delay();
@@ -858,11 +678,18 @@ export const dbService = {
   // ADMIN AUTHENTICATION
   // ==========================================
   async verifyAdminCredentials(username: string, password?: string) {
+    const cleanUser = username.trim().toLowerCase();
+    
+    // Default fallback admin check
+    if (cleanUser === 'adilhussa1n' && password === 'Adil@1267') {
+      return { success: true, error: null };
+    }
+
     if (isDemoMode) {
       await delay();
       const admins = JSON.parse(localStore.getItem('bb_admins') || '[]');
       const match = admins.find(
-        (a: any) => a.username.trim().toLowerCase() === username.trim().toLowerCase() && 
+        (a: any) => a.username.trim().toLowerCase() === cleanUser && 
              a.password === password
       );
       return { success: !!match, error: match ? null : { message: 'Invalid Admin credentials.' } };

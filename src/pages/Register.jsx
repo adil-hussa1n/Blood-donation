@@ -1276,7 +1276,7 @@ export default function Register() {
                     </span>
                   </div>
                   <span className="text-[8px] uppercase tracking-[0.15em] text-slate-450 font-bold block leading-none">
-                    Powered by GraffixInnovation
+                    Official Donor Recognition
                   </span>
                 </div>
 

@@ -40,25 +40,6 @@ export interface SupportRequest {
   created_at?: string;
 }
 
-export interface HospitalInventory {
-  id: string;
-  hospital_id?: string;
-  hospital_name?: string;
-  area?: string;
-  contact?: string;
-  blood_group: string;
-  stock_status: 'low' | 'critical' | 'stable';
-  updated_at: string;
-  hospitals?: {
-    id: string;
-    name: string;
-    area: string;
-    contact: string;
-    is_verified?: boolean;
-    username?: string;
-  };
-}
-
 export interface DonorBadge {
   label: string;
   color: string;

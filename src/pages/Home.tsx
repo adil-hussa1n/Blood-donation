@@ -4,10 +4,10 @@ import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame,
 import { useApp, AREAS, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
 import QuickStats from '../components/QuickStats';
 import DonorCard from '../components/DonorCard';
-import { Donor, EmergencyRequest, HospitalInventory } from '../types';
+import { Donor, EmergencyRequest } from '../types';
 
 export default function Home() {
-  const { donors, emergencyRequests, hospitalInventory, loading, error, language, t } = useApp();
+  const { donors, emergencyRequests, loading, error, language, t } = useApp();
   const [filterOpen, setFilterOpen] = useState(false);
   
   // Active applied filters (used for rendering the list)
@@ -91,17 +91,6 @@ export default function Home() {
   const recentRequests = useMemo(() => {
     return (emergencyRequests || []).slice(0, 3);
   }, [emergencyRequests]);
-
-  // Critical Hospital Blood Stock Alerts (limit to 3)
-  const shortageAlerts = useMemo(() => {
-    return (hospitalInventory as HospitalInventory[] || [])
-      .filter((item) => (item.stock_status === 'critical' || item.stock_status === 'low') && item.hospitals?.is_verified)
-      .sort((a, b) => {
-        if (a.stock_status === 'critical' && b.stock_status !== 'critical') return -1;
-        if (a.stock_status !== 'critical' && b.stock_status === 'critical') return 1;
-        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-      });
-  }, [hospitalInventory]);
 
   return (
     <div className="space-y-8">
@@ -266,76 +255,6 @@ export default function Home() {
         {/* Right Donors List + Emergency feed */}
         <div className="lg:col-span-3 space-y-8 text-left">
           
-          {/* Critical Hospital Blood Stock Alerts */}
-          {shortageAlerts.length > 0 && (
-            <div className="glass-panel border-amber-500/20 dark:border-amber-500/20 rounded-3xl p-5 border relative overflow-hidden bg-gradient-to-r from-amber-500/5 to-rose-500/5 text-left">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-extrabold text-slate-900 dark:text-white text-base flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-500 animate-pulse" />
-                  {language === 'en' ? 'Critical Hospital Blood Stock Alerts' : 'হাসপাতাল রক্তের স্টক সতর্কতা'}
-                </h3>
-                <Link
-                  to="/hospitals-stock?shortage=true"
-                  className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1 group"
-                >
-                  {language === 'en' ? 'View all' : 'সবগুলো দেখুন'} <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {shortageAlerts
-                  .slice(0, 3)
-                  .map((item) => (
-                    <div 
-                      key={item.id} 
-                      className={`border rounded-xl p-4 flex flex-col justify-between transition-all hover:scale-[1.02] duration-300 ${
-                        item.stock_status === 'critical' 
-                          ? 'bg-rose-500/5 border-rose-500/20 dark:border-rose-500/30' 
-                          : 'bg-amber-500/5 border-amber-500/20 dark:border-amber-500/30'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="font-black text-slate-900 dark:text-white text-sm leading-tight">
-                            {item.hospitals?.name}
-                          </span>
-                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
-                            item.stock_status === 'critical'
-                              ? 'bg-red-500 text-white animate-pulse'
-                              : 'bg-amber-500 text-white'
-                          }`}>
-                            {item.stock_status === 'critical' ? (language === 'en' ? 'CRITICAL' : 'জরুরী সংকট') : (language === 'en' ? 'LOW STOCK' : 'স্বল্পতা')}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-600 dark:text-zinc-350 font-bold mb-2 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          {getAreaLabel(item.hospitals?.area || '', t)}
-                        </p>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold">{language === 'en' ? 'Needed Group:' : 'প্রয়োজনীয় গ্রুপ:'}</span>
-                          <span className="font-black text-red-655 dark:text-red-400 text-base">{item.blood_group}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <a 
-                          href={`tel:${item.hospitals?.contact || ''}`} 
-                          className="text-[10px] bg-slate-900 hover:bg-slate-850 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-colors shadow-sm"
-                        >
-                          {language === 'en' ? 'Contact' : 'যোগাযোগ'}
-                        </a>
-                        <Link 
-                          to="/register" 
-                          className="text-[10px] bg-red-500 hover:bg-red-650 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-all shadow-sm"
-                        >
-                          {language === 'en' ? 'Donate Now' : 'রক্তদান করুন'}
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
           {/* Recent Emergencies Highlight banner */}
           {recentRequests.length > 0 && (
             <div className="glass-panel border-red-500/20 dark:border-red-500/20 rounded-3xl p-5 border relative overflow-hidden">

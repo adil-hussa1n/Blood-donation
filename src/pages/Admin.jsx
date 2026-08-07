@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Shield, Key, Eye, EyeOff, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, User, ChevronLeft, ChevronRight, Ban, Hospital, MessageSquare } from 'lucide-react';
+import { Shield, Key, Eye, EyeOff, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, User, ChevronLeft, ChevronRight, Ban, MessageSquare } from 'lucide-react';
 import { useApp, BLOOD_GROUPS, normalizeDonor, getAreaLabel } from '../context/AppContext';
 
 export default function Admin() {
@@ -14,8 +14,6 @@ export default function Admin() {
     blockDonorByPhone,
     unblockDonorByPhone,
     getBlockedPhones,
-    getAllHospitalsAdmin,
-    approveHospitalAdmin,
     getSupportRequests,
     showToast,
     t
@@ -44,7 +42,6 @@ export default function Admin() {
   // Inline Confirmation Banner States
   const [confirmUnblockPhone, setConfirmUnblockPhone] = useState(null);
   const [confirmBlockData, setConfirmBlockData] = useState(null);
-  const [confirmClinicVerification, setConfirmClinicVerification] = useState(null);
 
   const fetchBlockedPhones = async () => {
     setBlockedLoading(true);
@@ -56,22 +53,6 @@ export default function Admin() {
       setBlockedError(res.error?.message || "Failed to fetch blocked phone numbers.");
     }
     setBlockedLoading(false);
-  };
-
-  const [hospitals, setHospitals] = useState([]);
-  const [hospitalsLoading, setHospitalsLoading] = useState(false);
-  const [hospitalsError, setHospitalsError] = useState(null);
-
-  const fetchHospitals = async () => {
-    setHospitalsLoading(true);
-    setHospitalsError(null);
-    const res = await getAllHospitalsAdmin();
-    if (res.data) {
-      setHospitals(res.data);
-    } else if (res.error) {
-      setHospitalsError(res.error.message || "Failed to fetch registered hospitals.");
-    }
-    setHospitalsLoading(false);
   };
 
   const [supportRequests, setSupportRequests] = useState([]);
@@ -93,25 +74,9 @@ export default function Admin() {
   useEffect(() => {
     if (isAdmin) {
       fetchBlockedPhones();
-      fetchHospitals();
       fetchSupportRequests();
     }
   }, [isAdmin]);
-
-  const handleToggleHospitalVerification = (hospitalId, name, currentStatus) => {
-    const nextStatus = !currentStatus;
-    setConfirmClinicVerification({ id: hospitalId, name, nextStatus });
-  };
-
-  const executeClinicVerification = async (hospitalId, nextStatus) => {
-    const res = await approveHospitalAdmin(hospitalId, nextStatus);
-    if (res.success) {
-      showToast(`Clinic ${nextStatus ? 'approved' : 'revoked'} successfully.`, 'success');
-      await fetchHospitals();
-    } else {
-      showToast("Failed to change verification: " + (res.error?.message || "unknown error"), 'error');
-    }
-  };
 
   const handleBlockPhone = (e) => {
     e.preventDefault();
@@ -216,21 +181,27 @@ export default function Admin() {
     }
   };
 
+  // Safe array references
+  const safeDonors = useMemo(() => (donors || []).map(normalizeDonor), [donors]);
+  const safeEmergencies = useMemo(() => emergencyRequests || [], [emergencyRequests]);
+  const safeBlockedPhones = useMemo(() => blockedPhones || [], [blockedPhones]);
+  const safeSupportRequests = useMemo(() => supportRequests || [], [supportRequests]);
+
   // Filtered Donors list for Admin
   const adminFilteredDonors = useMemo(() => {
-    return donors.filter((d) => {
+    return safeDonors.filter((d) => {
       return bloodGroupFilter ? d.blood_group === bloodGroupFilter : true;
     });
-  }, [donors, bloodGroupFilter]);
+  }, [safeDonors, bloodGroupFilter]);
 
   // Compute counts for each blood group
   const groupCounts = useMemo(() => {
-    const counts = { All: donors.length };
+    const counts = { All: safeDonors.length };
     BLOOD_GROUPS.forEach(g => {
-      counts[g] = donors.filter(d => d.blood_group === g).length;
+      counts[g] = safeDonors.filter(d => d.blood_group === g).length;
     });
     return counts;
-  }, [donors]);
+  }, [safeDonors]);
 
   // Pagination for Donors
   const [donorPage, setDonorPage] = useState(1);
@@ -239,7 +210,7 @@ export default function Admin() {
   // Reset page when blood group filter changes or donors count changes
   useEffect(() => {
     setDonorPage(1);
-  }, [bloodGroupFilter, donors.length]);
+  }, [bloodGroupFilter, safeDonors.length]);
 
   const totalDonorPages = Math.max(1, Math.ceil(adminFilteredDonors.length / itemsPerPage));
   const paginatedDonors = useMemo(() => {
@@ -253,13 +224,13 @@ export default function Admin() {
   // Reset page when emergencies count changes
   useEffect(() => {
     setEmergencyPage(1);
-  }, [emergencyRequests.length]);
+  }, [safeEmergencies.length]);
 
-  const totalEmergencyPages = Math.max(1, Math.ceil(emergencyRequests.length / itemsPerPage));
+  const totalEmergencyPages = Math.max(1, Math.ceil(safeEmergencies.length / itemsPerPage));
   const paginatedEmergencies = useMemo(() => {
     const startIndex = (emergencyPage - 1) * itemsPerPage;
-    return emergencyRequests.slice(startIndex, startIndex + itemsPerPage);
-  }, [emergencyRequests, emergencyPage]);
+    return safeEmergencies.slice(startIndex, startIndex + itemsPerPage);
+  }, [safeEmergencies, emergencyPage]);
 
   // ==============================================================
   // RENDER: LOGIN FORM
@@ -383,7 +354,7 @@ export default function Admin() {
       </div>
 
       {/* Stats Quick Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <button
           onClick={() => setAdminTab('donors')}
           className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
@@ -397,7 +368,7 @@ export default function Admin() {
               {t('manageDonorsTab')}
             </span>
             <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
-              {donors.length}
+              {safeDonors.length}
             </span>
           </div>
           <div className="p-2 sm:p-3 rounded-xl bg-red-500/5 dark:bg-red-500/10 text-red-500 shrink-0">
@@ -418,7 +389,7 @@ export default function Admin() {
               {t('manageEmergenciesTab')}
             </span>
             <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
-              {emergencyRequests.length}
+              {safeEmergencies.length}
             </span>
           </div>
           <div className="p-2 sm:p-3 rounded-xl bg-rose-500/5 dark:bg-rose-500/10 text-rose-500 shrink-0">
@@ -439,7 +410,7 @@ export default function Admin() {
               Blocked Phones
             </span>
             <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
-              {blockedPhones.length}
+              {safeBlockedPhones.length}
             </span>
           </div>
           <div className="p-2 sm:p-3 rounded-xl bg-zinc-500/5 dark:bg-zinc-500/10 text-zinc-500 shrink-0">
@@ -448,29 +419,8 @@ export default function Admin() {
         </button>
 
         <button
-          onClick={() => setAdminTab('hospitals')}
-          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
-            adminTab === 'hospitals'
-              ? 'border-emerald-500/40 ring-1 ring-emerald-500/10 shadow-md'
-              : 'hover:border-slate-300 dark:hover:border-zinc-700'
-          }`}
-        >
-          <div className="space-y-0.5 sm:space-y-1 min-w-0">
-            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
-              Manage Clinics
-            </span>
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
-              {hospitals.length}
-            </span>
-          </div>
-          <div className="p-2 sm:p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 text-emerald-500 shrink-0">
-            <Hospital className="w-4 h-4 sm:w-6 sm:h-6" />
-          </div>
-        </button>
-
-        <button
           onClick={() => setAdminTab('support')}
-          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer col-span-2 sm:col-span-1 ${
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
             adminTab === 'support'
               ? 'border-blue-500/40 ring-1 ring-blue-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
@@ -481,7 +431,7 @@ export default function Admin() {
               Support Tickets
             </span>
             <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
-              {supportRequests.length}
+              {safeSupportRequests.length}
             </span>
           </div>
           <div className="p-2 sm:p-3 rounded-xl bg-blue-500/5 dark:bg-blue-500/10 text-blue-500 shrink-0">
@@ -584,40 +534,6 @@ export default function Admin() {
             >
               <CheckCircle className="w-3.5 h-3.5" />
               Confirm Unblock
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Clinic Verification Confirmation Alert Banner */}
-      {confirmClinicVerification && (
-        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-300 dark:border-blue-900 text-blue-800 dark:text-blue-300 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-            <div className="text-left">
-              <h4 className="font-bold text-sm">Are you sure?</h4>
-              <p className="text-xs text-blue-700/80 dark:text-blue-300/80 mt-0.5">
-                You are about to <span className="font-extrabold uppercase">{confirmClinicVerification.nextStatus ? 'approve' : 'revoke'}</span> verification for the clinic <span className="font-bold">"{confirmClinicVerification.name}"</span>.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2 self-end sm:self-center">
-            <button
-              onClick={() => setConfirmClinicVerification(null)}
-              className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={async () => {
-                const clinic = confirmClinicVerification;
-                setConfirmClinicVerification(null);
-                await executeClinicVerification(clinic.id, clinic.nextStatus);
-              }}
-              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md cursor-pointer"
-            >
-              <CheckCircle className="w-3.5 h-3.5" />
-              Confirm Changes
             </button>
           </div>
         </div>
@@ -808,7 +724,7 @@ export default function Admin() {
               </h3>
             </div>
             
-            {emergencyRequests.length === 0 ? (
+            {safeEmergencies.length === 0 ? (
               <div className="p-8 text-center text-sm text-slate-500 dark:text-zinc-400">
                 {t('noActiveEmergencies')}
               </div>
@@ -988,9 +904,9 @@ export default function Admin() {
                 </div>
               )}
 
-              {blockedLoading && blockedPhones.length === 0 ? (
+              {blockedLoading && safeBlockedPhones.length === 0 ? (
                 <p className="text-xs text-slate-400 dark:text-zinc-500 font-semibold py-4">Loading blocked list...</p>
-              ) : blockedPhones.length === 0 ? (
+              ) : safeBlockedPhones.length === 0 ? (
                 <p className="text-xs text-slate-400 dark:text-zinc-500 font-semibold py-4">No blocked phone numbers.</p>
               ) : (
               <>
@@ -1007,7 +923,7 @@ export default function Admin() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-zinc-900 text-slate-700 dark:text-zinc-350">
-                    {blockedPhones.map((b) => (
+                    {safeBlockedPhones.map((b) => (
                       <tr key={b.phone} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
                         <td className="p-3 font-bold">{b.phone}</td>
                         <td className="p-3">{b.reason || 'Blocked by admin'}</td>
@@ -1030,7 +946,7 @@ export default function Admin() {
 
               {/* Blocked phones — Mobile cards */}
               <div className="md:hidden space-y-3">
-                {blockedPhones.map((b) => (
+                {safeBlockedPhones.map((b) => (
                   <div key={b.phone} className="glass-panel border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl p-4 space-y-3">
                     <div className="flex justify-between items-start gap-3">
                       <div className="space-y-0.5">
@@ -1062,132 +978,6 @@ export default function Admin() {
           </div>
         )}
 
-        {adminTab === 'hospitals' && (
-          <div className="space-y-4">
-            <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 text-left">
-              <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
-                Clinic & Hospital Verification Console
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-500 mt-1 font-semibold">
-                Manage registered hospital accounts, verify their status, and approve or revoke stock editing access.
-              </p>
-            </div>
-
-            {hospitalsError && (
-              <div className="mx-5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950/50 text-rose-800 dark:text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
-                <span className="font-semibold">{hospitalsError}</span>
-              </div>
-            )}
-
-            {hospitalsLoading ? (
-              <div className="p-12 text-center text-slate-400 dark:text-zinc-500 font-semibold text-xs">
-                Loading hospital records...
-              </div>
-            ) : hospitals.length === 0 ? (
-              <div className="p-12 text-center text-slate-550 dark:text-zinc-450 font-semibold text-xs">
-                No clinics or hospitals registered yet.
-              </div>
-            ) : (
-              <div>
-                {/* Hospitals — Desktop table */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="min-w-full divide-y divide-slate-100 dark:divide-zinc-800">
-                    <thead className="bg-slate-50/50 dark:bg-zinc-950/40">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Hospital / Clinic Name</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Area Union</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Contact Number</th>
-                        <th className="px-6 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Verification Status</th>
-                        <th className="px-6 py-4 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-zinc-850">
-                      {hospitals.map((h) => (
-                        <tr key={h.id} className="hover:bg-slate-50/40 dark:hover:bg-zinc-900/10 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-left">
-                            <span className="font-extrabold text-sm text-slate-900 dark:text-white block">{h.name}</span>
-                            <span className="text-[10px] text-slate-400 dark:text-zinc-500">ID: {h.id}</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-xs text-slate-655 dark:text-zinc-450">
-                            {getAreaLabel(h.area, t)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-xs text-slate-655 dark:text-zinc-450">
-                            {h.contact}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
-                            {h.is_verified ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-500">
-                                <CheckCircle className="w-3.5 h-3.5" /> Approved
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-500">
-                                <AlertTriangle className="w-3.5 h-3.5 animate-pulse" /> Pending
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-semibold">
-                            <button
-                              onClick={() => handleToggleHospitalVerification(h.id, h.name, h.is_verified)}
-                              className={`px-3 py-1.5 rounded-xl font-bold transition-all text-[10px] uppercase tracking-wider cursor-pointer ${
-                                h.is_verified
-                                  ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                                  : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/15'
-                              }`}
-                            >
-                              {h.is_verified ? 'Revoke Approval' : 'Approve Clinic'}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Hospitals — Mobile cards */}
-                <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-800">
-                  {hospitals.map((h) => (
-                    <div key={h.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
-                      <div className="flex justify-between items-start gap-3">
-                        <div className="space-y-0.5 min-w-0">
-                          <span className="font-extrabold text-slate-900 dark:text-white text-sm block truncate">{h.name}</span>
-                          <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-red-500/60 shrink-0" />
-                            {getAreaLabel(h.area, t)}
-                          </span>
-                        </div>
-                        {h.is_verified ? (
-                          <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-500">
-                            <CheckCircle className="w-3 h-3" /> Approved
-                          </span>
-                        ) : (
-                          <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-500">
-                            <AlertTriangle className="w-3 h-3 animate-pulse" /> Pending
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
-                        <span className="text-xs font-bold text-slate-600 dark:text-zinc-400">{h.contact}</span>
-                        <button
-                          onClick={() => handleToggleHospitalVerification(h.id, h.name, h.is_verified)}
-                          className={`px-3 py-1.5 rounded-xl font-bold transition-all text-xs cursor-pointer ${
-                            h.is_verified
-                              ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                              : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/15'
-                          }`}
-                        >
-                          {h.is_verified ? 'Revoke' : 'Approve'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
         {adminTab === 'support' && (
           <div className="space-y-4">
             <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 text-left flex items-center justify-between">
@@ -1215,11 +1005,11 @@ export default function Admin() {
               </div>
             )}
 
-            {supportLoading && supportRequests.length === 0 ? (
+            {supportLoading && safeSupportRequests.length === 0 ? (
               <div className="p-12 text-center text-slate-400 dark:text-zinc-500 font-semibold text-xs animate-pulse">
                 Loading support requests...
               </div>
-            ) : supportRequests.length === 0 ? (
+            ) : safeSupportRequests.length === 0 ? (
               <div className="p-12 text-center text-slate-550 dark:text-zinc-450 font-semibold text-xs">
                 No support requests or problem reports found.
               </div>
@@ -1239,7 +1029,7 @@ export default function Admin() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
-                      {supportRequests.map((req) => (
+                      {safeSupportRequests.map((req) => (
                         <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
                           <td className="p-4">
                             <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${
@@ -1277,7 +1067,7 @@ export default function Admin() {
 
                 {/* Mobile View */}
                 <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
-                  {supportRequests.map((req) => (
+                  {safeSupportRequests.map((req) => (
                     <div key={req.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors text-left">
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
