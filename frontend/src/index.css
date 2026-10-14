@@ -1,0 +1,372 @@
+@import "tailwindcss";
+
+/* Google Fonts moved to index.html <link> for non-blocking load */
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary-50: #fef2f2;
+  --color-primary-100: #fee2e2;
+  --color-primary-200: #fecaca;
+  --color-primary-300: #fca5a5;
+  --color-primary-400: #f87171;
+  --color-primary-500: #ef4444;
+  --color-primary-600: #dc2626;
+  --color-primary-700: #b91c1c;
+  --color-primary-800: #991b1b;
+  --color-primary-900: #7f1d1d;
+  --color-primary-950: #450a0a;
+}
+
+@utility glass-panel {
+  @apply bg-white/80 dark:bg-zinc-950/85 border border-slate-200/50 dark:border-zinc-900/50 shadow-sm;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+@utility glass-panel-hover {
+  @apply hover:shadow-md hover:border-slate-300/50 dark:hover:border-zinc-700/50 transition-all duration-300;
+}
+
+@utility pulse-glow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
+  }
+  50% {
+    box-shadow: 0 0 6px 1px rgba(244, 63, 94, 0.25);
+  }
+}
+
+/* ===========================
+   BASE STYLES
+   =========================== */
+
+html {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  scroll-behavior: smooth;
+  /* Use dynamic viewport height for proper mobile browser chrome handling */
+  height: 100%;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  @apply bg-slate-50 text-slate-800 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-300 antialiased overflow-x-hidden;
+  min-height: 100dvh; /* dynamic viewport height — handles Safari/Chrome mobile chrome */
+  /* Safe area padding for notch / Dynamic Island / pill devices */
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ===========================
+   MOBILE BROWSER OPTIMIZATIONS
+   =========================== */
+
+/* Remove tap highlight on all mobile browsers (Safari, Chrome, Opera Mini) */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent double-tap zoom on interactive elements — improves perceived speed */
+a, button, [role="button"], input, select, textarea, label {
+  touch-action: manipulation;
+}
+
+/* iOS Safari: prevent auto-zoom on input focus (triggers at <16px font-size) */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* iOS Safari: reset default date inputs to prevent overflow and visual layout bugs */
+input[type="date"] {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.5em;
+}
+
+/* For all mobile: ensure inputs don't trigger zoom */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="date"],
+  input[type="email"],
+  input[type="number"],
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
+/* Momentum scrolling for overflow containers (Safari) */
+.overflow-x-auto,
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* GPU acceleration hint for backdrop-blur elements (reduces jank on mobile) */
+.glass-panel,
+[class*="backdrop-blur"] {
+  will-change: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* ===========================
+   ACCESSIBILITY: REDUCED MOTION
+   =========================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===========================
+   PREMIUM SCROLLBAR
+   =========================== */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-100 dark:bg-zinc-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 dark:bg-zinc-800 rounded-full hover:bg-red-500 dark:hover:bg-red-600 transition-colors;
+}
+
+/* Mobile: hide scrollbar for cleaner look but keep scrollable */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+}
+
+/* ===========================
+   ANIMATIONS
+   =========================== */
+
+@keyframes loading-bar {
+  0% {
+    left: -100%;
+    width: 50%;
+  }
+  50% {
+    left: 25%;
+    width: 70%;
+  }
+  100% {
+    left: 100%;
+    width: 50%;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mobileNavItemIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@utility animate-fade-in {
+  animation: fadeIn 0.4s ease-out both;
+}
+
+.mobile-nav-shell {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.mobile-nav-shell--open {
+  pointer-events: auto;
+}
+
+.mobile-nav-dropdown {
+  transform: translate3d(0, -100%, 0);
+  opacity: 0;
+  background: color-mix(in srgb, #ffffff 96%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid color-mix(in srgb, #e2e8f0 60%, transparent);
+  box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.28s ease-out;
+}
+
+.dark .mobile-nav-dropdown {
+  background: color-mix(in srgb, #09090b 96%, transparent);
+  border-bottom-color: color-mix(in srgb, #27272a 60%, transparent);
+  box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.35);
+}
+
+.mobile-nav-shell--open .mobile-nav-dropdown {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+.mobile-nav-dropdown__inner {
+  min-height: 0;
+  padding: 0.75rem 1rem 1.25rem 1rem;
+  transform: translate3d(0, -8px, 0);
+  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-nav-shell--open .mobile-nav-dropdown__inner {
+  transform: translate3d(0, 0, 0);
+}
+
+.mobile-nav-shell--open .mobile-nav-item {
+  animation: mobileNavItemIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.mobile-menu-icon {
+  transition:
+    opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mobile-menu-icon--menu {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.mobile-menu-icon--close {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.75);
+}
+
+.mobile-menu-icon--menu-hidden {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.75);
+}
+
+.mobile-menu-icon--close-visible {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav-shell {
+    transition: none;
+  }
+
+  .mobile-nav-dropdown,
+  .mobile-nav-dropdown__inner,
+  .mobile-menu-icon {
+    transition: none !important;
+  }
+
+  .mobile-nav-shell--open .mobile-nav-item {
+    animation: none !important;
+  }
+}
+
+@utility animate-scale-up {
+  animation: scaleUp 0.3s ease-out both;
+}
+
+@utility animate-slide-up {
+  animation: slideUp 0.4s ease-out both;
+}
+
+/* ===========================
+   HARDWARE-ACCELERATED THEME TRANSITIONS (LAG-FREE 60-120 FPS)
+   =========================== */
+
+/* GPU-composited crossfade between theme snapshots without CPU re-rasterization */
+::view-transition-old(root) {
+  animation: 200ms cubic-bezier(0.4, 0, 0.2, 1) both theme-fade-out;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  animation: 200ms cubic-bezier(0.4, 0, 0.2, 1) both theme-fade-in;
+  mix-blend-mode: normal;
+}
+
+@keyframes theme-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes theme-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Prevent CSS transitions from conflicting during snapshots */
+.theme-transitioning,
+.theme-transitioning * {
+  transition: none !important;
+}
+
+/* Silky fallback transition for browsers without View Transitions */
+.theme-smooth-transition,
+.theme-smooth-transition *,
+.theme-smooth-transition *::before,
+.theme-smooth-transition *::after {
+  transition: background-color 220ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 220ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 220ms cubic-bezier(0.4, 0, 0.2, 1),
+              fill 220ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}

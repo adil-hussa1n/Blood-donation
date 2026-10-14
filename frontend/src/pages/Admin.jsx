@@ -1,0 +1,1259 @@
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare } from 'lucide-react';
+import { useApp, BLOOD_GROUPS, normalizeDonor, getAreaLabel } from '../context/AppContext';
+
+export default function Admin() {
+  const { 
+    donors, 
+    emergencyRequests, 
+    isAdmin, 
+    loginAdminWithGoogle,
+    logoutAdmin, 
+    deleteDonor, 
+    deleteEmergencyRequest,
+    blockDonorByPhone,
+    unblockDonorByPhone,
+    getBlockedPhones,
+    getSupportRequests,
+    showToast,
+    t
+  } = useApp();
+
+  // Dashboard view state: 'donors' or 'emergencies' or 'blocked'
+  const [adminTab, setAdminTab] = useState('donors');
+  
+  // Blood group filter in Donors view
+  const [bloodGroupFilter, setBloodGroupFilter] = useState(''); // '' means All
+
+  // Blocked phone states
+  const [blockedPhones, setBlockedPhones] = useState([]);
+  const [blockedLoading, setBlockedLoading] = useState(false);
+  const [blockedError, setBlockedError] = useState(null);
+  const [phoneToBlock, setPhoneToBlock] = useState('');
+  const [blockReason, setBlockReason] = useState('');
+
+  // Inline Confirmation Banner States
+  const [confirmUnblockPhone, setConfirmUnblockPhone] = useState(null);
+  const [confirmBlockData, setConfirmBlockData] = useState(null);
+
+  const fetchBlockedPhones = async () => {
+    setBlockedLoading(true);
+    setBlockedError(null);
+    const res = await getBlockedPhones();
+    if (res.success) {
+      setBlockedPhones(res.data || []);
+    } else {
+      setBlockedError(res.error?.message || "Failed to fetch blocked phone numbers.");
+    }
+    setBlockedLoading(false);
+  };
+
+  const [supportRequests, setSupportRequests] = useState([]);
+  const [supportLoading, setSupportLoading] = useState(false);
+  const [supportError, setSupportError] = useState(null);
+
+  const fetchSupportRequests = async () => {
+    setSupportLoading(true);
+    setSupportError(null);
+    const res = await getSupportRequests();
+    if (res.error) {
+      setSupportError(res.error.message || "Failed to fetch support requests.");
+    } else if (res.data) {
+      setSupportRequests(res.data);
+    }
+    setSupportLoading(false);
+  };
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchBlockedPhones();
+      fetchSupportRequests();
+    }
+  }, [isAdmin]);
+
+  const handleBlockPhone = (e) => {
+    e.preventDefault();
+    if (!phoneToBlock.trim()) return;
+
+    const phoneRegex = /^01[3-9]\d{8}$/;
+    if (!phoneRegex.test(phoneToBlock.trim())) {
+      showToast("Invalid phone number. Must be a valid 11-digit Bangladeshi number starting with 013-019.", 'warning');
+      return;
+    }
+
+    setConfirmBlockData({ phone: phoneToBlock.trim(), reason: blockReason.trim() });
+  };
+
+  const executeBlock = async (phone, reason) => {
+    setBlockedLoading(true);
+    const res = await blockDonorByPhone(phone, reason || 'Blocked by admin');
+    if (res.success) {
+      setPhoneToBlock('');
+      setBlockReason('');
+      await fetchBlockedPhones();
+      showToast("Phone number blocked successfully.", 'success');
+    } else {
+      showToast("Failed to block phone: " + (res.error?.message || "unknown error"), 'error');
+    }
+    setBlockedLoading(false);
+  };
+
+  const handleUnblockPhone = (phone) => {
+    setConfirmUnblockPhone(phone);
+  };
+
+  const executeUnblock = async (phone) => {
+    setBlockedLoading(true);
+    const res = await unblockDonorByPhone(phone);
+    if (res.success) {
+      await fetchBlockedPhones();
+      showToast("Phone number unblocked successfully.", 'success');
+    } else {
+      showToast("Failed to unblock phone: " + (res.error?.message || "unknown error"), 'error');
+    }
+    setBlockedLoading(false);
+  };
+
+  // Modal / Confirm state
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [confirmDeleteType, setConfirmDeleteType] = useState(null); // 'donor' or 'emergency'
+  const [deleting, setDeleting] = useState(false);
+
+  // Google Admin Login states & logic
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState('');
+  const [hasRenderedGoogleBtn, setHasRenderedGoogleBtn] = useState(false);
+  const [showSimModal, setShowSimModal] = useState(false);
+  const [simEmail, setSimEmail] = useState('adilh5353@gmail.com');
+  const googleBtnRef = useRef(null);
+
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+  const isRealGoogleConfigured = clientId && clientId.trim() !== '' && !clientId.includes('YOUR_GOOGLE_CLIENT_ID');
+
+  useEffect(() => {
+    if (!isAdmin && isRealGoogleConfigured && typeof window !== 'undefined') {
+      const initGsi = () => {
+        if (window.google?.accounts?.id) {
+          try {
+            window.google.accounts.id.initialize({
+              client_id: clientId,
+              callback: async (response) => {
+                if (response.credential) {
+                  await handleAdminGoogleCredential(response.credential);
+                }
+              },
+            });
+
+            if (googleBtnRef.current) {
+              googleBtnRef.current.innerHTML = '';
+              window.google.accounts.id.renderButton(googleBtnRef.current, {
+                theme: 'outline',
+                size: 'large',
+                width: 320,
+                text: 'signin_with',
+                shape: 'pill',
+                logo_alignment: 'left',
+              });
+              setHasRenderedGoogleBtn(true);
+            }
+          } catch (err) {
+            console.warn('Admin Google Identity initialization error:', err);
+          }
+        }
+      };
+
+      if (window.google?.accounts?.id) {
+        initGsi();
+      } else {
+        const interval = setInterval(() => {
+          if (window.google?.accounts?.id) {
+            clearInterval(interval);
+            initGsi();
+          }
+        }, 200);
+        return () => clearInterval(interval);
+      }
+    }
+  }, [isAdmin, clientId, isRealGoogleConfigured]);
+
+  const handleAdminGoogleCredential = async (credential) => {
+    setGoogleLoading(true);
+    setGoogleError('');
+    try {
+      const res = await loginAdminWithGoogle({ credential });
+      if (!res.success) {
+        setGoogleError(res.error?.message || 'Access Denied: This Google account is not authorized as an administrator.');
+      }
+    } catch (err) {
+      setGoogleError(err.message || 'Google sign-in failed.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleSimulatedGoogleSubmit = async (e) => {
+    e.preventDefault();
+    setGoogleLoading(true);
+    setGoogleError('');
+    setShowSimModal(false);
+    try {
+      const res = await loginAdminWithGoogle({
+        user: {
+          email: simEmail.trim().toLowerCase(),
+          name: 'Adil Hussain (Admin)',
+          sub: 'google_admin_simulated',
+        }
+      });
+      if (!res.success) {
+        setGoogleError(res.error?.message || `Access Denied: The Google account (${simEmail}) is not authorized as an administrator.`);
+      }
+    } catch (err) {
+      setGoogleError(err.message || 'Google authentication failed.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const startDeleteConfirm = (id, type) => {
+    setConfirmDeleteId(id);
+    setConfirmDeleteType(type);
+  };
+
+  const cancelDeleteConfirm = () => {
+    setConfirmDeleteId(null);
+    setConfirmDeleteType(null);
+  };
+
+  const executeDelete = async () => {
+    if (!confirmDeleteId || !confirmDeleteType) return;
+    setDeleting(true);
+    
+    try {
+      if (confirmDeleteType === 'donor') {
+        const res = await deleteDonor(confirmDeleteId);
+        if (!res.success) {
+          showToast(t('errorDeletingDonorPrefix') + res.error, 'error');
+        }
+      } else if (confirmDeleteType === 'emergency') {
+        const res = await deleteEmergencyRequest(confirmDeleteId);
+        if (!res.success) {
+          showToast(t('errorDeletingRequestPrefix') + res.error, 'error');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeleting(false);
+      setConfirmDeleteId(null);
+      setConfirmDeleteType(null);
+    }
+  };
+
+  // Safe array references
+  const safeDonors = useMemo(() => (donors || []).map(normalizeDonor), [donors]);
+  const safeEmergencies = useMemo(() => emergencyRequests || [], [emergencyRequests]);
+  const safeBlockedPhones = useMemo(() => blockedPhones || [], [blockedPhones]);
+  const safeSupportRequests = useMemo(() => supportRequests || [], [supportRequests]);
+
+  // Filtered Donors list for Admin
+  const adminFilteredDonors = useMemo(() => {
+    return safeDonors.filter((d) => {
+      return bloodGroupFilter ? d.blood_group === bloodGroupFilter : true;
+    });
+  }, [safeDonors, bloodGroupFilter]);
+
+  // Compute counts for each blood group
+  const groupCounts = useMemo(() => {
+    const counts = { All: safeDonors.length };
+    BLOOD_GROUPS.forEach(g => {
+      counts[g] = safeDonors.filter(d => d.blood_group === g).length;
+    });
+    return counts;
+  }, [safeDonors]);
+
+  // Pagination for Donors
+  const [donorPage, setDonorPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Reset page when blood group filter changes or donors count changes
+  useEffect(() => {
+    setDonorPage(1);
+  }, [bloodGroupFilter, safeDonors.length]);
+
+  const totalDonorPages = Math.max(1, Math.ceil(adminFilteredDonors.length / itemsPerPage));
+  const paginatedDonors = useMemo(() => {
+    const startIndex = (donorPage - 1) * itemsPerPage;
+    return adminFilteredDonors.slice(startIndex, startIndex + itemsPerPage);
+  }, [adminFilteredDonors, donorPage]);
+
+  // Pagination for Emergencies
+  const [emergencyPage, setEmergencyPage] = useState(1);
+
+  // Reset page when emergencies count changes
+  useEffect(() => {
+    setEmergencyPage(1);
+  }, [safeEmergencies.length]);
+
+  const totalEmergencyPages = Math.max(1, Math.ceil(safeEmergencies.length / itemsPerPage));
+  const paginatedEmergencies = useMemo(() => {
+    const startIndex = (emergencyPage - 1) * itemsPerPage;
+    return safeEmergencies.slice(startIndex, startIndex + itemsPerPage);
+  }, [safeEmergencies, emergencyPage]);
+
+  // ==============================================================
+  // RENDER: LOGIN FORM
+  // ==============================================================
+  if (!isAdmin) {
+    return (
+      <div className="max-w-md mx-auto py-12 px-4 sm:px-0">
+        <div className="glass-panel rounded-3xl p-6 md:p-8 border border-slate-200/60 dark:border-zinc-800 space-y-6 shadow-2xl relative overflow-hidden bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl animate-fade-in">
+          {/* Top Decorative Crimson Accent Bar */}
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-red-600" />
+
+          {/* Header */}
+          <div className="text-center space-y-3 pt-2">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-red-500/25 relative group">
+              <Shield className="w-7 h-7" />
+              <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center text-[10px] shadow-xs">
+                🔒
+              </span>
+            </div>
+
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {t('adminAuthTitle')}
+              </h2>
+              <span className="text-[10px] font-extrabold text-red-600 dark:text-red-400 uppercase tracking-widest block">
+                {t('adminPortalSub')}
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
+              Sign in with your authorized administrator Google account to access moderator records.
+            </p>
+          </div>
+
+          {/* Single Account Security Enforcement Notice */}
+          <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-3 flex items-start gap-2.5 text-left">
+            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0 mt-1" />
+            <p className="text-[11px] text-amber-800 dark:text-amber-300 font-semibold leading-normal">
+              <strong className="font-bold">Strict 1-Account Enforcement:</strong> Access is locked exclusively to the configured administrator Google account. Unauthorized accounts are strictly rejected.
+            </p>
+          </div>
+
+          {/* Google Error Banner */}
+          {googleError && (
+            <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-900/60 text-rose-800 dark:text-rose-300 p-4 rounded-2xl text-xs flex items-start gap-3 text-left">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+              <div className="space-y-1">
+                <span className="font-bold block">Access Denied</span>
+                <span className="font-medium text-[11px] leading-relaxed block">{googleError}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Google Authentication Actions - Displays exactly ONE button */}
+          <div className="pt-2 flex flex-col items-center justify-center w-full">
+            {/* Real Google Button Container when initialized */}
+            <div 
+              ref={googleBtnRef} 
+              className={hasRenderedGoogleBtn ? 'flex justify-center w-full min-h-[44px]' : 'hidden'} 
+            />
+
+            {/* Direct Google Sign In Button - Only shown when Google Identity iframe is not rendered */}
+            {!hasRenderedGoogleBtn && (
+              <button
+                type="button"
+                disabled={googleLoading}
+                onClick={() => {
+                  if (window.google?.accounts?.id && isRealGoogleConfigured) {
+                    window.google.accounts.id.prompt();
+                  } else {
+                    setShowSimModal(true);
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-2xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 hover:border-red-500/40 dark:hover:border-red-500/40 text-slate-800 dark:text-white font-bold text-xs shadow-xs hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+              >
+                {/* Google G Logo SVG */}
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <span>{googleLoading ? 'Verifying Google Account...' : 'Sign in with Google'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Development / Testing Google Auth Modal */}
+        {showSimModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in text-left">
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl animate-scale-up">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">Admin Google Sign-In</h3>
+                    <p className="text-[10px] text-slate-400 dark:text-zinc-500">Test or verify admin authorization</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSimModal(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSimulatedGoogleSubmit} className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                    Google Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={simEmail}
+                    onChange={(e) => setSimEmail(e.target.value)}
+                    placeholder="e.g. adilh5353@gmail.com"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-red-500"
+                  />
+                  <p className="text-[10px] text-slate-400 dark:text-zinc-500">
+                    Pre-set with authorized admin email. Try entering another email to test unauthorized rejection.
+                  </p>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSimModal(false)}
+                    className="flex-1 py-2 px-3 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={googleLoading}
+                    className="flex-1 py-2 px-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {googleLoading ? 'Verifying...' : 'Authorize Admin'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ==============================================================
+  // RENDER: ADMIN PANEL DASHBOARD
+  // ==============================================================
+  return (
+    <div className="space-y-5 sm:space-y-8 max-w-6xl mx-auto relative">
+      
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 bg-slate-100 dark:bg-zinc-900/50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200/50 dark:border-zinc-800/30">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-red-500 text-white flex items-center justify-center shadow-md shrink-0">
+            <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
+          </div>
+          <div className="text-left">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              {t('adminDashboardTitle')}
+            </h2>
+            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-400 font-semibold uppercase tracking-wider mt-0.5">
+              {t('moderatorControlsText')}
+            </p>
+          </div>
+        </div>
+        
+        <button
+          onClick={logoutAdmin}
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 dark:text-rose-400 rounded-xl text-xs font-bold transition-all self-start sm:self-auto"
+        >
+          <LogOut className="w-4 h-4" />
+          {t('exitAdminButton')}
+        </button>
+      </div>
+
+      {/* Stats Quick Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <button
+          onClick={() => setAdminTab('donors')}
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+            adminTab === 'donors'
+              ? 'border-red-500/40 ring-1 ring-red-500/10 shadow-md'
+              : 'hover:border-slate-300 dark:hover:border-zinc-700'
+          }`}
+        >
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
+              {t('manageDonorsTab')}
+            </span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+              {safeDonors.length}
+            </span>
+          </div>
+          <div className="p-2 sm:p-3 rounded-xl bg-red-500/5 dark:bg-red-500/10 text-red-500 shrink-0">
+            <Heart className="w-4 h-4 sm:w-6 sm:h-6" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('emergencies')}
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+            adminTab === 'emergencies'
+              ? 'border-rose-500/40 ring-1 ring-rose-500/10 shadow-md'
+              : 'hover:border-slate-300 dark:hover:border-zinc-700'
+          }`}
+        >
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
+              {t('manageEmergenciesTab')}
+            </span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+              {safeEmergencies.length}
+            </span>
+          </div>
+          <div className="p-2 sm:p-3 rounded-xl bg-rose-500/5 dark:bg-rose-500/10 text-rose-500 shrink-0">
+            <Flame className="w-4 h-4 sm:w-6 sm:h-6" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('blocked')}
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+            adminTab === 'blocked'
+              ? 'border-zinc-500/40 ring-1 ring-zinc-500/10 shadow-md'
+              : 'hover:border-slate-300 dark:hover:border-zinc-700'
+          }`}
+        >
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
+              Blocked Phones
+            </span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+              {safeBlockedPhones.length}
+            </span>
+          </div>
+          <div className="p-2 sm:p-3 rounded-xl bg-zinc-500/5 dark:bg-zinc-500/10 text-zinc-500 shrink-0">
+            <Ban className="w-4 h-4 sm:w-6 sm:h-6" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('support')}
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+            adminTab === 'support'
+              ? 'border-blue-500/40 ring-1 ring-blue-500/10 shadow-md'
+              : 'hover:border-slate-300 dark:hover:border-zinc-700'
+          }`}
+        >
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
+              Support Tickets
+            </span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+              {safeSupportRequests.length}
+            </span>
+          </div>
+          <div className="p-2 sm:p-3 rounded-xl bg-blue-500/5 dark:bg-blue-500/10 text-blue-500 shrink-0">
+            <MessageSquare className="w-4 h-4 sm:w-6 sm:h-6" />
+          </div>
+        </button>
+      </div>
+
+      {/* Delete Confirmation Alert Banner */}
+      {confirmDeleteId && (
+        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-300 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+            <div className="text-left">
+              <h4 className="font-bold text-sm">{t('areYouSureTitle')}</h4>
+              <p className="text-xs text-rose-700/80 dark:text-rose-300/80 mt-0.5">
+                {t('permanentActionWarning', { type: confirmDeleteType === 'donor' ? t('registeredDonorWord') : t('emergencyRequestWord') })}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 self-end sm:self-center">
+            <button
+              onClick={cancelDeleteConfirm}
+              className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            >
+              {t('cancelButton')}
+            </button>
+            <button
+              onClick={executeDelete}
+              disabled={deleting}
+              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {deleting ? t('deletingButton') : t('confirmDeleteButton')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Block Confirmation Alert Banner */}
+      {confirmBlockData && (
+        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-300 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+            <div className="text-left">
+              <h4 className="font-bold text-sm">Are you absolutely sure?</h4>
+              <p className="text-xs text-rose-700/80 dark:text-rose-300/80 mt-0.5">
+                You are about to block the phone number <span className="font-extrabold">{confirmBlockData.phone}</span>. If they have an active session, they will be logged out and prohibited from registering or creating emergency posts.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 self-end sm:self-center">
+            <button
+              onClick={() => setConfirmBlockData(null)}
+              className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                const data = confirmBlockData;
+                setConfirmBlockData(null);
+                await executeBlock(data.phone, data.reason);
+              }}
+              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md cursor-pointer"
+            >
+              <Ban className="w-3.5 h-3.5" />
+              Confirm Block
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Unblock Confirmation Alert Banner */}
+      {confirmUnblockPhone && (
+        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-900 text-amber-800 dark:text-amber-350 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="text-left">
+              <h4 className="font-bold text-sm">Are you sure?</h4>
+              <p className="text-xs text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+                You are about to unblock the phone number <span className="font-bold">{confirmUnblockPhone}</span>. This will restore their access to register, login, and post emergency requests.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 self-end sm:self-center">
+            <button
+              onClick={() => setConfirmUnblockPhone(null)}
+              className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                const phone = confirmUnblockPhone;
+                setConfirmUnblockPhone(null);
+                await executeUnblock(phone);
+              }}
+              className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md cursor-pointer"
+            >
+              <CheckCircle className="w-3.5 h-3.5" />
+              Confirm Unblock
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Tables */}
+      <div className="glass-panel border rounded-3xl overflow-hidden">
+        {adminTab === 'donors' && (
+          <div className="space-y-4">
+            
+            {/* Header with categories */}
+            <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 space-y-4 text-left">
+              <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
+                {t('donorRecordsHeader')}
+              </h3>
+              
+              {/* Category selector */}
+              <div className="flex flex-wrap gap-2 items-center animate-fade-in">
+                <span className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mr-2">
+                  {t('categoryLabel')}
+                </span>
+                
+                {/* All pill */}
+                <button
+                  onClick={() => setBloodGroupFilter('')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    bloodGroupFilter === ''
+                      ? 'bg-red-500 text-white shadow-sm shadow-red-500/10'
+                      : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200'
+                  }`}
+                >
+                  {t('allCategoryPill')} ({groupCounts.All})
+                </button>
+
+                {/* Blood Group pills */}
+                {BLOOD_GROUPS.map(group => (
+                  <button
+                    key={group}
+                    onClick={() => setBloodGroupFilter(group)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      bloodGroupFilter === group
+                        ? 'bg-red-500 text-white shadow-sm shadow-red-500/10'
+                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200'
+                    }`}
+                  >
+                    {group} ({groupCounts[group]})
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {adminFilteredDonors.length === 0 ? (
+              <div className="p-8 text-center text-sm text-slate-500 dark:text-zinc-400">
+                {t('noDonorsInCategory', { category: bloodGroupFilter || t('allCategoryPill') })}
+              </div>
+            ) : (
+              <>
+                <div className="animate-fade-in">
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse table-fixed">
+                      <thead>
+                        <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                          <th className="p-4 w-[22%]">{t('nameHeader')}</th>
+                          <th className="p-4 w-[12%]">{t('bloodGroupHeader')}</th>
+                          <th className="p-4 w-[18%]">{t('phoneHeader')}</th>
+                          <th className="p-4 w-[22%]">{t('areaHeader')}</th>
+                          <th className="p-4 w-[14%]">{t('donationsHeader')}</th>
+                          <th className="p-4 w-[12%] text-center">{t('actionsHeader')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                        {paginatedDonors.map((donor) => (
+                          <tr key={donor.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                            <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={donor.name}>
+                              {donor.name}
+                            </td>
+                            <td className="p-4">
+                              <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-2 py-0.5 rounded-md text-xs">
+                                {donor.blood_group}
+                              </span>
+                            </td>
+                            <td className="p-4 truncate overflow-hidden">{donor.phone}</td>
+                            <td className="p-4 truncate overflow-hidden" title={getAreaLabel(donor.area, t)}>
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
+                                <span className="truncate">{getAreaLabel(donor.area, t)}</span>
+                              </span>
+                            </td>
+                            <td className="p-4 font-semibold">
+                              <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 font-black text-sm border border-red-500/15 mr-2">
+                                {normalizeDonor(donor).total_donations}
+                              </span>
+                              {t('timesUnit', { count: normalizeDonor(donor).total_donations })}
+                            </td>
+                            <td className="p-4 text-center">
+                              <button
+                                onClick={() => startDeleteConfirm(donor.id, 'donor')}
+                                className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all cursor-pointer"
+                                title="Delete fake/spam donor"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Stack Card View */}
+                  <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
+                    {paginatedDonors.map((donor) => (
+                      <div key={donor.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div className="text-left space-y-1">
+                            <span className="font-extrabold text-slate-900 dark:text-white text-base block">
+                              {donor.name}
+                            </span>
+                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                              {donor.phone}
+                            </span>
+                          </div>
+                          <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-3 py-1 rounded-lg text-xs">
+                            {donor.blood_group}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-xs text-slate-650 dark:text-zinc-300 pt-1">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
+                            <span className="font-medium">{getAreaLabel(donor.area, t)}</span>
+                          </span>
+                          <span className="font-bold bg-slate-100 dark:bg-zinc-800/60 px-2 py-0.5 rounded-md text-[11px]">
+                            {t('timesUnit', { count: normalizeDonor(donor).total_donations })}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-end pt-1">
+                          <button
+                            onClick={() => startDeleteConfirm(donor.id, 'donor')}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            {t('deleteDonorAction')}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              {/* Pagination Controls */}
+              {totalDonorPages > 1 && (
+                <div className="flex justify-between items-center p-5 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
+                  <button
+                    type="button"
+                    onClick={() => setDonorPage(prev => Math.max(1, prev - 1))}
+                    disabled={donorPage === 1}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    {t('previousPage')}
+                  </button>
+                  <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
+                    {t('pageIndicator', { current: donorPage, total: totalDonorPages })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setDonorPage(prev => Math.min(totalDonorPages, prev + 1))}
+                    disabled={donorPage === totalDonorPages}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {t('nextPage')}
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+          </div>
+        )}
+
+        {adminTab === 'emergencies' && (
+          <div className="space-y-4">
+            <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 flex items-center justify-between">
+              <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
+                {t('activeEmergencyRecordsHeader')}
+              </h3>
+            </div>
+            
+            {safeEmergencies.length === 0 ? (
+              <div className="p-8 text-center text-sm text-slate-500 dark:text-zinc-400">
+                {t('noActiveEmergencies')}
+              </div>
+            ) : (
+              <>
+                <div className="animate-fade-in">
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse table-fixed">
+                      <thead>
+                        <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                          <th className="p-4 w-[12%]">{t('bloodNeededHeader')}</th>
+                          <th className="p-4 w-[22%]">{t('hospitalAreaHeader')}</th>
+                          <th className="p-4 w-[16%]">{t('contactPhoneHeader')}</th>
+                          <th className="p-4 w-[24%]">{t('noteDetailsHeader')}</th>
+                          <th className="p-4 w-[14%]">{t('postedDateHeader')}</th>
+                          <th className="p-4 w-[12%] text-center">{t('actionsHeader')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                        {paginatedEmergencies.map((req) => (
+                          <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                            <td className="p-4">
+                              <span className="bg-red-500 text-white font-extrabold px-2.5 py-0.5 rounded-lg text-xs">
+                                {req.blood_group}
+                              </span>
+                            </td>
+                            <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={getAreaLabel(req.area, t)}>{getAreaLabel(req.area, t)}</td>
+                            <td className="p-4 truncate overflow-hidden">{req.contact}</td>
+                            <td className="p-4 truncate overflow-hidden" title={req.note}>
+                              {req.note || t('noDescription')}
+                            </td>
+                            <td className="p-4 text-xs text-slate-400 dark:text-zinc-500">
+                              {new Date(req.created_at).toLocaleString()}
+                            </td>
+                            <td className="p-4 text-center">
+                              <button
+                                onClick={() => startDeleteConfirm(req.id, 'emergency')}
+                                className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all cursor-pointer"
+                                title="Delete emergency request"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Stack Card View */}
+                  <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
+                    {paginatedEmergencies.map((req) => (
+                      <div key={req.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div className="text-left space-y-1">
+                            <span className="font-extrabold text-slate-900 dark:text-white text-base block">
+                              {getAreaLabel(req.area, t)}
+                            </span>
+                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                              {req.contact}
+                            </span>
+                          </div>
+                          <span className="bg-red-500 text-white font-black px-3 py-1 rounded-lg text-xs">
+                            {req.blood_group}
+                          </span>
+                        </div>
+
+                        {req.note && (
+                          <p className="text-xs text-slate-650 dark:text-zinc-355 bg-slate-50 dark:bg-zinc-900/40 p-2.5 rounded-xl border border-slate-200/20 dark:border-zinc-800/30 text-left leading-normal">
+                            {req.note}
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-zinc-500 pt-1">
+                          <span>{new Date(req.created_at).toLocaleString()}</span>
+                          <button
+                            onClick={() => startDeleteConfirm(req.id, 'emergency')}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            {t('deleteRequest')}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              {/* Pagination Controls */}
+              {totalEmergencyPages > 1 && (
+                <div className="flex justify-between items-center p-5 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
+                  <button
+                    type="button"
+                    onClick={() => setEmergencyPage(prev => Math.max(1, prev - 1))}
+                    disabled={emergencyPage === 1}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    {t('previousPage')}
+                  </button>
+                  <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
+                    {t('pageIndicator', { current: emergencyPage, total: totalEmergencyPages })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setEmergencyPage(prev => Math.min(totalEmergencyPages, prev + 1))}
+                    disabled={emergencyPage === totalEmergencyPages}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {t('nextPage')}
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+          </div>
+        )}
+
+        {adminTab === 'blocked' && (
+          <div className="space-y-6 p-5">
+            <h3 className="font-extrabold text-slate-950 dark:text-white text-base border-b border-slate-200/50 dark:border-zinc-800/50 pb-3 text-left">
+              Block Users by Phone Number
+            </h3>
+
+            {/* Block phone form */}
+            <form onSubmit={handleBlockPhone} className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-zinc-950/20 p-5 rounded-2xl border border-slate-200/50 dark:border-zinc-800/30">
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="e.g. 01712345678"
+                  value={phoneToBlock}
+                  onChange={(e) => setPhoneToBlock(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                />
+              </div>
+
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">
+                  Reason for Block (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Spam donor"
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  disabled={blockedLoading}
+                  className="w-full bg-red-500 hover:bg-red-600 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-md hover:shadow-lg transition-all text-xs cursor-pointer flex items-center justify-center gap-1.5 h-[42px]"
+                >
+                  <Ban className="w-4 h-4" />
+                  Block Phone Number
+                </button>
+              </div>
+            </form>
+
+            {/* Block list */}
+            <div className="space-y-3">
+              <h4 className="font-bold text-slate-900 dark:text-white text-sm text-left">
+                Currently Blocked Phone Numbers
+              </h4>
+
+              {blockedError && (
+                <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950/50 text-rose-800 dark:text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span className="font-semibold">{blockedError}</span>
+                </div>
+              )}
+
+              {blockedLoading && safeBlockedPhones.length === 0 ? (
+                <p className="text-xs text-slate-400 dark:text-zinc-500 font-semibold py-4">Loading blocked list...</p>
+              ) : safeBlockedPhones.length === 0 ? (
+                <p className="text-xs text-slate-400 dark:text-zinc-500 font-semibold py-4">No blocked phone numbers.</p>
+              ) : (
+              <>
+              {/* Blocked phones — Desktop table */}
+              <div className="hidden md:block overflow-x-auto border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">
+                      <th className="p-3">Phone</th>
+                      <th className="p-3">Reason</th>
+                      <th className="p-3">Blocked By</th>
+                      <th className="p-3">Blocked At</th>
+                      <th className="p-3 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-zinc-900 text-slate-700 dark:text-zinc-350">
+                    {safeBlockedPhones.map((b) => (
+                      <tr key={b.phone} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                        <td className="p-3 font-bold">{b.phone}</td>
+                        <td className="p-3">{b.reason || 'Blocked by admin'}</td>
+                        <td className="p-3">{b.blocked_by || 'Admin'}</td>
+                        <td className="p-3">{b.blocked_at ? new Date(b.blocked_at).toLocaleString() : 'N/A'}</td>
+                        <td className="p-3 text-center">
+                          <button
+                            onClick={() => handleUnblockPhone(b.phone)}
+                            disabled={blockedLoading}
+                            className="px-2.5 py-1 bg-green-500/15 hover:bg-green-500/25 text-green-600 dark:text-green-400 rounded-lg text-[10px] font-extrabold cursor-pointer transition-all border border-green-500/20 hover:scale-[1.02]"
+                          >
+                            Unblock
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Blocked phones — Mobile cards */}
+              <div className="md:hidden space-y-3">
+                {safeBlockedPhones.map((b) => (
+                  <div key={b.phone} className="glass-panel border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl p-4 space-y-3">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="space-y-0.5">
+                        <span className="font-black text-slate-900 dark:text-white text-base block">{b.phone}</span>
+                        <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">{b.reason || 'Blocked by admin'}</span>
+                      </div>
+                      <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15">
+                        BLOCKED
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
+                      <span className="text-[10px] text-slate-400 dark:text-zinc-500">
+                        {b.blocked_at ? new Date(b.blocked_at).toLocaleString() : 'N/A'}
+                      </span>
+                      <button
+                        onClick={() => handleUnblockPhone(b.phone)}
+                        disabled={blockedLoading}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/15 hover:bg-green-500/25 text-green-600 dark:text-green-400 rounded-xl text-xs font-extrabold cursor-pointer transition-all border border-green-500/20"
+                      >
+                        Unblock
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {adminTab === 'support' && (
+          <div className="space-y-4">
+            <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 text-left flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
+                  Help & Support Requests
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-zinc-500 mt-1 font-semibold">
+                  View and manage tickets submitted by donors and users seeking help or reporting problems.
+                </p>
+              </div>
+              <button
+                onClick={fetchSupportRequests}
+                disabled={supportLoading}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {supportLoading ? 'Refreshing...' : 'Refresh List'}
+              </button>
+            </div>
+
+            {supportError && (
+              <div className="mx-5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950/50 text-rose-800 dark:text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span className="font-semibold">{supportError}</span>
+              </div>
+            )}
+
+            {supportLoading && safeSupportRequests.length === 0 ? (
+              <div className="p-12 text-center text-slate-400 dark:text-zinc-500 font-semibold text-xs animate-pulse">
+                Loading support requests...
+              </div>
+            ) : safeSupportRequests.length === 0 ? (
+              <div className="p-12 text-center text-slate-550 dark:text-zinc-450 font-semibold text-xs">
+                No support requests or problem reports found.
+              </div>
+            ) : (
+              <div className="animate-fade-in">
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse table-fixed">
+                    <thead>
+                      <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                        <th className="p-4 w-[10%]">Type</th>
+                        <th className="p-4 w-[18%]">Name</th>
+                        <th className="p-4 w-[15%]">Phone</th>
+                        <th className="p-4 w-[17%]">Issue Type</th>
+                        <th className="p-4 w-[28%]">Message</th>
+                        <th className="p-4 w-[12%]">Received At</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                      {safeSupportRequests.map((req) => (
+                        <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                          <td className="p-4">
+                            <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${
+                              req.type === 'problem'
+                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                            }`}>
+                              {req.type === 'problem' ? 'Problem' : 'Support'}
+                            </span>
+                          </td>
+                          <td className="p-4 font-bold text-slate-950 dark:text-white truncate" title={req.name}>
+                            {req.name}
+                          </td>
+                          <td className="p-4">{req.phone}</td>
+                          <td className="p-4">
+                            {req.issue_type ? (
+                              <span className="bg-slate-105 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 px-2 py-0.5 rounded text-xs">
+                                {t(req.issue_type) || req.issue_type}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 dark:text-zinc-650">—</span>
+                            )}
+                          </td>
+                          <td className="p-4 truncate" title={req.message}>
+                            {req.message}
+                          </td>
+                          <td className="p-4 text-xs text-slate-400 dark:text-zinc-500">
+                            {new Date(req.created_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
+                  {safeSupportRequests.map((req) => (
+                    <div key={req.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors text-left">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <span className="font-extrabold text-slate-900 dark:text-white text-base block">
+                            {req.name}
+                          </span>
+                          <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                            {req.phone}
+                          </span>
+                        </div>
+                        <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${
+                          req.type === 'problem'
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                            : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                        }`}>
+                          {req.type === 'problem' ? 'Problem' : 'Support'}
+                        </span>
+                      </div>
+
+                      {req.issue_type && (
+                        <div className="text-xs">
+                          <span className="text-slate-400 dark:text-zinc-500 mr-1.5">Issue:</span>
+                          <span className="bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 px-2 py-0.5 rounded font-bold">
+                            {t(req.issue_type) || req.issue_type}
+                          </span>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-slate-655 dark:text-zinc-350 bg-slate-50 dark:bg-zinc-900/40 p-2.5 rounded-xl border border-slate-200/20 dark:border-zinc-800/30 leading-normal">
+                        {req.message}
+                      </p>
+
+                      <div className="text-[10px] text-slate-400 dark:text-zinc-500">
+                        Received: {new Date(req.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
