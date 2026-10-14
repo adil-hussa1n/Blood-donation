@@ -53,10 +53,11 @@ export default function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/emergency" element={<Emergency />} />
               <Route path="/support" element={<Support />} />
-              
-              {/* Obfuscated Admin route */}
-              <Route path="/adil" element={<Admin />} />
-              
+
+              {/* Admin routes: support /admin, /adil, and /darun */}
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/darun" element={<Admin />} />
+
               {/* Fallback route */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

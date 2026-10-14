@@ -251,14 +251,14 @@ export default function Layout({ children }: LayoutProps) {
               </Link>
             </div>
             <span className="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-400 font-semibold tracking-wide">
-              Designed & Developed by{' '}
+              A project of <span className="font-extrabold text-slate-800 dark:text-white">Darun tech Private Limited</span> • Designed & Developed by{' '}
               <a
-                href="https://www.adilhussa1n.online"
+                href="https://daruntech.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:underline transition-all font-extrabold"
               >
-                ADIL HUSSAIN
+                Darun tech Private Limited
               </a>
             </span>
           </div>
