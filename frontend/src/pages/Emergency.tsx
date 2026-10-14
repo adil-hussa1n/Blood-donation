@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Flame, AlertTriangle, CheckCircle2, Phone, MapPin, ClipboardList, MessageCircle, Calendar, Trash2, Key, X, Clock, Eye, EyeOff, ChevronLeft, ChevronRight, ShieldCheck, Sparkles, Check, LayoutGrid, LayoutList } from 'lucide-react';
-import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getAreaLabel } from '../context/AppContext';
+import { Flame, AlertTriangle, CheckCircle2, Phone, MapPin, ClipboardList, MessageCircle, Calendar, Trash2, Key, X, Clock, Eye, EyeOff, ChevronLeft, ChevronRight, ShieldCheck, Sparkles, Check, LayoutGrid, LayoutList, Navigation } from 'lucide-react';
+import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, getAreaLabel } from '../context/AppContext';
 import TimelineTrack from '../components/TimelineTrack';
 import EmergencyForm from '../components/EmergencyForm';
 import { EmergencyRequest } from '../types';
@@ -86,13 +86,40 @@ export default function Emergency() {
     return counts;
   }, [emergencyRequests]);
 
+  const userLocationArea = currentDonor?.area || '';
+  const userDistrictId = useMemo(() => {
+    return userLocationArea ? getDistrictForArea(userLocationArea).id : null;
+  }, [userLocationArea]);
+
   const filteredEmergencyRequests = useMemo(() => {
-    return (emergencyRequests as EmergencyRequest[]).filter((req) => {
+    const list = (emergencyRequests as EmergencyRequest[]).filter((req) => {
       const matchBlood = !feedBloodFilter || req.blood_group === feedBloodFilter;
       const matchArea = !feedAreaFilter || req.area === feedAreaFilter;
       return matchBlood && matchArea;
     });
-  }, [emergencyRequests, feedBloodFilter, feedAreaFilter]);
+
+    // If user has not picked a specific area filter, prioritize requests by user location proximity
+    return [...list].sort((a, b) => {
+      if (!feedAreaFilter && userLocationArea) {
+        const aExact = a.area && a.area.toLowerCase() === userLocationArea.toLowerCase() ? 2 : 0;
+        const bExact = b.area && b.area.toLowerCase() === userLocationArea.toLowerCase() ? 2 : 0;
+        
+        const aDistrict = userDistrictId && getDistrictForArea(a.area).id === userDistrictId ? 1 : 0;
+        const bDistrict = userDistrictId && getDistrictForArea(b.area).id === userDistrictId ? 1 : 0;
+
+        const aScore = Math.max(aExact, aDistrict);
+        const bScore = Math.max(bExact, bDistrict);
+
+        if (aScore !== bScore) {
+          return bScore - aScore;
+        }
+      }
+
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [emergencyRequests, feedBloodFilter, feedAreaFilter, userLocationArea, userDistrictId]);
 
   // Reset page when feed filters or request list changes
   useEffect(() => {

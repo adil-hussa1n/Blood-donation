@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList } from 'lucide-react';
-import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
+import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Navigation, Sparkles } from 'lucide-react';
+import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
 import QuickStats from '../components/QuickStats';
 import DonorCard from '../components/DonorCard';
 import { Donor, EmergencyRequest } from '../types';
@@ -111,10 +111,40 @@ export default function Home() {
     return filteredDonors.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredDonors, currentPage]);
 
-  // Recent Emergency Requests (limit to 3)
+  // Determine effective user location for prioritization (logged in donor area, or filtered area)
+  const userLocationArea = currentDonor?.area || appliedArea || localArea || '';
+  const userDistrictId = useMemo(() => {
+    return userLocationArea ? getDistrictForArea(userLocationArea).id : null;
+  }, [userLocationArea]);
+
+  // Recent Emergency Requests: prioritize by user location (exact upazila match > same district > others), then by recency
   const recentRequests = useMemo(() => {
-    return (emergencyRequests || []).slice(0, 3);
-  }, [emergencyRequests]);
+    if (!emergencyRequests || emergencyRequests.length === 0) return [];
+    
+    const sorted = [...(emergencyRequests as EmergencyRequest[])].sort((a, b) => {
+      if (userLocationArea) {
+        const aExact = a.area && a.area.toLowerCase() === userLocationArea.toLowerCase() ? 2 : 0;
+        const bExact = b.area && b.area.toLowerCase() === userLocationArea.toLowerCase() ? 2 : 0;
+        
+        const aDistrict = userDistrictId && getDistrictForArea(a.area).id === userDistrictId ? 1 : 0;
+        const bDistrict = userDistrictId && getDistrictForArea(b.area).id === userDistrictId ? 1 : 0;
+
+        const aScore = Math.max(aExact, aDistrict);
+        const bScore = Math.max(bExact, bDistrict);
+
+        if (aScore !== bScore) {
+          return bScore - aScore; // Highest location score first
+        }
+      }
+
+      // Secondary: Most recent first
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return timeB - timeA;
+    });
+
+    return sorted.slice(0, 3);
+  }, [emergencyRequests, userLocationArea, userDistrictId]);
 
   return (
     <div className="space-y-8">
@@ -311,51 +341,91 @@ export default function Home() {
                 </Link>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {recentRequests.map((req) => (
-                  <div key={req.id} className="bg-red-500/5 dark:bg-red-500/5 border border-red-500/10 dark:border-red-500/15 rounded-xl p-4 flex flex-col justify-between hover:border-red-500/30 transition-all hover:scale-[1.02] duration-300">
-                    <div>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="font-black text-red-500 text-lg leading-none">{req.blood_group}</span>
-                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-semibold uppercase tracking-wider">
-                          {getAreaLabel(req.area, t).split(' ')[0]}
+                {recentRequests.map((req) => {
+                  const isExactLocation = !!(userLocationArea && req.area && req.area.toLowerCase() === userLocationArea.toLowerCase());
+                  const isSameDistrict = !isExactLocation && !!(userDistrictId && getDistrictForArea(req.area).id === userDistrictId);
+                  const distBadge = getDistrictBadge(req.area, language);
+
+                  return (
+                    <div 
+                      key={req.id} 
+                      className={`relative rounded-xl p-4 flex flex-col justify-between transition-all hover:scale-[1.02] duration-300 ${
+                        isExactLocation 
+                          ? 'bg-red-500/10 dark:bg-red-500/15 border-2 border-red-500 shadow-md shadow-red-500/10 ring-1 ring-red-500/30' 
+                          : isSameDistrict
+                            ? 'bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/30 dark:border-amber-500/30'
+                            : 'bg-red-500/5 dark:bg-red-500/5 border border-red-500/10 dark:border-red-500/15 hover:border-red-500/30'
+                      }`}
+                    >
+                      {/* Proximity / Priority Ribbon */}
+                      {isExactLocation && (
+                        <div className="absolute -top-2.5 right-3 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1 border border-white/20">
+                          <Navigation className="w-2.5 h-2.5 fill-current animate-pulse" />
+                          {t('nearYouBadge')}
+                        </div>
+                      )}
+                      {isSameDistrict && (
+                        <div className="absolute -top-2.5 right-3 bg-amber-600 dark:bg-amber-500 text-white text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                          <MapPin className="w-2.5 h-2.5" />
+                          {t('sameDistrictBadge')}
+                        </div>
+                      )}
+
+                      <div>
+                        <div className="flex justify-between items-start mb-2 pt-0.5">
+                          <span className="font-black text-red-500 text-xl leading-none tracking-tight">{req.blood_group}</span>
+                          <div className="flex flex-col items-end gap-1">
+                            <span 
+                              className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded tracking-wider border ${distBadge.color.bg} ${distBadge.color.text} ${distBadge.color.border}`}
+                            >
+                              {distBadge.label}
+                            </span>
+                            <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-bold truncate max-w-[130px]">
+                              {getAreaLabel(req.area, t)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-700 dark:text-zinc-200 line-clamp-2 mb-2 font-medium">
+                          {req.note || t('noDescriptionProvided')}
+                        </p>
+                        <span className="text-[11px] text-slate-550 dark:text-zinc-450 block mb-3 font-semibold">
+                          Contact: {revealedContacts[req.id] ? req.contact : maskPhone(req.contact)}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-600 dark:text-zinc-300 line-clamp-2 mb-2 font-semibold">
-                        {req.note || t('noDescriptionProvided')}
-                      </p>
-                      <span className="text-[11px] text-slate-550 dark:text-zinc-450 block mb-3 font-semibold">
-                        Contact: {revealedContacts[req.id] ? req.contact : maskPhone(req.contact)}
-                      </span>
-                    </div>
-                    <div className="flex gap-2">
-                      {!revealedContacts[req.id] ? (
-                        <button
-                          onClick={() => setRevealedContacts(prev => ({ ...prev, [req.id]: true }))}
-                          className="text-[10px] bg-red-500 hover:bg-red-600 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-all shadow-sm cursor-pointer"
-                        >
-                          {t('showContact')}
-                        </button>
-                      ) : (
-                        <>
-                          <a 
-                            href={`tel:${req.contact}`} 
-                            className="text-[10px] bg-red-500 hover:bg-red-650 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-colors shadow-sm"
+
+                      <div className="flex gap-2">
+                        {!revealedContacts[req.id] ? (
+                          <button
+                            onClick={() => setRevealedContacts(prev => ({ ...prev, [req.id]: true }))}
+                            className="text-[10px] bg-red-500 hover:bg-red-600 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-all shadow-sm cursor-pointer"
                           >
-                            {t('call')}
-                          </a>
-                          <a 
-                            href={`https://wa.me/${req.contact.startsWith('0') ? '88' + req.contact : req.contact}`} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-colors shadow-sm"
-                          >
-                            {t('whatsapp')}
-                          </a>
-                        </>
-                      )}
+                            {t('showContact')}
+                          </button>
+                        ) : (
+                          <>
+                            <a 
+                              href={`tel:${req.contact}`} 
+                              className="text-[10px] bg-red-500 hover:bg-red-650 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-colors shadow-sm flex items-center justify-center gap-1"
+                            >
+                              <Phone className="w-3 h-3" />
+                              {t('call')}
+                            </a>
+                            <a 
+                              href={`https://wa.me/${req.contact.startsWith('0') ? '88' + req.contact : req.contact}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-colors shadow-sm flex items-center justify-center gap-1"
+                            >
+                              <MessageCircle className="w-3 h-3" />
+                              {t('whatsapp')}
+                            </a>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
