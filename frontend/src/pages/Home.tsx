@@ -9,7 +9,7 @@ import { Donor, EmergencyRequest } from '../types';
 export default function Home() {
   const { donors, emergencyRequests, currentDonor, loading, error, language, t } = useApp();
   const [filterOpen, setFilterOpen] = useState(false);
-  
+
   // Active applied filters (used for rendering the list)
   const [appliedBloodGroup, setAppliedBloodGroup] = useState('');
   const [appliedArea, setAppliedArea] = useState(currentDonor?.area || '');
@@ -27,7 +27,7 @@ export default function Home() {
       setAppliedArea(currentDonor.area);
     }
   }, [currentDonor?.area]);
-  
+
   // Security: track revealed contact numbers
   const [revealedContacts, setRevealedContacts] = useState<Record<string, boolean>>({});
 
@@ -56,12 +56,12 @@ export default function Home() {
   // Form submission / search trigger
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Apply local state buffers to active applied filters
     setAppliedBloodGroup(localBloodGroup);
     setAppliedArea(localArea);
     setAppliedSearchQuery(localSearchQuery);
-    
+
     // Smoothly scroll down to the directory title
     setTimeout(() => {
       const element = document.getElementById('donors-directory');
@@ -76,7 +76,7 @@ export default function Home() {
     setLocalBloodGroup('');
     setLocalArea('');
     setLocalSearchQuery('');
-    
+
     setAppliedBloodGroup('');
     setAppliedArea('');
     setAppliedSearchQuery('');
@@ -91,7 +91,7 @@ export default function Home() {
         const matchArea = appliedArea ? donor.area === appliedArea : true;
         const matchSearch = appliedSearchQuery
           ? donor.name.toLowerCase().includes(appliedSearchQuery.toLowerCase()) ||
-            donor.phone.includes(appliedSearchQuery)
+          donor.phone.includes(appliedSearchQuery)
           : true;
         return matchBlood && matchArea && matchSearch;
       });
@@ -120,12 +120,12 @@ export default function Home() {
   // Recent Emergency Requests: prioritize by user location (exact upazila match > same district > others), then by recency
   const recentRequests = useMemo(() => {
     if (!emergencyRequests || emergencyRequests.length === 0) return [];
-    
+
     const sorted = [...(emergencyRequests as EmergencyRequest[])].sort((a, b) => {
       if (userLocationArea) {
         const aExact = a.area && a.area.toLowerCase() === userLocationArea.toLowerCase() ? 2 : 0;
         const bExact = b.area && b.area.toLowerCase() === userLocationArea.toLowerCase() ? 2 : 0;
-        
+
         const aDistrict = userDistrictId && getDistrictForArea(a.area).id === userDistrictId ? 1 : 0;
         const bDistrict = userDistrictId && getDistrictForArea(b.area).id === userDistrictId ? 1 : 0;
 
@@ -155,14 +155,14 @@ export default function Home() {
 
         <div className="max-w-3xl relative z-10 space-y-6 text-left">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-xs font-semibold uppercase tracking-wider text-red-200">
-            <Heart className="w-3.5 h-3.5 fill-current text-red-300 animate-pulse" />
+            <Heart className="w-3.5 h-3.5 fill-current text-red-500 animate-pulse" />
             {t('empoweringCommunity')}
           </div>
-          
+
           <h1 className="text-2xl sm:text-3xl md:text-5xl font-black tracking-tight leading-tight">
             {language === 'en' ? 'Every Blood Donor is a ' : 'প্রতিটি রক্তদাতাই একজন '}<span className="text-rose-200 dark:text-red-400">{t('lifesaverWord')}</span>
           </h1>
-          
+
           <p className="text-sm sm:text-base md:text-lg text-slate-100 dark:text-zinc-300 font-medium leading-relaxed max-w-2xl">
             {t('heroDescText')}
           </p>
@@ -191,7 +191,7 @@ export default function Home() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
-        
+
         {/* Left Filters Panel */}
         <div className="lg:col-span-1 space-y-3 lg:space-y-6">
           {/* Mobile filter toggle */}
@@ -209,7 +209,7 @@ export default function Home() {
             </span>
             <span className={`text-slate-400 text-xs transition-transform duration-200 ${filterOpen ? 'rotate-180' : ''}`}>▼</span>
           </button>
-          <form 
+          <form
             onSubmit={handleSearchSubmit}
             className={`glass-panel rounded-2xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 text-left space-y-5 ${filterOpen ? 'block' : 'hidden'} lg:block`}
           >
@@ -297,11 +297,10 @@ export default function Home() {
                         type="button"
                         key={group}
                         onClick={() => setLocalBloodGroup(active ? '' : group)}
-                        className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                          active
-                            ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/10'
-                            : 'border-slate-200 dark:border-zinc-800 hover:border-red-500 dark:hover:border-red-500/50 bg-slate-50/30 dark:bg-zinc-900/30 text-slate-700 dark:text-zinc-300'
-                        }`}
+                        className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${active
+                          ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/10'
+                          : 'border-slate-200 dark:border-zinc-800 hover:border-red-500 dark:hover:border-red-500/50 bg-slate-50/30 dark:bg-zinc-900/30 text-slate-700 dark:text-zinc-300'
+                          }`}
                       >
                         {group}
                       </button>
@@ -324,7 +323,7 @@ export default function Home() {
 
         {/* Right Donors List + Emergency feed */}
         <div className="lg:col-span-3 space-y-8 text-left">
-          
+
           {/* Recent Emergencies Highlight banner */}
           {recentRequests.length > 0 && (
             <div className="glass-panel border-red-500/20 dark:border-red-500/20 rounded-3xl p-5 border relative overflow-hidden">
@@ -347,15 +346,14 @@ export default function Home() {
                   const distBadge = getDistrictBadge(req.area, language);
 
                   return (
-                    <div 
-                      key={req.id} 
-                      className={`relative rounded-xl p-4 flex flex-col justify-between transition-all hover:scale-[1.02] duration-300 ${
-                        isExactLocation 
-                          ? 'bg-red-500/10 dark:bg-red-500/15 border-2 border-red-500 shadow-md shadow-red-500/10 ring-1 ring-red-500/30' 
-                          : isSameDistrict
-                            ? 'bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/30 dark:border-amber-500/30'
-                            : 'bg-red-500/5 dark:bg-red-500/5 border border-red-500/10 dark:border-red-500/15 hover:border-red-500/30'
-                      }`}
+                    <div
+                      key={req.id}
+                      className={`relative rounded-xl p-4 flex flex-col justify-between transition-all hover:scale-[1.02] duration-300 ${isExactLocation
+                        ? 'bg-red-500/10 dark:bg-red-500/15 border-2 border-red-500 shadow-md shadow-red-500/10 ring-1 ring-red-500/30'
+                        : isSameDistrict
+                          ? 'bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/30 dark:border-amber-500/30'
+                          : 'bg-red-500/5 dark:bg-red-500/5 border border-red-500/10 dark:border-red-500/15 hover:border-red-500/30'
+                        }`}
                     >
                       {/* Proximity / Priority Ribbon */}
                       {isExactLocation && (
@@ -375,7 +373,7 @@ export default function Home() {
                         <div className="flex justify-between items-start mb-2 pt-0.5">
                           <span className="font-black text-red-500 text-xl leading-none tracking-tight">{req.blood_group}</span>
                           <div className="flex flex-col items-end gap-1">
-                            <span 
+                            <span
                               className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded tracking-wider border ${distBadge.color.bg} ${distBadge.color.text} ${distBadge.color.border}`}
                             >
                               {distBadge.label}
@@ -404,16 +402,16 @@ export default function Home() {
                           </button>
                         ) : (
                           <>
-                            <a 
-                              href={`tel:${req.contact}`} 
+                            <a
+                              href={`tel:${req.contact}`}
                               className="text-[10px] bg-red-500 hover:bg-red-650 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-colors shadow-sm flex items-center justify-center gap-1"
                             >
                               <Phone className="w-3 h-3" />
                               {t('call')}
                             </a>
-                            <a 
-                              href={`https://wa.me/${req.contact.startsWith('0') ? '88' + req.contact : req.contact}`} 
-                              target="_blank" 
+                            <a
+                              href={`https://wa.me/${req.contact.startsWith('0') ? '88' + req.contact : req.contact}`}
+                              target="_blank"
                               rel="noreferrer"
                               className="text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-center py-1.5 px-2 rounded-lg flex-1 transition-colors shadow-sm flex items-center justify-center gap-1"
                             >
@@ -445,11 +443,10 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => handleViewModeChange('table')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    viewMode === 'table'
-                      ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'table'
+                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+                    }`}
                   title={language === 'bn' ? 'টেবিল ভিউ' : 'Table View'}
                 >
                   <LayoutList className="w-3.5 h-3.5" />
@@ -458,11 +455,10 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => handleViewModeChange('grid')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    viewMode === 'grid'
-                      ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'grid'
+                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+                    }`}
                   title={language === 'bn' ? 'গ্রিড ভিউ' : 'Grid View'}
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
@@ -575,8 +571,8 @@ export default function Home() {
                                       <div className="flex items-center gap-3">
                                         {normalizedDonor.avatar_url ? (
                                           <div className="relative shrink-0">
-                                            <img 
-                                              src={normalizedDonor.avatar_url} 
+                                            <img
+                                              src={normalizedDonor.avatar_url}
                                               alt={normalizedDonor.name}
                                               referrerPolicy="no-referrer"
                                               onError={(e) => {
@@ -635,7 +631,7 @@ export default function Home() {
                                       </span>
                                     </td>
                                     <td className="py-4 px-4 align-middle whitespace-nowrap text-xs text-slate-600 dark:text-zinc-400 font-medium">
-                                      {normalizedDonor.last_donation_date 
+                                      {normalizedDonor.last_donation_date
                                         ? new Date(normalizedDonor.last_donation_date).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                                         : t('never')
                                       }

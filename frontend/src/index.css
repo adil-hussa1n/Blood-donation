@@ -56,6 +56,14 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', system-ui, -apple-system, sans-serif;
 }
 
+:root {
+  --modal-bg: #ffffff;
+}
+
+.dark {
+  --modal-bg: #18181b;
+}
+
 body {
   @apply bg-slate-50 text-slate-800 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-300 antialiased overflow-x-hidden;
   min-height: 100dvh; /* dynamic viewport height — handles Safari/Chrome mobile chrome */

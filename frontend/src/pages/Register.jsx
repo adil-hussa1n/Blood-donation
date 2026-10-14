@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, Sparkles, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel, calculateDaysSince } from '../context/AppContext';
 import { dbService } from '../services/db';
@@ -1370,9 +1371,12 @@ export default function Register() {
       )}
 
       {/* Confirmation Modal Before Logging New Donation */}
-      {showDonationConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 border border-slate-200 dark:border-zinc-800 shadow-2xl animate-scale-up relative bg-white dark:bg-zinc-900">
+      {showDonationConfirmModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/75 dark:bg-black/85 backdrop-blur-md animate-fade-in">
+          <div 
+            className="w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 border border-slate-200 dark:border-zinc-800 shadow-2xl animate-scale-up relative bg-white dark:bg-zinc-900"
+            style={{ backgroundColor: 'var(--modal-bg, #ffffff)' }}
+          >
             {/* Header Icon */}
             <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto shadow-inner">
               <History className="w-7 h-7" />
@@ -1421,7 +1425,8 @@ export default function Register() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
