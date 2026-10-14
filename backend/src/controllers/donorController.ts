@@ -348,6 +348,26 @@ export async function addDonationEvent(req: Request, res: Response): Promise<voi
       }
     }
 
+    // Cooldown Validation: Check if donor is within 90 days of last donation
+    if (donor.last_donation_date) {
+      const lastDate = new Date(donor.last_donation_date);
+      const newDate = new Date(donation_date);
+      const diffTime = newDate.getTime() - lastDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays >= 0 && diffDays < 90) {
+        const remaining = 90 - diffDays;
+        res.status(400).json({
+          data: null,
+          error: {
+            message: `Donation restricted: Mandatory recovery cooldown is active. Please wait ${remaining} more days.`,
+            daysRemaining: remaining,
+          },
+        });
+        return;
+      }
+    }
+
     const eventId = crypto.randomUUID();
     await pool.query(
       'INSERT INTO donation_history (id, donor_id, donation_date) VALUES (?, ?, ?)',

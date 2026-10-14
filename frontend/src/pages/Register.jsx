@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, Sparkles, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet } from 'lucide-react';
-import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
+import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, Sparkles, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock } from 'lucide-react';
+import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel, calculateDaysSince } from '../context/AppContext';
 import { dbService } from '../services/db';
 import GoogleAuthButton from '../components/GoogleAuthButton';
 import { appStorage as localStorage } from '../services/storage';
@@ -132,6 +132,7 @@ export default function Register() {
   
   // Add new donation event field
   const [newDonationDate, setNewDonationDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showDonationConfirmModal, setShowDonationConfirmModal] = useState(false);
 
   // ----------------------------------------
   // ACTIONS: GOOGLE AUTHENTICATION
@@ -337,9 +338,27 @@ export default function Register() {
     }
   };
 
-  const handleAddDonation = async (e) => {
+  const handleRequestDonationLog = (e) => {
     e.preventDefault();
     if (!foundDonor || !newDonationDate) return;
+
+    // Check if cooldown is currently active
+    const daysSince = calculateDaysSince(foundDonor.last_donation_date);
+    if (daysSince < 90) {
+      setErrorMsg(t('cooldownActiveDesc', {
+        date: foundDonor.last_donation_date
+          ? new Date(foundDonor.last_donation_date).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+          : ''
+      }));
+      return;
+    }
+
+    setShowDonationConfirmModal(true);
+  };
+
+  const handleConfirmAddDonation = async () => {
+    if (!foundDonor || !newDonationDate) return;
+    setShowDonationConfirmModal(false);
 
     setFormLoading(true);
     setSuccessMsg('');
@@ -826,45 +845,110 @@ export default function Register() {
             {/* Profile Update Controls & Log Donation forms */}
             <div className="md:col-span-7 space-y-6 animate-fade-in">
                 
-                {/* 1. Log Donation Event Form */}
-                <form 
-                  onSubmit={handleAddDonation}
-                  className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 font-semibold text-xs"
-                >
-                  <div className="flex items-center gap-2 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center">
-                      <History className="w-4 h-4" />
-                    </div>
-                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
-                      {t('logDonationTitle')}
-                    </h3>
-                  </div>
+                {/* 1. Log Donation Event Form with Cooldown Guard */}
+                {(() => {
+                  const daysSince = calculateDaysSince(foundDonor.last_donation_date);
+                  const isCooldown = daysSince < 90;
+                  const daysRemaining = 90 - daysSince;
+                  const cooldownEndDate = foundDonor.last_donation_date
+                    ? new Date(new Date(foundDonor.last_donation_date).getTime() + 90 * 24 * 60 * 60 * 1000)
+                    : null;
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                      {t('donationDate')}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="date"
-                        required
-                        max={new Date().toISOString().split('T')[0]}
-                        value={newDonationDate}
-                        onChange={(e) => setNewDonationDate(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white cursor-pointer"
-                      />
-                      <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                    </div>
-                  </div>
+                  return (
+                    <form 
+                      onSubmit={handleRequestDonationLog}
+                      className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 font-semibold text-xs relative overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white ${isCooldown ? 'bg-amber-500' : 'bg-emerald-500'}`}>
+                            {isCooldown ? <Clock className="w-4 h-4 animate-spin-slow" /> : <History className="w-4 h-4" />}
+                          </div>
+                          <div>
+                            <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
+                              {t('logDonationTitle')}
+                            </h3>
+                            <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+                              {language === 'bn' ? 'চিকিৎসা সুরক্ষার জন্য ৯০ দিনের কুলডাউন প্রযোজ্য' : 'Medical safety standard: 90 days cooldown'}
+                            </p>
+                          </div>
+                        </div>
 
-                  <button
-                    type="submit"
-                    disabled={formLoading}
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer"
-                  >
-                    {formLoading ? t('loggingButton') : t('logDonationButton')}
-                  </button>
-                </form>
+                        {isCooldown && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1.5 shrink-0">
+                            <Clock className="w-3 h-3 animate-pulse" />
+                            {t('daysRemainingCooldown', { days: daysRemaining })}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Cooldown Active Warning Box */}
+                      {isCooldown ? (
+                        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 space-y-2 text-xs">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-bold">{t('cooldownActiveTitle')}</p>
+                              <p className="text-[11px] text-amber-700/90 dark:text-amber-400/90 leading-relaxed mt-0.5">
+                                {t('cooldownActiveDesc', {
+                                  date: foundDonor.last_donation_date
+                                    ? new Date(foundDonor.last_donation_date).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                                    : ''
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          {cooldownEndDate && (
+                            <div className="text-[10px] font-extrabold text-amber-900 dark:text-amber-200 bg-amber-500/15 px-2.5 py-1 rounded-lg inline-block">
+                              {t('cooldownEndsOn', {
+                                date: cooldownEndDate.toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                          {t('donationDate')}
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="date"
+                            required
+                            disabled={isCooldown || formLoading}
+                            max={new Date().toISOString().split('T')[0]}
+                            value={newDonationDate}
+                            onChange={(e) => setNewDonationDate(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                          />
+                          <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isCooldown || formLoading}
+                        className={`w-full font-extrabold py-2.5 px-4 rounded-xl shadow-md active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 text-xs ${
+                          isCooldown
+                            ? 'bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 cursor-not-allowed border border-slate-300/40 dark:border-zinc-700/40 shadow-none'
+                            : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/10 hover:shadow-emerald-500/20 cursor-pointer disabled:opacity-50'
+                        }`}
+                      >
+                        {isCooldown ? (
+                          <>
+                            <Clock className="w-4 h-4 text-amber-500" />
+                            <span>{t('cooldownRestrictedNotice')}</span>
+                          </>
+                        ) : formLoading ? (
+                          t('loggingButton')
+                        ) : (
+                          t('logDonationButton')
+                        )}
+                      </button>
+                    </form>
+                  );
+                })()}
 
                 {/* 2. Edit Profile Form */}
                 <form 
@@ -1203,6 +1287,61 @@ export default function Register() {
               >
                 <Save className="w-4 h-4" />
                 Print / Save PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal Before Logging New Donation */}
+      {showDonationConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 border border-slate-200 dark:border-zinc-800 shadow-2xl animate-scale-up relative bg-white/95 dark:bg-zinc-900/95">
+            {/* Header Icon */}
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto shadow-inner">
+              <History className="w-7 h-7" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                {t('confirmDonationModalTitle')}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-300 font-medium">
+                {t('confirmDonationModalDesc', {
+                  date: newDonationDate
+                    ? new Date(newDonationDate).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                    : ''
+                })}
+              </p>
+            </div>
+
+            {/* Warning Callout Box */}
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-800 dark:text-amber-300 text-xs space-y-1.5 leading-relaxed">
+              <div className="flex items-center gap-2 font-bold text-amber-700 dark:text-amber-400">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{language === 'bn' ? '৯০ দিনের কুলডাউন প্রযোজ্য হবে' : 'Mandatory 90-Day Cooldown'}</span>
+              </div>
+              <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 font-medium">
+                {t('confirmDonationCooldownWarning')}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDonationConfirmModal(false)}
+                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold text-xs transition-colors cursor-pointer"
+              >
+                {t('confirmDonationCancelButton')}
+              </button>
+              <button
+                type="button"
+                disabled={formLoading}
+                onClick={handleConfirmAddDonation}
+                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {formLoading ? t('loggingButton') : t('confirmDonationProceedButton')}
               </button>
             </div>
           </div>

@@ -334,6 +334,16 @@ export const TRANSLATIONS = {
     totalDonationsCount: 'Total Donations',
     times: 'times',
     never: 'Not Mentioned',
+    confirmDonationModalTitle: 'Confirm Blood Donation',
+    confirmDonationModalDesc: 'Are you sure you want to log a new blood donation on {date}?',
+    confirmDonationCooldownWarning: 'Important: Once logged, medical safety rules require a mandatory 90-day cooldown period. Your profile will be marked unavailable for donation during this time.',
+    confirmDonationProceedButton: 'Yes, Confirm & Enter Cooldown',
+    confirmDonationCancelButton: 'Cancel',
+    cooldownActiveTitle: 'Donation Cooldown Active',
+    cooldownActiveDesc: 'You recently donated blood on {date}. For your health and medical safety, you cannot log another donation until your 90-day recovery cooldown ends.',
+    daysRemainingCooldown: '{days} days remaining until eligible',
+    cooldownEndsOn: 'Cooldown ends on {date}',
+    cooldownRestrictedNotice: 'Donation Logging Restricted During Cooldown',
 
     // Emergency Page
     emergencyTitle: 'Emergency Blood Requests',
@@ -723,6 +733,16 @@ export const TRANSLATIONS = {
     totalDonationsCount: 'মোট রক্তদান',
     times: 'বার',
     never: 'উল্লেখ নেই',
+    confirmDonationModalTitle: 'রক্তদানের তথ্য নিশ্চিতকরণ',
+    confirmDonationModalDesc: 'আপনি কি নিশ্চিত যে আপনি {date} তারিখে নতুন রক্তদানের তথ্য যোগ করতে চান?',
+    confirmDonationCooldownWarning: 'সতর্কতা: তথ্য যোগ করার পর চিকিৎসা নিয়মানুযায়ী আপনার অ্যাকাউন্টে বাধ্যতামূলক ৯০ দিনের কুলডাউন প্রযোজ্য হবে এবং এই সময়ে আপনার প্রোফাইল রক্তদানে সাময়িক অনুপলব্ধ থাকবে।',
+    confirmDonationProceedButton: 'হ্যাঁ, নিশ্চিত করুন ও কুলডাউনে প্রবেশ করুন',
+    confirmDonationCancelButton: 'বাতিল',
+    cooldownActiveTitle: 'রক্তদানের কুলডাউন সক্রিয় রয়েছে',
+    cooldownActiveDesc: 'আপনি সম্প্রতি {date} তারিখে রক্তদান করেছেন। আপনার শারীরিক সুরক্ষা ও স্বাস্থ্যবিধির স্বার্থে ৯০ দিনের কুলডাউন শেষ না হওয়া পর্যন্ত পুনরায় নতুন রক্তদান যোগ করা যাবে না।',
+    daysRemainingCooldown: 'পুনরায় রক্তদানে আরও {days} দিন বাকি',
+    cooldownEndsOn: 'কুলডাউন শেষ হবে: {date}',
+    cooldownRestrictedNotice: 'কুলডাউন চলাকালীন নতুন রক্তদান যোগ করা নিষিদ্ধ',
 
     // Emergency Page
     emergencyTitle: 'জরুরি রক্তের অনুরোধসমূহ',
