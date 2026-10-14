@@ -90,6 +90,19 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // 3.1 Prevent Admin email from being used as a donor account
+    const configuredAdminEmails = (process.env.ADMIN_GOOGLE_EMAIL || process.env.ADMIN_EMAIL || 'adilh5353@gmail.com,daruntech.pvt.ltd@gmail.com')
+      .split(',')
+      .map(e => e.trim().toLowerCase());
+
+    if (email && configuredAdminEmails.includes(email)) {
+      res.status(403).json({
+        data: null,
+        error: { message: 'This email is reserved for system administrators and cannot be used as a general donor account. Please log in through the Admin Dashboard.' }
+      });
+      return;
+    }
+
     // 4. DOB Required
     if (!donorData?.dob) {
       res.status(400).json({ data: null, error: { message: 'Date of birth is required for registration.' } });
@@ -450,6 +463,19 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
 
     if (!email && !googleId) {
       res.status(400).json({ success: false, error: { message: 'Invalid Google authentication payload.' } });
+      return;
+    }
+
+    // 2.1 Block admin email from user donor portal
+    const configuredAdminEmails = (process.env.ADMIN_GOOGLE_EMAIL || process.env.ADMIN_EMAIL || 'adilh5353@gmail.com,daruntech.pvt.ltd@gmail.com')
+      .split(',')
+      .map(e => e.trim().toLowerCase());
+
+    if (email && configuredAdminEmails.includes(email)) {
+      res.status(403).json({
+        success: false,
+        error: { message: 'This email belongs to a system administrator and cannot be used as a public donor account. Please sign in via the Admin Dashboard.' }
+      });
       return;
     }
 

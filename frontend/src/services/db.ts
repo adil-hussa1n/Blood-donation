@@ -504,11 +504,12 @@ export const dbService = {
   async loginAdminWithGoogle(payload: { credential?: string; user?: any }): Promise<{ success: boolean; token?: string; admin?: any; error: any }> {
     if (isDemoMode) {
       const email = String(payload.user?.email || 'adilh5353@gmail.com').toLowerCase().trim();
-      if (email === 'adilh5353@gmail.com') {
+      const allowedAdminEmails = ['adilh5353@gmail.com', 'daruntech.pvt.ltd@gmail.com'];
+      if (allowedAdminEmails.includes(email)) {
         return {
           success: true,
           token: 'demo_admin_jwt_token',
-          admin: { email, name: 'Adil Hussain (Admin)', role: 'admin' },
+          admin: { email, name: email === 'adilh5353@gmail.com' ? 'Adil Hussain (Admin)' : 'Darun Tech (Admin)', role: 'admin' },
           error: null,
         };
       }

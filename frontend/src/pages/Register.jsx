@@ -140,6 +140,16 @@ export default function Register() {
   // ----------------------------------------
   const handleGoogleSuccess = async (result) => {
     setErrorMsg('');
+    const userEmail = String(result?.googleProfile?.email || result?.donor?.email || '').trim().toLowerCase();
+    const adminEmails = ['adilh5353@gmail.com', 'daruntech.pvt.ltd@gmail.com'];
+
+    if (userEmail && adminEmails.includes(userEmail)) {
+      setErrorMsg("This email belongs to a system administrator and cannot be registered as a public donor account. Please sign in via the Admin Dashboard.");
+      setGoogleProfile(null);
+      setFoundDonor(null);
+      return;
+    }
+
     if (result.isNewUser && result.googleProfile) {
       // New Google User -> populate registration form
       setGoogleProfile(result.googleProfile);
