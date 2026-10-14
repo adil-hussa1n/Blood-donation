@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapPin, Phone, MessageCircle, AlertTriangle, CheckCircle2, Clock, Calendar, Heart, ShieldCheck } from 'lucide-react';
-import { useApp, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, getAreaLabel } from '../context/AppContext';
+import { useApp, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, getAreaLabel, getDistrictBadge } from '../context/AppContext';
 import { Donor } from '../types';
 
 interface DonorCardProps {
@@ -66,8 +66,10 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
               <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                 {donor.name}
               </h4>
-              <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-zinc-400 font-medium mt-1 truncate">
-                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400 font-medium mt-1 truncate">
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${getDistrictBadge(donor.area, language).color.bg} ${getDistrictBadge(donor.area, language).color.text} ${getDistrictBadge(donor.area, language).color.border}`}>
+                  {getDistrictBadge(donor.area, language).label}
+                </span>
                 <span className="truncate">{getAreaLabel(donor.area, t)}</span>
               </div>
             </div>

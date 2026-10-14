@@ -76,58 +76,137 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AREAS = [
-  'Sylhet City Corporation',
-
-  // Sylhet District (13 Upazilas)
-  'Sylhet Sadar Upazila',
-  'Beanibazar Upazila',
-  'Bishwanath Upazila',
-  'Companiganj Upazila',
-  'Fenchuganj Upazila',
-  'Golapganj Upazila',
-  'Gowainghat Upazila',
-  'Jaintiapur Upazila',
-  'Kanaighat Upazila',
-  'Osmani Nagar Upazila',
-  'South Surma Upazila',
-  'Zakiganj Upazila',
-  'Balaganj Upazila',
-
-  // Moulvibazar District (7 Upazilas)
-  'Moulvibazar Sadar Upazila',
-  'Barlekha Upazila',
-  'Juri Upazila',
-  'Kamalganj Upazila',
-  'Kulaura Upazila',
-  'Rajnagar Upazila',
-  'Sreemangal Upazila',
-
-  // Habiganj District (9 Upazilas)
-  'Habiganj Sadar Upazila',
-  'Ajmiriganj Upazila',
-  'Bahubal Upazila',
-  'Baniachang Upazila',
-  'Chunarughat Upazila',
-  'Lakhai Upazila',
-  'Madhabpur Upazila',
-  'Nabiganj Upazila',
-  'Sayestaganj Upazila',
-
-  // Sunamganj District (12 Upazilas)
-  'Sunamganj Sadar Upazila',
-  'Bishwamvarpur Upazila',
-  'Chhatak Upazila',
-  'Derai Upazila',
-  'Dharampasha Upazila',
-  'Dowarabazar Upazila',
-  'Jagannathpur Upazila',
-  'Jamalganj Upazila',
-  'Madyanagar Upazila',
-  'Shantiganj Upazila',
-  'Sullah Upazila',
-  'Tahirpur Upazila',
+export const DISTRICT_AREAS = [
+  {
+    id: 'sylhet',
+    name: 'Sylhet',
+    nameBn: 'সিলেট জেলা ও সিটি',
+    color: {
+      bg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
+      text: 'text-emerald-700 dark:text-emerald-300',
+      border: 'border-emerald-500/30 dark:border-emerald-500/40',
+      dot: 'bg-emerald-500',
+      optGroupClass: 'text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40',
+    },
+    upazilas: [
+      'Sylhet City Corporation',
+      'Sylhet Sadar Upazila',
+      'Beanibazar Upazila',
+      'Bishwanath Upazila',
+      'Companiganj Upazila',
+      'Fenchuganj Upazila',
+      'Golapganj Upazila',
+      'Gowainghat Upazila',
+      'Jaintiapur Upazila',
+      'Kanaighat Upazila',
+      'Osmani Nagar Upazila',
+      'South Surma Upazila',
+      'Zakiganj Upazila',
+      'Balaganj Upazila',
+    ]
+  },
+  {
+    id: 'moulvibazar',
+    name: 'Moulvibazar',
+    nameBn: 'মৌলভীবাজার জেলা',
+    color: {
+      bg: 'bg-sky-500/10 dark:bg-sky-500/20',
+      text: 'text-sky-700 dark:text-sky-300',
+      border: 'border-sky-500/30 dark:border-sky-500/40',
+      dot: 'bg-sky-500',
+      optGroupClass: 'text-sky-700 dark:text-sky-400 font-bold bg-sky-50 dark:bg-sky-950/40',
+    },
+    upazilas: [
+      'Moulvibazar Sadar Upazila',
+      'Barlekha Upazila',
+      'Juri Upazila',
+      'Kamalganj Upazila',
+      'Kulaura Upazila',
+      'Rajnagar Upazila',
+      'Sreemangal Upazila',
+    ]
+  },
+  {
+    id: 'habiganj',
+    name: 'Habiganj',
+    nameBn: 'হবিগঞ্জ জেলা',
+    color: {
+      bg: 'bg-amber-500/10 dark:bg-amber-500/20',
+      text: 'text-amber-700 dark:text-amber-300',
+      border: 'border-amber-500/30 dark:border-amber-500/40',
+      dot: 'bg-amber-500',
+      optGroupClass: 'text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/40',
+    },
+    upazilas: [
+      'Habiganj Sadar Upazila',
+      'Ajmiriganj Upazila',
+      'Bahubal Upazila',
+      'Baniachang Upazila',
+      'Chunarughat Upazila',
+      'Lakhai Upazila',
+      'Madhabpur Upazila',
+      'Nabiganj Upazila',
+      'Sayestaganj Upazila',
+    ]
+  },
+  {
+    id: 'sunamganj',
+    name: 'Sunamganj',
+    nameBn: 'সুনামগঞ্জ জেলা',
+    color: {
+      bg: 'bg-purple-500/10 dark:bg-purple-500/20',
+      text: 'text-purple-700 dark:text-purple-300',
+      border: 'border-purple-500/30 dark:border-purple-500/40',
+      dot: 'bg-purple-500',
+      optGroupClass: 'text-purple-700 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-950/40',
+    },
+    upazilas: [
+      'Sunamganj Sadar Upazila',
+      'Bishwamvarpur Upazila',
+      'Chhatak Upazila',
+      'Derai Upazila',
+      'Dharampasha Upazila',
+      'Dowarabazar Upazila',
+      'Jagannathpur Upazila',
+      'Jamalganj Upazila',
+      'Madyanagar Upazila',
+      'Shantiganj Upazila',
+      'Sullah Upazila',
+      'Tahirpur Upazila',
+    ]
+  }
 ];
+
+export const AREAS = DISTRICT_AREAS.flatMap((d) => d.upazilas);
+
+export const getDistrictForArea = (area: string | undefined | null) => {
+  if (!area) return DISTRICT_AREAS[0];
+  const found = DISTRICT_AREAS.find((d) => d.upazilas.some((u) => u.toLowerCase() === area.toLowerCase()));
+  if (found) return found;
+  // Partial fallback matching
+  const lower = area.toLowerCase();
+  if (lower.includes('sylhet') || lower.includes('beanibazar') || lower.includes('golapganj') || lower.includes('bishwanath') || lower.includes('osmani')) {
+    return DISTRICT_AREAS[0];
+  }
+  if (lower.includes('moulvi') || lower.includes('kulaura') || lower.includes('sreemangal') || lower.includes('barlekha') || lower.includes('kamalganj')) {
+    return DISTRICT_AREAS[1];
+  }
+  if (lower.includes('habi') || lower.includes('nabiganj') || lower.includes('baniachang') || lower.includes('chunarughat') || lower.includes('sayesta')) {
+    return DISTRICT_AREAS[2];
+  }
+  if (lower.includes('sunam') || lower.includes('chhatak') || lower.includes('jagannath') || lower.includes('tahirpur') || lower.includes('derai')) {
+    return DISTRICT_AREAS[3];
+  }
+  return DISTRICT_AREAS[0];
+};
+
+export const getDistrictBadge = (area: string | undefined | null, language: string = 'en') => {
+  const district = getDistrictForArea(area);
+  return {
+    label: language === 'bn' ? district.nameBn : district.name,
+    color: district.color,
+  };
+};
 
 export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, Sparkles, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet } from 'lucide-react';
-import { useApp, AREAS, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
+import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
 import { dbService } from '../services/db';
 import GoogleAuthButton from '../components/GoogleAuthButton';
 import { appStorage as localStorage } from '../services/storage';
@@ -555,8 +555,18 @@ export default function Register() {
                   onChange={(e) => setRegArea(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
                 >
-                  {AREAS.map(a => (
-                    <option key={a} value={a}>{getAreaLabel(a, t)}</option>
+                  {DISTRICT_AREAS.map((district) => (
+                    <optgroup
+                      key={district.id}
+                      label={`📍 ${language === 'bn' ? district.nameBn : district.name}`}
+                      className={district.color.optGroupClass}
+                    >
+                      {district.upazilas.map((a) => (
+                        <option key={a} value={a} className="text-slate-800 dark:text-zinc-200 font-normal">
+                          {getAreaLabel(a, t)}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
@@ -893,8 +903,18 @@ export default function Register() {
                         onChange={(e) => setEditArea(e.target.value)}
                         className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white cursor-pointer"
                       >
-                        {AREAS.map(a => (
-                          <option key={a} value={a}>{getAreaLabel(a, t)}</option>
+                        {DISTRICT_AREAS.map((district) => (
+                          <optgroup
+                            key={district.id}
+                            label={`📍 ${language === 'bn' ? district.nameBn : district.name}`}
+                            className={district.color.optGroupClass}
+                          >
+                            {district.upazilas.map((a) => (
+                              <option key={a} value={a} className="text-slate-800 dark:text-zinc-200 font-normal">
+                                {getAreaLabel(a, t)}
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
                       </select>
                     </div>

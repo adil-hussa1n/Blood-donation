@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Flame, AlertTriangle, CheckCircle2, Phone, MapPin, ClipboardList, MessageCircle, Calendar, Trash2, Key, X, Clock, Eye, EyeOff, ChevronLeft, ChevronRight, ShieldCheck, Sparkles, Check, LayoutGrid, LayoutList } from 'lucide-react';
-import { useApp, AREAS, BLOOD_GROUPS, getAreaLabel } from '../context/AppContext';
+import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getAreaLabel } from '../context/AppContext';
 import TimelineTrack from '../components/TimelineTrack';
 import EmergencyForm from '../components/EmergencyForm';
 import { EmergencyRequest } from '../types';
@@ -669,10 +669,18 @@ export default function Emergency() {
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all dark:text-white appearance-none cursor-pointer"
                   >
                     <option value="">{t('allAreas')}</option>
-                    {(AREAS as string[]).map((a) => (
-                      <option key={a} value={a}>
-                        {getAreaLabel(a, t)} {currentDonor?.area === a ? (language === 'bn' ? '⭐ (আপনার এলাকা)' : '⭐ (Your Area)') : ''}
-                      </option>
+                    {DISTRICT_AREAS.map((district) => (
+                      <optgroup
+                        key={district.id}
+                        label={`📍 ${language === 'bn' ? district.nameBn : district.name}`}
+                        className={district.color.optGroupClass}
+                      >
+                        {district.upazilas.map((a) => (
+                          <option key={a} value={a} className="text-slate-800 dark:text-zinc-200 font-normal">
+                            {getAreaLabel(a, t)} {currentDonor?.area === a ? (language === 'bn' ? '⭐ (আপনার এলাকা)' : '⭐ (Your Area)') : ''}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                   <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
@@ -841,7 +849,9 @@ export default function Emergency() {
                               {/* Hospital / Area */}
                               <td className="py-4 px-4 align-middle">
                                 <div className="flex items-center gap-1.5 text-sm font-bold text-slate-900 dark:text-white">
-                                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${getDistrictBadge(req.area, language).color.bg} ${getDistrictBadge(req.area, language).color.text} ${getDistrictBadge(req.area, language).color.border}`}>
+                                    {getDistrictBadge(req.area, language).label}
+                                  </span>
                                   <span className="leading-snug">{getAreaLabel(req.area, t)}</span>
                                 </div>
                               </td>
@@ -988,7 +998,9 @@ export default function Emergency() {
 
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5 text-sm font-extrabold text-slate-900 dark:text-white leading-snug">
-                                  <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border shrink-0 ${getDistrictBadge(req.area, language).color.bg} ${getDistrictBadge(req.area, language).color.text} ${getDistrictBadge(req.area, language).color.border}`}>
+                                    {getDistrictBadge(req.area, language).label}
+                                  </span>
                                   <span className="truncate">{getAreaLabel(req.area, t)}</span>
                                 </div>
                                 <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-1 mt-0.5">

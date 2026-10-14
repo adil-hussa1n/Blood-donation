@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList } from 'lucide-react';
-import { useApp, AREAS, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
+import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
 import QuickStats from '../components/QuickStats';
 import DonorCard from '../components/DonorCard';
 import { Donor, EmergencyRequest } from '../types';
@@ -236,10 +236,18 @@ export default function Home() {
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all dark:text-white appearance-none cursor-pointer"
                   >
                     <option value="">{t('allBeanibazarAreas')}</option>
-                    {AREAS.map((area) => (
-                      <option key={area} value={area}>
-                        {getAreaLabel(area, t)} {currentDonor?.area === area ? (language === 'bn' ? '⭐ (আপনার এলাকা)' : '⭐ (Your Area)') : ''}
-                      </option>
+                    {DISTRICT_AREAS.map((district) => (
+                      <optgroup
+                        key={district.id}
+                        label={`📍 ${language === 'bn' ? district.nameBn : district.name}`}
+                        className={district.color.optGroupClass}
+                      >
+                        {district.upazilas.map((area) => (
+                          <option key={area} value={area} className="text-slate-800 dark:text-zinc-200 font-normal">
+                            {getAreaLabel(area, t)} {currentDonor?.area === area ? (language === 'bn' ? '⭐ (আপনার এলাকা)' : '⭐ (Your Area)') : ''}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                   <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
@@ -515,7 +523,9 @@ export default function Home() {
                                     </td>
                                     <td className="py-4 px-4 align-middle">
                                       <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300">
-                                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${getDistrictBadge(normalizedDonor.area, language).color.bg} ${getDistrictBadge(normalizedDonor.area, language).color.text} ${getDistrictBadge(normalizedDonor.area, language).color.border}`}>
+                                          {getDistrictBadge(normalizedDonor.area, language).label}
+                                        </span>
                                         <span className="leading-snug">{getAreaLabel(normalizedDonor.area, t)}</span>
                                       </div>
                                     </td>

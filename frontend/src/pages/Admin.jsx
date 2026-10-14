@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare } from 'lucide-react';
-import { useApp, BLOOD_GROUPS, normalizeDonor, getAreaLabel } from '../context/AppContext';
+import { useApp, BLOOD_GROUPS, normalizeDonor, getAreaLabel, getDistrictBadge } from '../context/AppContext';
 
 export default function Admin() {
   const { 
@@ -760,8 +760,10 @@ export default function Admin() {
                             </td>
                             <td className="p-4 truncate overflow-hidden">{donor.phone}</td>
                             <td className="p-4 truncate overflow-hidden" title={getAreaLabel(donor.area, t)}>
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
+                              <span className="flex items-center gap-1.5">
+                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border shrink-0 ${getDistrictBadge(donor.area, language).color.bg} ${getDistrictBadge(donor.area, language).color.text} ${getDistrictBadge(donor.area, language).color.border}`}>
+                                  {getDistrictBadge(donor.area, language).label}
+                                </span>
                                 <span className="truncate">{getAreaLabel(donor.area, t)}</span>
                               </span>
                             </td>
@@ -894,7 +896,14 @@ export default function Admin() {
                                 {req.blood_group}
                               </span>
                             </td>
-                            <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={getAreaLabel(req.area, t)}>{getAreaLabel(req.area, t)}</td>
+                            <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={getAreaLabel(req.area, t)}>
+                              <div className="flex items-center gap-1.5">
+                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border shrink-0 ${getDistrictBadge(req.area, language).color.bg} ${getDistrictBadge(req.area, language).color.text} ${getDistrictBadge(req.area, language).color.border}`}>
+                                  {getDistrictBadge(req.area, language).label}
+                                </span>
+                                <span className="truncate">{getAreaLabel(req.area, t)}</span>
+                              </div>
+                            </td>
                             <td className="p-4 truncate overflow-hidden">{req.contact}</td>
                             <td className="p-4 truncate overflow-hidden" title={req.note}>
                               {req.note || t('noDescription')}

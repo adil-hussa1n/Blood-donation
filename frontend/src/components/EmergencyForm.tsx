@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Megaphone, MapPin, Phone, ClipboardList, ShieldAlert, LogIn, Clock, CheckCircle2, UserCheck, Sparkles } from 'lucide-react';
-import { useApp, AREAS, BLOOD_GROUPS, getAreaLabel } from '../context/AppContext';
+import { useApp, AREAS, DISTRICT_AREAS, BLOOD_GROUPS, getAreaLabel } from '../context/AppContext';
 import GoogleAuthButton from './GoogleAuthButton';
 
 interface EmergencyFormProps {
@@ -263,10 +263,18 @@ export default function EmergencyForm({ onSuccess, onError }: EmergencyFormProps
             onChange={(e) => setArea(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
           >
-            {(AREAS as string[]).map((a) => (
-              <option key={a} value={a}>
-                {getAreaLabel(a, t)} {currentDonor?.area === a ? (language === 'bn' ? '⭐ (আপনার এলাকা)' : '⭐ (Your Area)') : ''}
-              </option>
+            {DISTRICT_AREAS.map((district) => (
+              <optgroup
+                key={district.id}
+                label={`📍 ${language === 'bn' ? district.nameBn : district.name}`}
+                className={district.color.optGroupClass}
+              >
+                {district.upazilas.map((a) => (
+                  <option key={a} value={a} className="text-slate-800 dark:text-zinc-200 font-normal">
+                    {getAreaLabel(a, t)} {currentDonor?.area === a ? (language === 'bn' ? '⭐ (আপনার এলাকা)' : '⭐ (Your Area)') : ''}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
           <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
