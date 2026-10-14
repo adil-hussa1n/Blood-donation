@@ -236,7 +236,7 @@ export default function Layout({ children }: LayoutProps) {
       {/* Footer */}
       <footer className="w-full py-5 sm:py-8 mt-6 sm:mt-12 glass-panel border-t border-slate-200/50 dark:border-zinc-800/50 text-center" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
-          <div className="flex flex-col items-center md:items-start gap-1">
+          <div className="flex flex-col items-center md:items-start gap-1.5">
             <div className="flex items-center gap-2">
               <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 fill-current animate-pulse" />
               <span className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white">
@@ -251,22 +251,33 @@ export default function Layout({ children }: LayoutProps) {
               </Link>
             </div>
             <span className="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-400 font-semibold tracking-wide">
-              A project of <span className="font-extrabold text-slate-800 dark:text-white">Darun tech Private Limited</span> • Designed & Developed by{' '}
-              <a
-                href="https://daruntech.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:underline transition-all font-extrabold"
-              >
-                Darun tech Private Limited
-              </a>
+              A Humanitarian Initiative by <a href="https://daruntech.com" target="_blank" rel="noopener noreferrer" className="font-extrabold text-purple-600 dark:text-purple-400 hover:underline">Darun tech Private Limited</a>
             </span>
           </div>
-          <div className="text-[10px] sm:text-xs text-slate-400 dark:text-zinc-500 flex flex-col items-center md:items-end gap-1">
-            <span>{t('dedicatedTo')}</span>
-            <span className="font-extrabold text-red-500 dark:text-red-400 uppercase tracking-widest text-[8px] sm:text-[9px] bg-red-500/5 dark:bg-red-500/10 px-2 sm:px-2.5 py-0.5 rounded-full border border-red-500/10">
-              Save Lives • 24/7 Service
-            </span>
+
+          {/* Darun Tech Advertisement & Attribution Badge */}
+          <div className="flex flex-col items-center md:items-end gap-2">
+            <a
+              href="https://daruntech.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-fuchsia-500/10 to-indigo-500/10 dark:from-purple-950/30 dark:via-fuchsia-950/20 dark:to-indigo-950/30 border border-purple-500/20 hover:border-purple-500/40 shadow-xs hover:shadow-md transition-all duration-300"
+              title="Visit Darun tech Private Limited"
+            >
+              <img 
+                src="/daruntech-logo.png" 
+                alt="Darun Tech Logo" 
+                className="w-5 h-5 rounded-md object-contain shrink-0 group-hover:scale-110 transition-transform duration-300" 
+              />
+              <div className="text-left md:text-right">
+                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300 block leading-tight">
+                  Designed & Developed by
+                </span>
+                <span className="text-[11px] sm:text-xs font-black text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors block leading-tight">
+                  Darun tech Private Limited
+                </span>
+              </div>
+            </a>
           </div>
         </div>
       </footer>
