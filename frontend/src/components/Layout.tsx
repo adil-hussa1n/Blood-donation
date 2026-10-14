@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, ExternalLink, LucideIcon } from 'lucide-react';
+import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, ExternalLink, LucideIcon, ChevronRight, LogOut, User } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface NavigationItem {
@@ -15,7 +15,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { theme, toggleTheme, isAdmin, logoutAdmin, currentDonor, isDemoMode, language, setLanguage, t } = useApp();
+  const { theme, toggleTheme, isAdmin, logoutAdmin, currentDonor, logoutDonor, isDemoMode, language, setLanguage, t } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMenuAnimKey, setMobileMenuAnimKey] = useState(0);
   const location = useLocation();
@@ -176,6 +176,71 @@ export default function Layout({ children }: LayoutProps) {
         >
           <div className="mobile-nav-dropdown">
             <div key={mobileMenuAnimKey} className="mobile-nav-dropdown__inner space-y-1">
+              {/* Logged-in User Profile Header in Mobile Menu */}
+              {currentDonor && (
+                <div 
+                  style={{ animationDelay: '60ms' }}
+                  className="mobile-nav-item mb-2.5 p-3 rounded-2xl bg-gradient-to-r from-red-500/10 via-rose-500/10 to-transparent dark:from-red-950/40 dark:via-rose-950/30 border border-red-500/20 dark:border-red-900/40"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <Link
+                      to="/register"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 min-w-0 flex-1 group"
+                    >
+                      <div className="relative shrink-0">
+                        {currentDonor.avatar_url ? (
+                          <img
+                            src={currentDonor.avatar_url}
+                            alt={currentDonor.name || 'Donor'}
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                              const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
+                              if (fallback) fallback.style.display = 'flex';
+                            }}
+                            className="w-11 h-11 rounded-full object-cover border-2 border-red-500/40 shadow-sm"
+                          />
+                        ) : null}
+                        <div
+                          className={`w-11 h-11 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white font-bold text-base shadow-sm items-center justify-center ${currentDonor.avatar_url ? 'hidden' : 'flex'}`}
+                        >
+                          {currentDonor.name?.charAt(0).toUpperCase() || <User className="w-5 h-5" />}
+                        </div>
+                        {currentDonor.blood_group && (
+                          <span className="absolute -bottom-1 -right-1 bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-md shadow-sm border border-white dark:border-zinc-900 leading-tight">
+                            {currentDonor.blood_group}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 text-left">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-red-500 transition-colors">
+                            {currentDonor.name || 'Donor Member'}
+                          </h4>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 truncate flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span>{currentDonor.phone || currentDonor.email || t('verifiedDonorBadge')}</span>
+                        </p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-red-500 transition-transform group-hover:translate-x-0.5 shrink-0" />
+                    </Link>
+                    <button
+                      onClick={() => {
+                        logoutDonor();
+                        setMobileMenuOpen(false);
+                      }}
+                      title={t('signOutLabel') || 'Sign Out'}
+                      aria-label="Log out donor"
+                      className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0 cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {navigation.map((item, index) => {
                 const Icon = item.icon;
                 const active = isActive(item.path);
