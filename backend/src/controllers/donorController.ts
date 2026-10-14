@@ -68,13 +68,19 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
     }
 
     // 2. Validate Bangladeshi Phone Format
-    const phone = String(donorData?.phone || '').trim();
+    // Format must be: +88 fixed country code with 11-digit number starting with 013, 014, 015, 016, 017, 018, 019
+    let phone = String(donorData?.phone || '').trim();
+    if (phone.startsWith('+88')) {
+      phone = phone.slice(3).trim();
+    } else if (phone.startsWith('88')) {
+      phone = phone.slice(2).trim();
+    }
     const phoneRegex = /^01[3-9]\d{8}$/;
     if (!phoneRegex.test(phone)) {
       await logRateLimit(clientIp, 'donor_registration', 'blocked', 'invalid_phone');
       res.status(400).json({
         data: null,
-        error: { message: 'Invalid phone number. Must be a valid 11-digit Bangladeshi number starting with 013-019.' }
+        error: { message: 'Invalid phone number. Must be an 11-digit Bangladeshi mobile number starting with 013, 014, 015, 016, 017, 018, or 019 (e.g. 01711223344).' }
       });
       return;
     }
@@ -103,9 +109,30 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // 4. DOB Required
+    // 4. DOB Required & Minimum Age 18 Check
     if (!donorData?.dob) {
       res.status(400).json({ data: null, error: { message: 'Date of birth is required for registration.' } });
+      return;
+    }
+
+    const birthDate = new Date(donorData.dob);
+    if (isNaN(birthDate.getTime())) {
+      res.status(400).json({ data: null, error: { message: 'Invalid date of birth provided.' } });
+      return;
+    }
+
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    if (age < 18) {
+      res.status(400).json({
+        data: null,
+        error: { message: 'Blood donors must be at least 18 years old to register.' }
+      });
       return;
     }
 
@@ -117,10 +144,10 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // 6. Duplicate Phone Check
+    // 6. Duplicate Phone Check (Phone number must be unique)
     const [existing]: any = await pool.query('SELECT id FROM donors WHERE phone = ?', [phone]);
     if (existing && existing.length > 0) {
-      res.status(409).json({ data: null, error: { message: `Phone number ${phone} is already registered.` } });
+      res.status(409).json({ data: null, error: { message: `Phone number ${phone} is already registered. Each donor must have a unique phone number.` } });
       return;
     }
 

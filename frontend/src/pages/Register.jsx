@@ -222,17 +222,47 @@ export default function Register() {
       }
     }
 
-    const phoneTrimmed = regPhone.trim();
-    // Validate phone number format strictly
+    // Sanitize phone number (strip leading +88 or 88 if entered/pasted)
+    let phoneTrimmed = regPhone.trim();
+    if (phoneTrimmed.startsWith('+88')) {
+      phoneTrimmed = phoneTrimmed.slice(3).trim();
+    } else if (phoneTrimmed.startsWith('88')) {
+      phoneTrimmed = phoneTrimmed.slice(2).trim();
+    }
+
+    // Validate phone number format strictly: 11 digits starting with 013, 014, 015, 016, 017, 018, 019
     const phoneRegex = /^01[3-9]\d{8}$/;
     if (!phoneRegex.test(phoneTrimmed)) {
-      setErrorMsg("Invalid phone number. Must be a valid 11-digit Bangladeshi number starting with 013-019.");
+      setErrorMsg(language === 'bn' 
+        ? "অবৈধ ফোন নম্বর। +৮৮ এর পর ১১ ডিজিটের সঠিক নম্বর দিন (যেমন: 01711223344) যা 013-019 দিয়ে শুরু।"
+        : "Invalid phone number. Must be an 11-digit Bangladeshi mobile number starting with 013-019 (e.g. 01711223344).");
       setFormLoading(false);
       return;
     }
 
     if (!regDob) {
-      setErrorMsg("Date of birth is required.");
+      setErrorMsg(language === 'bn' ? "জন্ম তারিখ দেওয়া আবশ্যক।" : "Date of birth is required.");
+      setFormLoading(false);
+      return;
+    }
+
+    // Validate minimum age >= 18
+    const birthDate = new Date(regDob);
+    if (isNaN(birthDate.getTime())) {
+      setErrorMsg(language === 'bn' ? "সঠিক জন্ম তারিখ দিন।" : "Please provide a valid date of birth.");
+      setFormLoading(false);
+      return;
+    }
+
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    if (age < 18) {
+      setErrorMsg(t('age18RequiredError') || "You must be at least 18 years old to register as a blood donor.");
       setFormLoading(false);
       return;
     }
@@ -581,20 +611,38 @@ export default function Register() {
                     <span className="text-red-500 font-black">*</span>
                   </label>
                   <span className="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded border border-red-200/50 dark:border-red-900/50">
-                    {language === 'bn' ? 'জরুরি প্রয়োজনে আবশ্যক' : 'Required for emergencies'}
+                    {language === 'bn' ? 'ইউনিক নম্বর আবশ্যক' : 'Unique phone required'}
                   </span>
                 </div>
-                <div className="relative">
-                  <input
-                    type="tel"
-                    required
-                    placeholder={t('phonePlaceholder')}
-                    value={regPhone}
-                    onChange={(e) => setRegPhone(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-red-200 dark:border-red-900/40 bg-red-50/20 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white font-medium"
-                  />
-                  <Phone className="w-4 h-4 text-red-500 absolute left-3.5 top-3.5" />
+                <div className="flex rounded-xl overflow-hidden border-2 border-red-200 dark:border-red-900/40 bg-red-50/20 dark:bg-zinc-950/40 focus-within:ring-2 focus-within:ring-red-500 focus-within:border-red-500 transition-all shadow-sm">
+                  <div className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 dark:bg-zinc-800/80 border-r border-red-200 dark:border-red-900/40 text-slate-700 dark:text-zinc-200 font-bold text-sm select-none">
+                    <span className="text-base leading-none">🇧🇩</span>
+                    <span>+88</span>
+                  </div>
+                  <div className="relative flex-1">
+                    <input
+                      type="tel"
+                      required
+                      maxLength={11}
+                      placeholder="01711223344"
+                      value={regPhone}
+                      onChange={(e) => {
+                        let val = e.target.value.replace(/[^0-9]/g, '');
+                        if (val.startsWith('880')) {
+                          val = val.slice(2);
+                        }
+                        setRegPhone(val.slice(0, 11));
+                      }}
+                      className="w-full pl-9 pr-3 py-2.5 bg-transparent text-sm focus:outline-none dark:text-white font-medium placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                    />
+                    <Phone className="w-3.5 h-3.5 text-red-500 absolute left-3 top-3.5 pointer-events-none" />
+                  </div>
                 </div>
+                <span className="text-[10px] text-slate-500 dark:text-zinc-400 block font-medium">
+                  {language === 'bn' 
+                    ? '১১ ডিজিটের নম্বর (013, 014, 015, 016, 017, 018, 019)' 
+                    : '11 digits starting with 013-019 (e.g. 01711223344)'}
+                </span>
               </div>
 
 
@@ -669,22 +717,35 @@ export default function Register() {
                 </div>
               </div>
 
-              {/* Date of Birth */}
+              {/* Date of Birth (Age must be 18+) */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                  {t('dobLabel')}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1">
+                    <span>{t('dobLabel')}</span>
+                    <span className="text-red-500 font-black">*</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200/50 dark:border-emerald-900/50">
+                    {language === 'bn' ? 'বয়স নূন্যতম ১৮ বছর' : 'Must be 18+ years'}
+                  </span>
+                </div>
                 <div className="relative">
                   <input
                     type="date"
                     required
-                    max={new Date().toISOString().split('T')[0]}
+                    max={(() => {
+                      const d = new Date();
+                      d.setFullYear(d.getFullYear() - 18);
+                      return d.toISOString().split('T')[0];
+                    })()}
                     value={regDob}
                     onChange={(e) => setRegDob(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
                   />
                   <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 </div>
+                <span className="text-[10px] text-slate-500 dark:text-zinc-400 block font-medium">
+                  {language === 'bn' ? 'রক্তদানের জন্য আপনার বয়স ১৮ বছর বা তদূর্ধ্ব হতে হবে' : 'Donors must be at least 18 years old'}
+                </span>
               </div>
 
               {/* Total Times Donated */}
