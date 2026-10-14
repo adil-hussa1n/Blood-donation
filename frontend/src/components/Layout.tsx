@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, LucideIcon } from 'lucide-react';
+import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, ExternalLink, LucideIcon } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface NavigationItem {
@@ -94,7 +94,7 @@ export default function Layout({ children }: LayoutProps) {
               })}
               {isAdmin && (
                 <Link
-                  to="/adil"
+                  to="/darun"
                   className={`flex items-center lg:gap-1 xl:gap-1.5 lg:px-2 lg:py-1.5 xl:px-3 xl:py-2 rounded-xl lg:text-[11px] xl:text-xs 2xl:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${isActive('/adil')
                     ? 'bg-red-500 text-white shadow-md'
                     : 'text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20'
@@ -198,7 +198,7 @@ export default function Layout({ children }: LayoutProps) {
               })}
               {isAdmin && (
                 <Link
-                  to="/adil"
+                  to="/darun"
                   onClick={() => setMobileMenuOpen(false)}
                   style={{ animationDelay: mobileMenuOpen ? `${100 + navigation.length * 45}ms` : '0ms' }}
                   tabIndex={mobileMenuOpen ? 0 : -1}
@@ -256,26 +256,31 @@ export default function Layout({ children }: LayoutProps) {
           </div>
 
           {/* Darun Tech Advertisement & Attribution Badge */}
-          <div className="flex flex-col items-center md:items-end gap-2">
+          <div className="flex flex-col items-center md:items-end gap-1.5">
             <a
               href="https://daruntech.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-fuchsia-500/10 to-indigo-500/10 dark:from-purple-950/30 dark:via-fuchsia-950/20 dark:to-indigo-950/30 border border-purple-500/20 hover:border-purple-500/40 shadow-xs hover:shadow-md transition-all duration-300"
-              title="Visit Darun tech Private Limited"
+              className="group flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-purple-500/10 via-fuchsia-500/10 to-indigo-500/10 dark:from-purple-950/40 dark:via-fuchsia-950/30 dark:to-indigo-950/40 border border-purple-500/25 hover:border-purple-500/50 shadow-xs hover:shadow-md hover:scale-[1.02] transition-all duration-300"
+              title="Visit Darun tech Private Limited - daruntech.com"
             >
-              <img 
-                src="/daruntech-logo.png" 
-                alt="Darun Tech Logo" 
-                className="w-5 h-5 rounded-md object-contain shrink-0 group-hover:scale-110 transition-transform duration-300" 
-              />
+              <div className="w-8 h-8 rounded-xl bg-white p-1 shadow-xs flex items-center justify-center shrink-0 border border-purple-200/50 dark:border-purple-800/40 group-hover:rotate-6 transition-transform duration-300">
+                <img 
+                  src="/daruntech-icon.png" 
+                  alt="Darun Tech Icon" 
+                  className="w-full h-full object-contain" 
+                />
+              </div>
               <div className="text-left md:text-right">
-                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300 block leading-tight">
+                <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-purple-700 dark:text-purple-300 block leading-tight">
                   Designed & Developed by
                 </span>
-                <span className="text-[11px] sm:text-xs font-black text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors block leading-tight">
-                  Darun tech Private Limited
-                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors leading-tight">
+                    Darun tech Private Limited
+                  </span>
+                  <ExternalLink className="w-3 h-3 text-purple-500 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                </div>
               </div>
             </a>
           </div>
