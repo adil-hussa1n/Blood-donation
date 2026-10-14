@@ -14,7 +14,31 @@ const PORT = parseInt(process.env.PORT || '5000', 10);
 // Middleware
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server, healthchecks)
+      if (!origin) return callback(null, true);
+
+      const allowedFrontend = process.env.FRONTEND_URL;
+      if (allowedFrontend && allowedFrontend !== '*') {
+        const allowedOrigins = allowedFrontend.split(',').map((o) => o.trim().replace(/\/+$/, ''));
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+      }
+
+      // Auto-allow vercel.app deployments, localhost, and wildcard fallback
+      if (
+        origin.endsWith('.vercel.app') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1') ||
+        !allowedFrontend ||
+        allowedFrontend === '*'
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Blocked by CORS policy'));
+    },
     credentials: true,
   })
 );
