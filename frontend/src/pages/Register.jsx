@@ -3,6 +3,7 @@ import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save,
 import { useApp, AREAS, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
 import { dbService } from '../services/db';
 import GoogleAuthButton from '../components/GoogleAuthButton';
+import { appStorage as localStorage } from '../services/storage';
 
 export default function Register() {
   const { registerDonor, updateDonorProfile, addDonationHistory, currentDonor, setCurrentDonor, logoutDonor, language, t } = useApp();
@@ -28,36 +29,46 @@ export default function Register() {
     setFormLoadTime(Date.now());
   }, [activeTab]);
 
-  // Load session from localStorage on mount
+  // Load session from appStorage on mount & sync with currentDonor
   useEffect(() => {
     try {
       const cached = localStorage.getItem('bb_donor_session');
+      let donorData = null;
+      let password = '';
+
       if (cached) {
         const session = JSON.parse(cached);
-        if (session && session.donor && (session.password || session.googleAuth)) {
-          const donor = normalizeDonor(session.donor);
-          setFoundDonor(donor);
-          if (session.password) setSearchPassword(session.password);
-          setEditName(donor.name);
-          setEditArea(donor.area);
-          setEditAvailable(donor.is_available);
-          setActiveTab('update');
-          
-          setHistoryLoading(true);
-          dbService.getDonationHistory(donor.id).then((historyRes) => {
-            if (!historyRes.error) {
-              setDonorHistory(historyRes.data || []);
-            }
-            setHistoryLoading(false);
-          }).catch((err) => {
-            setHistoryLoading(false);
-          });
+        if (session && session.donor) {
+          donorData = session.donor;
+          if (session.password) password = session.password;
         }
+      } else if (currentDonor) {
+        donorData = currentDonor;
+      }
+
+      if (donorData) {
+        const donor = normalizeDonor(donorData);
+        setFoundDonor(donor);
+        if (password) setSearchPassword(password);
+        setEditName(donor.name);
+        setEditArea(donor.area);
+        setEditAvailable(donor.is_available);
+        setActiveTab('update');
+        
+        setHistoryLoading(true);
+        dbService.getDonationHistory(donor.id).then((historyRes) => {
+          if (!historyRes.error) {
+            setDonorHistory(historyRes.data || []);
+          }
+          setHistoryLoading(false);
+        }).catch(() => {
+          setHistoryLoading(false);
+        });
       }
     } catch (e) {
       console.error("Failed to restore donor session:", e);
     }
-  }, []);
+  }, [currentDonor]);
 
   // ----------------------------------------
   // REGISTER FORM STATE

@@ -1,33 +1,7 @@
 import { isDemoMode, getApiUrl } from './apiConfig';
 import { Donor, EmergencyRequest, SupportRequest, DonationEvent } from '../types';
 
-// Safe localStorage wrapper for private browsing / demo mode
-const localStore = (() => {
-  const memoryStorage: Record<string, string> = {};
-  return {
-    getItem(key: string): string | null {
-      try {
-        return window.localStorage.getItem(key);
-      } catch (e) {
-        return memoryStorage[key] || null;
-      }
-    },
-    setItem(key: string, value: string): void {
-      try {
-        window.localStorage.setItem(key, value);
-      } catch (e) {
-        memoryStorage[key] = String(value);
-      }
-    },
-    removeItem(key: string): void {
-      try {
-        window.localStorage.removeItem(key);
-      } catch (e) {
-        delete memoryStorage[key];
-      }
-    },
-  };
-})();
+import { appStorage as localStore } from './storage';
 
 const generateUUID = (): string => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {

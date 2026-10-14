@@ -4,33 +4,10 @@ import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { dbService } from '../services/db';
 import { isDemoMode } from '../services/apiConfig';
 
-// Safe storage wrappers to prevent crashes in private browsing / security-conscious browsers
-const localStorage = (() => {
-  const memoryStorage = {};
-  return {
-    getItem(key) {
-      try {
-        return window.localStorage.getItem(key);
-      } catch (e) {
-        return memoryStorage[key] || null;
-      }
-    },
-    setItem(key, value) {
-      try {
-        window.localStorage.setItem(key, value);
-      } catch (e) {
-        memoryStorage[key] = String(value);
-      }
-    },
-    removeItem(key) {
-      try {
-        window.localStorage.removeItem(key);
-      } catch (e) {
-        delete memoryStorage[key];
-      }
-    }
-  };
-})();
+import { appStorage } from '../services/storage';
+
+// Robust cross-platform storage with cookie mirroring for mobile device resilience
+const localStorage = appStorage;
 
 const sessionStorage = (() => {
   const memoryStorage = {};
@@ -1009,7 +986,11 @@ export const AppProvider = ({ children }) => {
       try {
         const cached = localStorage.getItem('bb_donor_session');
         const existing = cached ? JSON.parse(cached) : {};
-        localStorage.setItem('bb_donor_session', JSON.stringify({ ...existing, donor }));
+        localStorage.setItem('bb_donor_session', JSON.stringify({
+          ...existing,
+          donor,
+          googleAuth: existing.googleAuth ?? (existing.password ? false : true),
+        }));
       } catch (e) { }
     } else {
       localStorage.removeItem('bb_donor_session');
