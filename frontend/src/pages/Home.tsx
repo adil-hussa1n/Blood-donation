@@ -31,14 +31,30 @@ export default function Home() {
   // Security: track revealed contact numbers
   const [revealedContacts, setRevealedContacts] = useState<Record<string, boolean>>({});
 
-  // Table vs Grid View State with localStorage persistence
+  // Table vs Grid View State: auto-selects 'grid' on mobile screens (< 768px)
   const [viewMode, setViewMode] = useState<'table' | 'grid'>(() => {
     if (typeof window !== 'undefined') {
+      // If on mobile device screen, auto select grid view
+      if (window.innerWidth < 768) {
+        return 'grid';
+      }
       const saved = localStorage.getItem('bloodify_donors_view');
       if (saved === 'table' || saved === 'grid') return saved;
     }
     return 'table';
   });
+
+  // Automatically switch to grid view when viewport resizes to mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setViewMode('grid');
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleViewModeChange = (mode: 'table' | 'grid') => {
     setViewMode(mode);

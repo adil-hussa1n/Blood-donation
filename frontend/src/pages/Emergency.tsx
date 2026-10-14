@@ -14,10 +14,26 @@ export default function Emergency() {
   const [feedAreaFilter, setFeedAreaFilter] = useState(currentDonor?.area || '');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>(() => {
     if (typeof window !== 'undefined') {
+      // If on mobile device screen, auto select grid view
+      if (window.innerWidth < 768) {
+        return 'grid';
+      }
       return (localStorage.getItem('bloodify_emergency_view') as 'table' | 'grid') || 'table';
     }
     return 'table';
   });
+
+  // Automatically switch to grid view when viewport resizes to mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setViewMode('grid');
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleViewModeChange = (mode: 'table' | 'grid') => {
     setViewMode(mode);

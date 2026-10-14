@@ -1007,26 +1007,28 @@ export default function Register() {
                       onSubmit={handleRequestDonationLog}
                       className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 font-semibold text-xs relative overflow-hidden"
                     >
-                      <div className="flex items-center justify-between pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white ${isCooldown ? 'bg-amber-500' : 'bg-emerald-500'}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0 ${isCooldown ? 'bg-amber-500' : 'bg-emerald-500'}`}>
                             {isCooldown ? <Clock className="w-4 h-4 animate-spin-slow" /> : <History className="w-4 h-4" />}
                           </div>
-                          <div>
-                            <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
+                          <div className="min-w-0">
+                            <h3 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight">
                               {t('logDonationTitle')}
                             </h3>
-                            <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+                            <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium leading-normal mt-0.5">
                               {language === 'bn' ? 'চিকিৎসা সুরক্ষার জন্য ৯০ দিনের কুলডাউন প্রযোজ্য' : 'Medical safety standard: 90 days cooldown'}
                             </p>
                           </div>
                         </div>
 
                         {isCooldown && (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1.5 shrink-0">
-                            <Clock className="w-3 h-3 animate-pulse" />
-                            {t('daysRemainingCooldown', { days: daysRemaining })}
-                          </span>
+                          <div className="self-start sm:self-auto">
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1.5 shrink-0">
+                              <Clock className="w-3 h-3 animate-pulse" />
+                              {t('daysRemainingCooldown', { days: daysRemaining })}
+                            </span>
+                          </div>
                         )}
                       </div>
 
