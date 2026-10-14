@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare } from 'lucide-react';
-import { useApp, BLOOD_GROUPS, normalizeDonor, getAreaLabel, getDistrictBadge } from '../context/AppContext';
+import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X } from 'lucide-react';
+import { useApp, BLOOD_GROUPS, DISTRICT_AREAS, normalizeDonor, getAreaLabel, getDistrictBadge } from '../context/AppContext';
 
 export default function Admin() {
   const { 
@@ -25,6 +25,12 @@ export default function Admin() {
   
   // Blood group filter in Donors view
   const [bloodGroupFilter, setBloodGroupFilter] = useState(''); // '' means All
+
+  // Advanced Filters: Search, Area, and Date
+  const [adminSearchQuery, setAdminSearchQuery] = useState('');
+  const [adminAreaFilter, setAdminAreaFilter] = useState('');
+  const [adminDateFrom, setAdminDateFrom] = useState('');
+  const [adminDateTo, setAdminDateTo] = useState('');
 
   // Blocked phone states
   const [blockedPhones, setBlockedPhones] = useState([]);
@@ -256,30 +262,114 @@ export default function Admin() {
   const safeBlockedPhones = useMemo(() => blockedPhones || [], [blockedPhones]);
   const safeSupportRequests = useMemo(() => supportRequests || [], [supportRequests]);
 
-  // Filtered Donors list for Admin
+  // Filtered Donors list for Admin with search, area, date, and blood group
   const adminFilteredDonors = useMemo(() => {
     return safeDonors.filter((d) => {
-      return bloodGroupFilter ? d.blood_group === bloodGroupFilter : true;
-    });
-  }, [safeDonors, bloodGroupFilter]);
+      // Blood Group filter
+      if (bloodGroupFilter && d.blood_group !== bloodGroupFilter) return false;
 
-  // Compute counts for each blood group
+      // Area filter
+      if (adminAreaFilter && d.area !== adminAreaFilter) return false;
+
+      // Search Query filter (matches name, phone, email, area)
+      if (adminSearchQuery.trim()) {
+        const q = adminSearchQuery.trim().toLowerCase();
+        const matchName = d.name?.toLowerCase().includes(q);
+        const matchPhone = d.phone?.includes(q);
+        const matchEmail = d.email?.toLowerCase().includes(q);
+        const matchArea = d.area?.toLowerCase().includes(q);
+        if (!matchName && !matchPhone && !matchEmail && !matchArea) return false;
+      }
+
+      // Date Range filter (created_at or last_donation_date)
+      if (adminDateFrom) {
+        const itemDate = d.created_at || d.last_donation_date;
+        if (!itemDate || new Date(itemDate) < new Date(adminDateFrom)) return false;
+      }
+      if (adminDateTo) {
+        const itemDate = d.created_at || d.last_donation_date;
+        const endOfDay = new Date(adminDateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (!itemDate || new Date(itemDate) > endOfDay) return false;
+      }
+
+      return true;
+    });
+  }, [safeDonors, bloodGroupFilter, adminAreaFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
+
+  // Filtered Emergencies list for Admin with search, area, and date
+  const adminFilteredEmergencies = useMemo(() => {
+    return safeEmergencies.filter((req) => {
+      // Area filter
+      if (adminAreaFilter && req.area !== adminAreaFilter) return false;
+
+      // Search Query filter
+      if (adminSearchQuery.trim()) {
+        const q = adminSearchQuery.trim().toLowerCase();
+        const matchPatient = req.patient_name?.toLowerCase().includes(q);
+        const matchHospital = req.hospital?.toLowerCase().includes(q);
+        const matchPhone = req.contact?.includes(q);
+        const matchArea = req.area?.toLowerCase().includes(q);
+        const matchBlood = req.blood_group?.toLowerCase().includes(q);
+        if (!matchPatient && !matchHospital && !matchPhone && !matchArea && !matchBlood) return false;
+      }
+
+      // Date Range filter
+      if (adminDateFrom) {
+        const itemDate = req.created_at || req.date;
+        if (!itemDate || new Date(itemDate) < new Date(adminDateFrom)) return false;
+      }
+      if (adminDateTo) {
+        const itemDate = req.created_at || req.date;
+        const endOfDay = new Date(adminDateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (!itemDate || new Date(itemDate) > endOfDay) return false;
+      }
+
+      return true;
+    });
+  }, [safeEmergencies, adminAreaFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
+
+  // Compute counts for each blood group (reflecting active area/search/date filters)
   const groupCounts = useMemo(() => {
-    const counts = { All: safeDonors.length };
+    const baseList = safeDonors.filter(d => {
+      if (adminAreaFilter && d.area !== adminAreaFilter) return false;
+      if (adminSearchQuery.trim()) {
+        const q = adminSearchQuery.trim().toLowerCase();
+        const matchName = d.name?.toLowerCase().includes(q);
+        const matchPhone = d.phone?.includes(q);
+        const matchEmail = d.email?.toLowerCase().includes(q);
+        const matchArea = d.area?.toLowerCase().includes(q);
+        if (!matchName && !matchPhone && !matchEmail && !matchArea) return false;
+      }
+      if (adminDateFrom) {
+        const itemDate = d.created_at || d.last_donation_date;
+        if (!itemDate || new Date(itemDate) < new Date(adminDateFrom)) return false;
+      }
+      if (adminDateTo) {
+        const itemDate = d.created_at || d.last_donation_date;
+        const endOfDay = new Date(adminDateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (!itemDate || new Date(itemDate) > endOfDay) return false;
+      }
+      return true;
+    });
+
+    const counts = { All: baseList.length };
     BLOOD_GROUPS.forEach(g => {
-      counts[g] = safeDonors.filter(d => d.blood_group === g).length;
+      counts[g] = baseList.filter(d => d.blood_group === g).length;
     });
     return counts;
-  }, [safeDonors]);
+  }, [safeDonors, adminAreaFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
 
   // Pagination for Donors
   const [donorPage, setDonorPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Reset page when blood group filter changes or donors count changes
+  // Reset page when any filter changes
   useEffect(() => {
     setDonorPage(1);
-  }, [bloodGroupFilter, safeDonors.length]);
+  }, [bloodGroupFilter, adminAreaFilter, adminSearchQuery, adminDateFrom, adminDateTo, safeDonors.length]);
 
   const totalDonorPages = Math.max(1, Math.ceil(adminFilteredDonors.length / itemsPerPage));
   const paginatedDonors = useMemo(() => {
@@ -290,16 +380,16 @@ export default function Admin() {
   // Pagination for Emergencies
   const [emergencyPage, setEmergencyPage] = useState(1);
 
-  // Reset page when emergencies count changes
+  // Reset page when emergencies count or filters change
   useEffect(() => {
     setEmergencyPage(1);
-  }, [safeEmergencies.length]);
+  }, [adminFilteredEmergencies.length, adminAreaFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
 
-  const totalEmergencyPages = Math.max(1, Math.ceil(safeEmergencies.length / itemsPerPage));
+  const totalEmergencyPages = Math.max(1, Math.ceil(adminFilteredEmergencies.length / itemsPerPage));
   const paginatedEmergencies = useMemo(() => {
     const startIndex = (emergencyPage - 1) * itemsPerPage;
-    return safeEmergencies.slice(startIndex, startIndex + itemsPerPage);
-  }, [safeEmergencies, emergencyPage]);
+    return adminFilteredEmergencies.slice(startIndex, startIndex + itemsPerPage);
+  }, [adminFilteredEmergencies, emergencyPage]);
 
   // ==============================================================
   // RENDER: LOGIN FORM
@@ -581,6 +671,165 @@ export default function Admin() {
             <MessageSquare className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </button>
+      </div>
+
+      {/* Advanced Filters Toolbar (Search, Area, Date Range) */}
+      <div className="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-200/60 dark:border-zinc-800/60 shadow-sm text-left space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/40 dark:border-zinc-800/40">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center">
+              <Filter className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
+                {language === 'bn' ? 'ফিল্টার এবং অনুসন্ধান' : 'Filter & Search Records'}
+              </h3>
+              <p className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">
+                {language === 'bn' ? 'এলাকা, তারিখ এবং কিওয়ার্ড অনুযায়ী ফিল্টার করুন' : 'Filter by Area, Date Range, or Keyword'}
+              </p>
+            </div>
+          </div>
+
+          {(adminSearchQuery || adminAreaFilter || adminDateFrom || adminDateTo || bloodGroupFilter) && (
+            <button
+              onClick={() => {
+                setAdminSearchQuery('');
+                setAdminAreaFilter('');
+                setAdminDateFrom('');
+                setAdminDateTo('');
+                setBloodGroupFilter('');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 text-xs font-bold transition-all cursor-pointer self-end sm:self-auto"
+            >
+              <X className="w-3.5 h-3.5 text-rose-500" />
+              <span>{language === 'bn' ? 'ফিল্টার রিসেট' : 'Reset Filters'}</span>
+            </button>
+          )}
+        </div>
+
+        {/* Filter Inputs Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* 1. Keyword Search */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+              {language === 'bn' ? 'অনুসন্ধান (নাম / ফোন / এলাকা)' : 'Search (Name / Phone / Area)'}
+            </label>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={adminSearchQuery}
+                onChange={(e) => setAdminSearchQuery(e.target.value)}
+                placeholder={language === 'bn' ? 'নাম বা নম্বর দিয়ে খুঁজুন...' : 'Search records...'}
+                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
+              />
+              {adminSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setAdminSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 2. District & Area Dropdown */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+              {language === 'bn' ? 'জেলা ও উপজেলা / এলাকা' : 'District & Area'}
+            </label>
+            <div className="relative">
+              <MapPin className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <select
+                value={adminAreaFilter}
+                onChange={(e) => setAdminAreaFilter(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all appearance-none cursor-pointer"
+              >
+                <option value="">{language === 'bn' ? 'সকল এলাকা (All Areas)' : 'All Areas'}</option>
+                {DISTRICT_AREAS.map((district) => (
+                  <optgroup key={district.id} label={`${district.name} (${district.nameBn})`}>
+                    {district.upazilas.map((upazila) => (
+                      <option key={upazila} value={upazila}>
+                        {getAreaLabel(upazila, t)}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                ▼
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Date From */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+              {language === 'bn' ? 'তারিখ থেকে (From)' : 'Date From'}
+            </label>
+            <div className="relative">
+              <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="date"
+                value={adminDateFrom}
+                onChange={(e) => setAdminDateFrom(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* 4. Date To */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+              {language === 'bn' ? 'তারিখ পর্যন্ত (To)' : 'Date To'}
+            </label>
+            <div className="relative">
+              <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="date"
+                value={adminDateTo}
+                onChange={(e) => setAdminDateTo(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all cursor-pointer"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Active Filter Indicators */}
+        {(adminSearchQuery || adminAreaFilter || adminDateFrom || adminDateTo) && (
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/40 text-xs">
+            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500">Active:</span>
+            {adminSearchQuery && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 font-semibold text-[11px] border border-red-500/20">
+                "{adminSearchQuery}"
+                <X className="w-3 h-3 cursor-pointer" onClick={() => setAdminSearchQuery('')} />
+              </span>
+            )}
+            {adminAreaFilter && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20">
+                {getAreaLabel(adminAreaFilter, t)}
+                <X className="w-3 h-3 cursor-pointer" onClick={() => setAdminAreaFilter('')} />
+              </span>
+            )}
+            {adminDateFrom && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold text-[11px] border border-blue-500/20">
+                From: {adminDateFrom}
+                <X className="w-3 h-3 cursor-pointer" onClick={() => setAdminDateFrom('')} />
+              </span>
+            )}
+            {adminDateTo && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold text-[11px] border border-blue-500/20">
+                To: {adminDateTo}
+                <X className="w-3 h-3 cursor-pointer" onClick={() => setAdminDateTo('')} />
+              </span>
+            )}
+            <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 ml-auto">
+              {adminTab === 'donors' ? `${adminFilteredDonors.length} matching donors` : `${adminFilteredEmergencies.length} matching emergencies`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Delete Confirmation Alert Banner */}
