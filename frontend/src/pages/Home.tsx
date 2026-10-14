@@ -566,7 +566,7 @@ export default function Home() {
                                 const cleanPhone = normalizedDonor.phone.trim();
                                 const waPhone = cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone;
                                 const waMessage = encodeURIComponent(
-                                  `Assalamu Alaikum ${normalizedDonor.name}, we found your contact on Bloodify247. We urgently need ${normalizedDonor.blood_group} blood. Are you available to donate?`
+                                  `Assalamu Alaikum ${normalizedDonor.name}, we found your contact on Darun Donors. We urgently need ${normalizedDonor.blood_group} blood. Are you available to donate?`
                                 );
 
                                 return (

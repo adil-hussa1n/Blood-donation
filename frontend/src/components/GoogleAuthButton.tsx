@@ -208,7 +208,7 @@ export default function GoogleAuthButton({
             </div>
 
             <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
-              Select or enter the Google Account you would like to use with <strong>Bloodify247</strong>:
+              Select or enter the Google Account you would like to use with <strong>Darun Donors</strong>:
             </p>
 
             <form onSubmit={handleSimulatedSignIn} className="space-y-4">

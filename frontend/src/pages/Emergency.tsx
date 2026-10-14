@@ -835,7 +835,7 @@ export default function Emergency() {
                           const cleanPhone = req.contact.trim();
                           const waPhone = cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone;
                           const waMessage = encodeURIComponent(
-                            `Assalamu Alaikum, I saw your emergency request for ${req.blood_group} blood at ${req.area} on Bloodify247. I want to help.`
+                            `Assalamu Alaikum, I saw your emergency request for ${req.blood_group} blood at ${req.area} on Darun Donors. I want to help.`
                           );
 
                           return (
@@ -986,7 +986,7 @@ export default function Emergency() {
                     const cleanPhone = req.contact.trim();
                     const waPhone = cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone;
                     const waMessage = encodeURIComponent(
-                      `Assalamu Alaikum, I saw your emergency request for ${req.blood_group} blood at ${req.area} on Bloodify247. I want to help.`
+                      `Assalamu Alaikum, I saw your emergency request for ${req.blood_group} blood at ${req.area} on Darun Donors. I want to help.`
                     );
 
                     return (

@@ -304,7 +304,7 @@ export const TRANSLATIONS = {
     googleAuthSuccess: 'Signed in with Google successfully!',
     googleCompleteProfile: 'Action Required: Please complete your donor profile to appear in searches and save lives.',
     completeProfileTitle: 'Complete Your Donor Profile',
-    completeProfileSubtitle: 'Welcome to Bloodify247! Please provide your contact and blood details to finalize your lifesaver profile.',
+    completeProfileSubtitle: 'Welcome to Darun Donors! Please provide your contact and blood details to finalize your lifesaver profile.',
     completeProfileBannerTitle: '⚠️ Action Required: Complete Your Profile',
     completeProfileBannerDesc: 'Your Google Account is linked, but emergency patients cannot reach you until you provide your Phone Number, Blood Group, and Upazila.',
     completeProfileStepNotice: 'Step 2 of 2: Almost Done!',
@@ -515,7 +515,7 @@ export const TRANSLATIONS = {
 
     // Admin Dashboard Additions
     adminAuthTitle: 'Admin Authentication',
-    adminPortalSub: 'Bloodify247 Admin Portal',
+    adminPortalSub: 'Darun Donors Admin Portal',
     adminDescLogin: 'Please enter administrator credentials to manage records.',
     adminLoginError: 'Invalid Administrator Credentials. Please check Admin ID and Password.',
     adminConnError: 'Authentication failed. Connection error.',
@@ -711,7 +711,7 @@ export const TRANSLATIONS = {
     googleAuthSuccess: 'গুগল দিয়ে সফলভাবে প্রবেশ সম্পন্ন হয়েছে!',
     googleCompleteProfile: 'জরুরি করণীয়: রক্তের অনুসন্ধান তালিকায় আপনার নাম দেখাতে দয়া করে প্রোফাইল সম্পন্ন করুন।',
     completeProfileTitle: 'আপনার রক্তদাতা প্রোফাইল সম্পন্ন করুন',
-    completeProfileSubtitle: 'Bloodify247-এ স্বাগতম! আপনার রক্তদাতা প্রোফাইল সক্রিয় করতে নিচে যোগাযোগের তথ্য ও রক্তের বিবরণ দিন।',
+    completeProfileSubtitle: 'দারুণ ডোনার্স-এ স্বাগতম! আপনার রক্তদাতা প্রোফাইল সক্রিয় করতে নিচে যোগাযোগের তথ্য ও রক্তের বিবরণ দিন।',
     completeProfileBannerTitle: '⚠️ জরুরি পদক্ষেপ: আপনার প্রোফাইলটি সম্পন্ন করুন',
     completeProfileBannerDesc: 'আপনার গুগল অ্যাকাউন্ট সংযুক্ত হয়েছে, তবে ফোন নম্বর, রক্তের গ্রুপ এবং উপজেলা প্রদান না করা পর্যন্ত জরুরি রোগীরা আপনার সাথে যোগাযোগ করতে পারবে না।',
     completeProfileStepNotice: 'ধাপ ২ এর ২: প্রায় সম্পন্ন!',
@@ -911,7 +911,7 @@ export const TRANSLATIONS = {
 
     // Admin Dashboard Additions
     adminAuthTitle: 'অ্যাডমিন লগইন',
-    adminPortalSub: 'ব্লাডিফাই২৪৭ অ্যাডমিন পোর্টাল',
+    adminPortalSub: 'দারুণ ডোনার্স অ্যাডমিন পোর্টাল',
     adminDescLogin: 'রেকর্ড পরিচালনা করতে অ্যাডমিনিস্ট্রেটর শংসাপত্র লিখুন।',
     adminLoginError: 'অবৈধ অ্যাডমিনিস্ট্রেটর শংসাপত্র। অ্যাডমিন আইডি এবং পাসওয়ার্ড যাচাই করুন।',
     adminConnError: 'যাচাইকরণ ব্যর্থ হয়েছে। সংযোগ ত্রুটি।',

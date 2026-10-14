@@ -1276,7 +1276,7 @@ export default function Register() {
                   <div className="flex items-center gap-1.5">
                     <Flame className="w-4 h-4 text-red-500 fill-current animate-pulse shrink-0" />
                     <span className="text-xs font-black tracking-widest text-slate-800 uppercase font-sans">
-                      Bloodify247
+                      Darun Donors
                     </span>
                   </div>
                   <span className="text-[8px] uppercase tracking-[0.15em] text-slate-450 font-bold block leading-none">

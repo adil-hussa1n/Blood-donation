@@ -65,7 +65,7 @@ export default function Layout({ children }: LayoutProps) {
               </div>
               <div className="flex flex-col text-left">
                 <span className="font-extrabold text-sm md:text-base leading-tight tracking-tight text-slate-900 dark:text-white group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">
-                  Bloodify247
+                  Darun Donors
                 </span>
                 <span className="text-[10px] sm:text-[11px] font-bold tracking-wider text-red-500 dark:text-red-400">
                   Save Lives
@@ -240,7 +240,7 @@ export default function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-2">
               <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 fill-current animate-pulse" />
               <span className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white">
-                © {new Date().getFullYear()} Bloodify247
+                © {new Date().getFullYear()} Darun Donors
               </span>
               <span className="text-slate-300 dark:text-zinc-700">|</span>
               <Link

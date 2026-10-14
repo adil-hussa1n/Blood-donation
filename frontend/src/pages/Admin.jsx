@@ -16,6 +16,7 @@ export default function Admin() {
     getBlockedPhones,
     getSupportRequests,
     showToast,
+    language,
     t
   } = useApp();
 
