@@ -19,6 +19,26 @@ export default function Register() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Auto-dismiss success notification after 5 seconds
+  useEffect(() => {
+    if (successMsg) {
+      const timer = setTimeout(() => {
+        setSuccessMsg('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMsg]);
+
+  // Auto-dismiss error notification after 7 seconds
+  useEffect(() => {
+    if (errorMsg) {
+      const timer = setTimeout(() => {
+        setErrorMsg('');
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMsg]);
+
   const [showCertificate, setShowCertificate] = useState(false);
 
   // Security elements
@@ -386,16 +406,34 @@ export default function Register() {
 
       {/* Notifications */}
       {successMsg && (
-        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-950/50 text-emerald-800 dark:text-emerald-450 p-4 rounded-2xl text-sm flex items-center gap-3 animate-fade-in">
-          <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500" />
-          <span className="font-semibold">{successMsg}</span>
+        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-950/50 text-emerald-800 dark:text-emerald-450 p-4 rounded-2xl text-sm flex items-center justify-between gap-3 animate-fade-in shadow-sm">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500" />
+            <span className="font-semibold">{successMsg}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSuccessMsg('')}
+            className="p-1 rounded-lg text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       {errorMsg && (
-        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950/50 text-rose-800 dark:text-rose-450 p-4 rounded-2xl text-sm flex items-center gap-3 animate-fade-in">
-          <AlertTriangle className="w-5 h-5 shrink-0 text-rose-500" />
-          <span className="font-semibold">{errorMsg}</span>
+        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950/50 text-rose-800 dark:text-rose-450 p-4 rounded-2xl text-sm flex items-center justify-between gap-3 animate-fade-in shadow-sm">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 shrink-0 text-rose-500" />
+            <span className="font-semibold">{errorMsg}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setErrorMsg('')}
+            className="p-1 rounded-lg text-rose-600 hover:text-rose-800 dark:text-rose-400 dark:hover:text-rose-200 hover:bg-rose-100/50 dark:hover:bg-rose-900/40 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, MessageSquare, AlertTriangle, CheckCircle2, User, Phone, Clipboard, Send } from 'lucide-react';
+import { HelpCircle, MessageSquare, AlertTriangle, CheckCircle2, User, Phone, Clipboard, Send, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { dbService } from '../services/db';
 
@@ -16,6 +16,25 @@ export default function Support() {
   const [formLoading, setFormLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Auto-dismiss notifications
+  useEffect(() => {
+    if (successMsg) {
+      const timer = setTimeout(() => {
+        setSuccessMsg('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMsg]);
+
+  useEffect(() => {
+    if (errorMsg) {
+      const timer = setTimeout(() => {
+        setErrorMsg('');
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMsg]);
 
   // Reset notifications on tab switch
   useEffect(() => {
@@ -115,16 +134,34 @@ export default function Support() {
       <div className="glass-panel rounded-3xl p-5 sm:p-8 space-y-6 relative overflow-hidden">
         {/* Status Alerts */}
         {successMsg && (
-          <div className="p-4 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-bold flex items-center gap-2.5 animate-scale-up">
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-            <span>{successMsg}</span>
+          <div className="p-4 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-bold flex items-center justify-between gap-2.5 animate-scale-up">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+              <span>{successMsg}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSuccessMsg('')}
+              className="p-1 rounded-lg text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         )}
 
         {errorMsg && (
-          <div className="p-4 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-bold flex items-center gap-2.5 animate-scale-up">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-            <span>{errorMsg}</span>
+          <div className="p-4 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-bold flex items-center justify-between gap-2.5 animate-scale-up">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setErrorMsg('')}
+              className="p-1 rounded-lg text-rose-600 hover:text-rose-800 dark:text-rose-400 dark:hover:text-rose-200 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         )}
 
