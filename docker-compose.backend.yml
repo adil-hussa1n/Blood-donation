@@ -26,7 +26,7 @@ services:
   # ==========================================
   # 2. Express Node.js API Backend
   # ==========================================
-  backend:
+  bloodify:
     build:
       context: ./backend
       dockerfile: Dockerfile
