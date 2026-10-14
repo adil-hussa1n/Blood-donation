@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, Sparkles, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock } from 'lucide-react';
+import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, Sparkles, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock, Download, Printer, ShieldCheck, Check } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel, calculateDaysSince } from '../context/AppContext';
 import { dbService } from '../services/db';
 import GoogleAuthButton from '../components/GoogleAuthButton';
@@ -41,6 +41,266 @@ export default function Register() {
   }, [errorMsg]);
 
   const [showCertificate, setShowCertificate] = useState(false);
+  const [isDownloadingPng, setIsDownloadingPng] = useState(false);
+  const certificateRef = useRef(null);
+
+  // High-Resolution Image Certificate Generator (Works without third-party dependencies)
+  const handleDownloadCertificateImage = async () => {
+    if (!foundDonor) return;
+    setIsDownloadingPng(true);
+
+    try {
+      const width = 1600;
+      const height = 1131; // Standard A4 landscape ratio (~1.414)
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas not supported');
+
+      // 1. Background Cream/Parchment Gradient
+      const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+      bgGrad.addColorStop(0, '#fffdfa');
+      bgGrad.addColorStop(0.5, '#fefefe');
+      bgGrad.addColorStop(1, '#fff9f0');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Subtle background watermark circle
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(width / 2, height / 2, 380, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.025)';
+      ctx.fill();
+      ctx.restore();
+
+      // 2. Outer Ornate Border
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 14;
+      ctx.strokeRect(36, 36, width - 72, height - 72);
+
+      // Inner Fine Gold Border
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(56, 56, width - 112, height - 112);
+
+      // Corner Accents
+      const drawCorner = (x, y, dx, dy) => {
+        ctx.save();
+        ctx.strokeStyle = '#b45309';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x, y + dy * 40);
+        ctx.lineTo(x, y);
+        ctx.lineTo(x + dx * 40, y);
+        ctx.stroke();
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(x + dx * 16, y + dy * 16, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      };
+      drawCorner(70, 70, 1, 1);
+      drawCorner(width - 70, 70, -1, 1);
+      drawCorner(70, height - 70, 1, -1);
+      drawCorner(width - 70, height - 70, -1, -1);
+
+      // 3. Organization Header / Brand
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.font = '900 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#e11d48';
+      ctx.fillText('DARUN DONORS', width / 2, 130);
+
+      ctx.font = '700 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('OFFICIAL HUMANITARIAN RECOGNITION SYSTEM', width / 2, 160);
+
+      // Divider line with gold diamond
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(width / 2 - 200, 185);
+      ctx.lineTo(width / 2 + 200, 185);
+      ctx.stroke();
+
+      ctx.fillStyle = '#d97706';
+      ctx.beginPath();
+      ctx.arc(width / 2, 185, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Certificate Pre-title
+      ctx.font = '900 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#b45309';
+      ctx.fillText('CERTIFICATE OF APPRECIATION', width / 2, 230);
+
+      // Award Title
+      ctx.font = '900 56px Georgia, "Times New Roman", serif';
+      const awardGrad = ctx.createLinearGradient(width / 2 - 250, 0, width / 2 + 250, 0);
+      awardGrad.addColorStop(0, '#b45309');
+      awardGrad.addColorStop(0.5, '#d97706');
+      awardGrad.addColorStop(1, '#92400e');
+      ctx.fillStyle = awardGrad;
+      ctx.fillText('LIFE SAVER AWARD', width / 2, 305);
+
+      // Sub-label
+      ctx.font = 'italic 500 20px Georgia, "Times New Roman", serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('This distinguished recognition is proudly presented to', width / 2, 380);
+
+      // Recipient Name
+      ctx.font = '900 48px Georgia, "Times New Roman", serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(foundDonor.name || 'Honored Blood Donor', width / 2, 455);
+
+      // Underline under Name
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(width / 2 - 260, 490);
+      ctx.lineTo(width / 2 + 260, 490);
+      ctx.stroke();
+
+      // Commendation Paragraph
+      ctx.font = '500 19px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#334155';
+      const line1 = `in profound gratitude for exceptional commitment to saving human lives by donating blood ${foundDonor.total_donations || 1} times.`;
+      const line2 = 'Your noble generosity, compassionate service, and selfless dedication directly inspire our entire community.';
+      ctx.fillText(line1, width / 2, 545);
+      ctx.fillText(line2, width / 2, 578);
+
+      // 4. Gold & Crimson Wax Seal Emblem (Center bottom)
+      const sealX = width / 2;
+      const sealY = 740;
+
+      // Ribbons
+      ctx.save();
+      ctx.fillStyle = '#be123c';
+      ctx.beginPath();
+      ctx.moveTo(sealX - 16, sealY + 20);
+      ctx.lineTo(sealX - 34, sealY + 115);
+      ctx.lineTo(sealX - 14, sealY + 105);
+      ctx.lineTo(sealX + 2, sealY + 115);
+      ctx.lineTo(sealX + 2, sealY + 20);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#9f1239';
+      ctx.beginPath();
+      ctx.moveTo(sealX - 2, sealY + 20);
+      ctx.lineTo(sealX - 2, sealY + 115);
+      ctx.lineTo(sealX + 14, sealY + 105);
+      ctx.lineTo(sealX + 34, sealY + 115);
+      ctx.lineTo(sealX + 16, sealY + 20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // Outer gold cog/ring
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(sealX, sealY, 66, 0, Math.PI * 2);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#d97706';
+      ctx.stroke();
+
+      // Crimson inner wax
+      ctx.beginPath();
+      ctx.arc(sealX, sealY, 56, 0, Math.PI * 2);
+      const waxGrad = ctx.createLinearGradient(sealX - 40, sealY - 40, sealX + 40, sealY + 40);
+      waxGrad.addColorStop(0, '#e11d48');
+      waxGrad.addColorStop(1, '#9f1239');
+      ctx.fillStyle = waxGrad;
+      ctx.fill();
+
+      // Inner thin gold ring
+      ctx.beginPath();
+      ctx.arc(sealX, sealY, 46, 0, Math.PI * 2);
+      ctx.strokeStyle = '#fde68a';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Seal blood group text
+      ctx.font = '800 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#fde68a';
+      ctx.fillText('BLOOD GROUP', sealX, sealY - 14);
+
+      ctx.font = '900 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(foundDonor.blood_group || 'O+', sealX, sealY + 14);
+      ctx.restore();
+
+      // 5. Left Signature / Verification Block
+      ctx.textAlign = 'left';
+      ctx.font = '700 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('DATE ISSUED', 160, 720);
+
+      ctx.font = '700 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#1e293b';
+      const issueDateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      ctx.fillText(issueDateStr, 160, 750);
+
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(160, 765);
+      ctx.lineTo(380, 765);
+      ctx.stroke();
+
+      ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('Official Issuance Date', 160, 785);
+
+      // 6. Right Authority Signature Block
+      ctx.textAlign = 'right';
+      ctx.font = '700 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('VERIFIED AUTHENTICITY', width - 160, 720);
+
+      // Stylish cursive font / simulated executive signature
+      ctx.font = 'italic 700 22px Georgia, "Times New Roman", serif';
+      ctx.fillStyle = '#e11d48';
+      ctx.fillText('Darun Donors Network', width - 160, 748);
+
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(width - 380, 765);
+      ctx.lineTo(width - 160, 765);
+      ctx.stroke();
+
+      ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('Authorized Medical & Donor Registry', width - 160, 785);
+
+      // 7. Footer Certificate ID / Verification Stamp
+      ctx.textAlign = 'center';
+      const certId = `CERT-BD-${(foundDonor.id || 'DONOR').slice(0, 8).toUpperCase()}-${new Date().getFullYear()}`;
+      ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(`Certificate ID: ${certId}  •  Verify at darun-donors.vercel.app`, width / 2, 920);
+
+      // Download triggered via anchor
+      const dataUrl = canvas.toDataURL('image/png', 1.0);
+      const downloadLink = document.createElement('a');
+      const safeName = (foundDonor.name || 'Donor').replace(/[^a-zA-Z0-9]/g, '_');
+      downloadLink.download = `Appreciation_Certificate_${safeName}.png`;
+      downloadLink.href = dataUrl;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    } catch (err) {
+      console.error('Error generating certificate image:', err);
+      window.print();
+    } finally {
+      setIsDownloadingPng(false);
+    }
+  };
 
   // Security elements
   const [honeypot, setHoneypot] = useState('');
@@ -1257,7 +1517,7 @@ export default function Register() {
 
       {/* Certificate Modal Overlay */}
       {showCertificate && foundDonor && (
-        <div id="certificate-modal-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 dark:bg-zinc-950/80 backdrop-blur-sm animate-fade-in print:bg-white print:p-0">
+        <div id="certificate-modal-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-900/80 dark:bg-black/90 backdrop-blur-md animate-fade-in overflow-y-auto print:bg-white print:p-0">
           <style>{`
             @media print {
               header, footer, nav, aside, .sticky, [role="banner"], button, .print\\:hidden {
@@ -1302,7 +1562,7 @@ export default function Register() {
                 min-height: 210mm !important;
                 max-width: 297mm !important;
                 max-height: 210mm !important;
-                padding: 12mm !important;
+                padding: 8mm !important;
                 margin: 0 !important;
                 border: none !important;
                 border-radius: 0 !important;
@@ -1320,123 +1580,169 @@ export default function Register() {
                 display: flex !important;
                 flex-direction: column !important;
                 justify-content: space-between !important;
-                padding: 10mm !important;
+                padding: 8mm 10mm !important;
                 box-sizing: border-box !important;
-                border-color: #f59e0b !important;
+                border-color: #d97706 !important;
               }
             }
           `}</style>
-          <div id="certificate-print-area" className="bg-gradient-to-br from-amber-50/40 via-white to-orange-50/20 text-slate-900 rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-amber-200/50 shadow-2xl relative space-y-6 text-center print:border-0 print:shadow-none print:p-0 print:my-0 print:mx-auto">
-            
-            {/* Floating Close Button */}
+
+          <div className="relative max-w-3xl w-full my-auto animate-scale-up">
+            {/* Close Button */}
             <button
               onClick={() => setShowCertificate(false)}
-              className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 w-9 h-9 bg-white dark:bg-zinc-900 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-full border border-slate-200 dark:border-zinc-800 flex items-center justify-center shadow-lg transition-all hover:scale-110 hover:rotate-90 z-10 print:hidden cursor-pointer"
+              className="absolute -top-3.5 -right-3.5 sm:-top-4 sm:-right-4 w-9 h-9 sm:w-10 sm:h-10 bg-white dark:bg-zinc-900 text-slate-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 rounded-full border border-slate-200 dark:border-zinc-800 flex items-center justify-center shadow-xl transition-all hover:scale-110 active:scale-95 z-20 print:hidden cursor-pointer"
+              title="Close Certificate"
+              aria-label="Close"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
 
-            {/* Certificate Border decoration */}
-            <div id="certificate-border-container" className="border-4 border-double border-amber-500/60 p-6 sm:p-10 rounded-2xl space-y-6 relative print:border-amber-500 print:p-8 bg-white/70">
-              <div className="absolute top-2.5 left-2.5 w-6 h-6 border-t-2 border-l-2 border-amber-600/80" />
-              <div className="absolute top-2.5 right-2.5 w-6 h-6 border-t-2 border-r-2 border-amber-600/80" />
-              <div className="absolute bottom-2.5 left-2.5 w-6 h-6 border-b-2 border-l-2 border-amber-600/80" />
-              <div className="absolute bottom-2.5 right-2.5 w-6 h-6 border-b-2 border-r-2 border-amber-600/80" />
+            <div id="certificate-print-area" className="bg-[#fffdf9] text-slate-900 rounded-3xl p-4 sm:p-7 shadow-2xl relative border-2 border-amber-300/60 print:border-0 print:shadow-none print:p-0">
+              
+              {/* Outer Guilloche / Double Gold Border Container */}
+              <div 
+                id="certificate-border-container" 
+                className="border-[5px] border-double border-amber-600/70 p-5 sm:p-8 rounded-2xl relative bg-white/90 shadow-inner flex flex-col justify-between print:border-amber-600"
+              >
+                {/* 4 Corner Ornaments */}
+                <div className="absolute top-3 left-3 w-8 h-8 border-t-2 border-l-2 border-amber-700 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                </div>
+                <div className="absolute top-3 right-3 w-8 h-8 border-t-2 border-r-2 border-amber-700 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                </div>
+                <div className="absolute bottom-3 left-3 w-8 h-8 border-b-2 border-l-2 border-amber-700 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                </div>
+                <div className="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 border-amber-700 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                </div>
 
-              {/* Content */}
-              <div className="space-y-1">
-                {/* Brand Header */}
-                <div className="flex flex-col items-center gap-0.5 pb-3">
-                  <div className="flex items-center gap-1.5">
-                    <Flame className="w-4 h-4 text-red-500 fill-current animate-pulse shrink-0" />
-                    <span className="text-xs font-black tracking-widest text-slate-800 uppercase font-sans">
+                {/* Certificate Header */}
+                <div className="text-center space-y-1.5 pt-2">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center shadow-sm">
+                      <Flame className="w-4 h-4 fill-current animate-pulse" />
+                    </div>
+                    <span className="text-sm font-black tracking-[0.25em] text-slate-900 uppercase">
                       Darun Donors
                     </span>
                   </div>
-                  <span className="text-[8px] uppercase tracking-[0.15em] text-slate-450 font-bold block leading-none">
-                    Official Donor Recognition
+                  <span className="text-[9px] uppercase tracking-[0.25em] text-slate-400 font-bold block">
+                    Official Humanitarian Recognition System
                   </span>
+
+                  <div className="pt-2">
+                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-amber-700 block">
+                      Certificate of Appreciation
+                    </span>
+                    <h2 className="font-serif font-black text-2xl sm:text-4xl text-amber-900 tracking-wide mt-0.5">
+                      LIFE SAVER AWARD
+                    </h2>
+                  </div>
+
+                  {/* Ornate Divider with Award Icon */}
+                  <div className="flex items-center justify-center gap-3 my-2">
+                    <div className="w-16 sm:w-24 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400 to-amber-600" />
+                    <Award className="w-5 h-5 text-amber-600 shrink-0" />
+                    <div className="w-16 sm:w-24 h-[1.5px] bg-gradient-to-l from-transparent via-amber-400 to-amber-600" />
+                  </div>
                 </div>
 
-                <span className="text-[11px] sm:text-xs font-black uppercase tracking-[0.25em] text-amber-700 block mb-1 font-sans border-t border-slate-100 pt-3">
-                  Certificate of Appreciation
-                </span>
-                <h2 className="font-serif font-black text-3xl sm:text-4xl bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 bg-clip-text text-transparent print:text-amber-600 tracking-wide">
-                  LIFE SAVER AWARD
-                </h2>
-                
-                {/* Styled Ornament Divider */}
-                <div className="flex items-center justify-center gap-3 my-3">
-                  <div className="w-14 h-[1px] bg-gradient-to-r from-transparent to-amber-500" />
-                  <Award className="w-4 h-4 text-amber-500 shrink-0" />
-                  <div className="w-14 h-[1px] bg-gradient-to-l from-transparent to-amber-500" />
-                </div>
-              </div>
+                {/* Recipient Commendation */}
+                <div className="text-center my-3 sm:my-4 space-y-2">
+                  <p className="text-xs sm:text-sm text-slate-500 font-serif italic">
+                    This distinguished recognition is proudly presented to
+                  </p>
 
-              <p className="text-xs text-slate-500 font-semibold leading-relaxed italic max-w-md mx-auto">
-                This certificate is proudly presented to
-              </p>
+                  <h3 className="text-2xl sm:text-4xl font-black text-slate-950 font-serif tracking-tight border-b-2 border-amber-400/80 inline-block px-4 pb-1">
+                    {foundDonor.name}
+                  </h3>
 
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight my-3 font-serif">
-                {foundDonor.name}
-              </h3>
-
-              <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed font-medium">
-                {language === 'bn' 
-                  ? `স্বেচ্ছায় রক্তদান করে মানবতার সেবায় অনন্য ভূমিকা পালনের জন্য এবং সফলভাবে ${foundDonor.total_donations} বার রক্তদান সম্পন্ন করায় আপনাকে এই সম্মাননা স্মারক প্রদান করা হলো।` 
-                  : `for their selfless dedication to humanity by donating blood ${foundDonor.total_donations} times. Your noble actions have directly helped save lives and serve as an inspiration to the community.`
-                }
-              </p>
-
-              {/* Bottom Details Grid with Wax Seal */}
-              <div className="grid grid-cols-3 items-center gap-4 pt-6 max-w-lg mx-auto border-t border-slate-200/80 print:border-slate-300">
-                {/* Left Column: Date Issued */}
-                <div className="text-left space-y-1">
-                  <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Date Issued</span>
-                  <strong className="text-xs font-semibold text-slate-700 block border-b border-slate-200 pb-1">
-                    {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </strong>
-                  <span className="text-[8px] text-slate-400 block uppercase tracking-tight">Certificate Date</span>
+                  <p className="text-xs sm:text-sm text-slate-700 max-w-lg mx-auto leading-relaxed pt-1.5 font-normal">
+                    {language === 'bn' 
+                      ? `স্বেচ্ছায় রক্তদান করে মানবতার সেবায় অনন্য ভূমিকা পালনের জন্য এবং সফলভাবে ${foundDonor.total_donations} বার রক্তদান সম্পন্ন করায় আপনাকে এই সম্মাননা স্মারক প্রদান করা হলো। আপনার নিঃস্বার্থ অবদান আমাদের সমাজের জন্য এক অবিস্মরণীয় প্রেরণা।` 
+                      : `for outstanding humanitarian dedication and saving precious lives by donating blood ${foundDonor.total_donations} times. Your noble sacrifice and selfless service serve as an enduring inspiration to our entire community.`
+                    }
+                  </p>
                 </div>
 
-                {/* Center Column: Red/Gold Wax Seal */}
-                <div className="relative flex justify-center -mt-2">
-                  <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-rose-600 to-red-700 flex items-center justify-center border border-amber-400 shadow-lg z-10 print:border-red-600">
-                    <div className="border border-amber-300/40 rounded-full w-[calc(100%-6px)] h-[calc(100%-6px)] flex flex-col items-center justify-center">
-                      <span className="text-[8px] font-bold text-amber-200/80 uppercase tracking-tight leading-none">Group</span>
-                      <span className="text-lg font-black text-white leading-none mt-0.5 drop-shadow">{foundDonor.blood_group}</span>
+                {/* Bottom Details Grid with Wax Seal */}
+                <div className="grid grid-cols-3 items-center gap-2 sm:gap-4 pt-4 border-t border-slate-200/90 print:border-slate-300">
+                  {/* Left Column: Date Issued */}
+                  <div className="text-left space-y-0.5 pl-1">
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Date Issued</span>
+                    <strong className="text-[11px] sm:text-xs font-bold text-slate-800 block border-b border-slate-200 pb-0.5">
+                      {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </strong>
+                    <span className="text-[7px] sm:text-[8px] text-slate-400 block tracking-tight">Verified Issuance Date</span>
+                  </div>
+
+                  {/* Center Column: Red & Gold Wax Seal */}
+                  <div className="relative flex justify-center">
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-rose-600 via-red-650 to-red-800 flex items-center justify-center border-2 border-amber-300 shadow-xl z-10 print:border-red-600">
+                      <div className="border border-amber-200/60 rounded-full w-[calc(100%-8px)] h-[calc(100%-8px)] flex flex-col items-center justify-center bg-gradient-to-br from-rose-700 to-red-900 shadow-inner">
+                        <span className="text-[7px] sm:text-[8px] font-bold text-amber-200/90 uppercase tracking-widest leading-none">Group</span>
+                        <span className="text-base sm:text-2xl font-black text-white leading-none mt-0.5 drop-shadow-md">
+                          {foundDonor.blood_group || 'O+'}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Seal Ribbons */}
+                    <div className="absolute top-12 sm:top-14 flex justify-center gap-1.5 pointer-events-none">
+                      <div className="w-3 sm:w-3.5 h-7 sm:h-9 bg-rose-700 rotate-12 transform origin-top shadow-md rounded-b-sm" />
+                      <div className="w-3 sm:w-3.5 h-7 sm:h-9 bg-red-800 -rotate-12 transform origin-top shadow-md rounded-b-sm" />
                     </div>
                   </div>
-                  {/* Seal Ribbons */}
-                  <div className="absolute top-12 flex justify-center gap-1 pointer-events-none print:opacity-85">
-                    <div className="w-3 h-8 bg-red-650/90 rotate-12 transform origin-top shadow-sm rounded-b-sm" />
-                    <div className="w-3 h-8 bg-red-750/90 -rotate-12 transform origin-top shadow-sm rounded-b-sm" />
+
+                  {/* Right Column: Registry Verification */}
+                  <div className="text-right space-y-0.5 pr-1">
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Verification</span>
+                    <strong className="text-[11px] sm:text-xs font-bold text-slate-800 block border-b border-slate-200 pb-0.5 font-serif italic text-red-600">
+                      Darun Donors Network
+                    </strong>
+                    <span className="text-[7px] sm:text-[8px] text-slate-400 block tracking-tight">Medical & Donor Registry</span>
                   </div>
                 </div>
 
-                {/* Right Column: Last Donation */}
-                <div className="text-right space-y-1">
-                  <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Last Donation</span>
-                  <strong className="text-xs font-semibold text-slate-700 block border-b border-slate-200 pb-1">
-                    {foundDonor.last_donation_date 
-                      ? new Date(foundDonor.last_donation_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                      : 'N/A'
-                    }
-                  </strong>
-                  <span className="text-[8px] text-slate-400 block uppercase tracking-tight">Donation Log</span>
+                {/* Certificate ID Watermark */}
+                <div className="text-center pt-3 pb-1">
+                  <span className="text-[8px] sm:text-[9px] text-slate-400 font-mono">
+                    ID: CERT-BD-{(foundDonor.id || 'DONOR').slice(0, 8).toUpperCase()}-{new Date().getFullYear()} • Official Authenticated Document
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2.5 justify-center print:hidden">
+            {/* Premium Action Toolbar (Download Image & PDF) */}
+            <div className="flex flex-wrap gap-2.5 sm:gap-3 justify-center items-center mt-4 print:hidden">
+              <button
+                type="button"
+                onClick={handleDownloadCertificateImage}
+                disabled={isDownloadingPng}
+                className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold rounded-2xl text-xs sm:text-sm shadow-lg shadow-orange-500/25 hover:shadow-orange-500/35 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
+              >
+                {isDownloadingPng ? (
+                  <>
+                    <Clock className="w-4 h-4 animate-spin" />
+                    <span>Generating Image...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Download Certificate (PNG)</span>
+                  </>
+                )}
+              </button>
+
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold rounded-xl text-xs shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
+                className="px-5 sm:px-6 py-2.5 sm:py-3 bg-white hover:bg-slate-50 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 font-extrabold rounded-2xl text-xs sm:text-sm shadow-md border border-slate-200 dark:border-zinc-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
               >
-                <Save className="w-4 h-4" />
-                Print / Save PDF
+                <Printer className="w-4 h-4 text-amber-500" />
+                <span>Print / Save as PDF</span>
               </button>
             </div>
           </div>
