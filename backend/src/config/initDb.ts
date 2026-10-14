@@ -77,6 +77,7 @@ export async function initDatabase() {
         last_donation_date DATE NULL,
         is_available TINYINT(1) DEFAULT 1 NOT NULL,
         total_donations INT DEFAULT 0 NOT NULL,
+        lifetime_donation_count INT DEFAULT 0 NOT NULL,
         password_hash VARCHAR(255) NULL,
         dob DATE NULL,
         email VARCHAR(255) NULL UNIQUE,
@@ -142,6 +143,40 @@ export async function initDatabase() {
     } catch (migErr: any) {
       console.warn('Migration note for emergency_requests.donor_id:', migErr.message);
     }
+
+    // Migration: ensure lifetime_donation_count and modern columns exist on donors table
+    const donorColumnsToCheck = [
+      { name: 'lifetime_donation_count', def: 'INT DEFAULT 0 NOT NULL AFTER total_donations' },
+      { name: 'avatar_url', def: 'VARCHAR(500) NULL AFTER google_id' },
+      { name: 'google_id', def: 'VARCHAR(100) NULL UNIQUE AFTER email' },
+      { name: 'email', def: 'VARCHAR(255) NULL UNIQUE AFTER dob' },
+      { name: 'dob', def: 'DATE NULL AFTER password_hash' },
+    ];
+
+    for (const col of donorColumnsToCheck) {
+      try {
+        const [exists]: any = await dbConn.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'donors' AND COLUMN_NAME = ?
+        `, [DB_NAME, col.name]);
+
+        if (!exists || exists.length === 0) {
+          await dbConn.query(`ALTER TABLE donors ADD COLUMN ${col.name} ${col.def}`);
+          console.log(`✅ Added ${col.name} column to donors table.`);
+        }
+      } catch (err: any) {
+        console.warn(`Migration note for donors.${col.name}:`, err.message);
+      }
+    }
+
+    try {
+      await dbConn.query(`
+        UPDATE donors 
+        SET lifetime_donation_count = total_donations 
+        WHERE lifetime_donation_count = 0 AND total_donations > 0
+      `);
+    } catch (e) {}
 
     // 6. Support Requests
     await dbConn.query(`
