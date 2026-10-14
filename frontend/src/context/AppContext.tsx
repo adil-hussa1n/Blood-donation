@@ -78,7 +78,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AREAS = [
   'Sylhet City Corporation',
-  // Sylhet District Upazilas
+
+  // Sylhet District (13 Upazilas)
   'Sylhet Sadar Upazila',
   'Beanibazar Upazila',
   'Bishwanath Upazila',
@@ -92,6 +93,40 @@ export const AREAS = [
   'South Surma Upazila',
   'Zakiganj Upazila',
   'Balaganj Upazila',
+
+  // Moulvibazar District (7 Upazilas)
+  'Moulvibazar Sadar Upazila',
+  'Barlekha Upazila',
+  'Juri Upazila',
+  'Kamalganj Upazila',
+  'Kulaura Upazila',
+  'Rajnagar Upazila',
+  'Sreemangal Upazila',
+
+  // Habiganj District (9 Upazilas)
+  'Habiganj Sadar Upazila',
+  'Ajmiriganj Upazila',
+  'Bahubal Upazila',
+  'Baniachang Upazila',
+  'Chunarughat Upazila',
+  'Lakhai Upazila',
+  'Madhabpur Upazila',
+  'Nabiganj Upazila',
+  'Sayestaganj Upazila',
+
+  // Sunamganj District (12 Upazilas)
+  'Sunamganj Sadar Upazila',
+  'Bishwamvarpur Upazila',
+  'Chhatak Upazila',
+  'Derai Upazila',
+  'Dharampasha Upazila',
+  'Dowarabazar Upazila',
+  'Jagannathpur Upazila',
+  'Jamalganj Upazila',
+  'Madyanagar Upazila',
+  'Shantiganj Upazila',
+  'Sullah Upazila',
+  'Tahirpur Upazila',
 ];
 
 export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
@@ -436,6 +471,37 @@ export const TRANSLATIONS = {
     area_southsurmaupazila: 'South Surma Upazila',
     area_zakiganjupazila: 'Zakiganj Upazila',
     area_balaganjupazila: 'Balaganj Upazila',
+    // Moulvibazar Upazilas
+    area_moulvibazarsadarupazila: 'Moulvibazar Sadar Upazila',
+    area_barlekhaupazila: 'Barlekha Upazila',
+    area_juriupazila: 'Juri Upazila',
+    area_kamalganjupazila: 'Kamalganj Upazila',
+    area_kulauraupazila: 'Kulaura Upazila',
+    area_rajnagarupazila: 'Rajnagar Upazila',
+    area_sreemangalupazila: 'Sreemangal Upazila',
+    // Habiganj Upazilas
+    area_habiganjsadarupazila: 'Habiganj Sadar Upazila',
+    area_ajmiriganjupazila: 'Ajmiriganj Upazila',
+    area_bahubalupazila: 'Bahubal Upazila',
+    area_baniachangupazila: 'Baniachang Upazila',
+    area_chunarughatupazila: 'Chunarughat Upazila',
+    area_lakhaiupazila: 'Lakhai Upazila',
+    area_madhabpurupazila: 'Madhabpur Upazila',
+    area_nabiganjupazila: 'Nabiganj Upazila',
+    area_sayestaganjupazila: 'Sayestaganj Upazila',
+    // Sunamganj Upazilas
+    area_sunamganjsadarupazila: 'Sunamganj Sadar Upazila',
+    area_bishwamvarpurupazila: 'Bishwamvarpur Upazila',
+    area_chhatakupazila: 'Chhatak Upazila',
+    area_deraiupazila: 'Derai Upazila',
+    area_dharampashaupazila: 'Dharampasha Upazila',
+    area_dowarabazarupazila: 'Dowarabazar Upazila',
+    area_jagannathpurupazila: 'Jagannathpur Upazila',
+    area_jamalganjupazila: 'Jamalganj Upazila',
+    area_madyanagarupazila: 'Madyanagar Upazila',
+    area_shantiganjupazila: 'Shantiganj Upazila',
+    area_sullahupazila: 'Sullah Upazila',
+    area_tahirpurupazila: 'Tahirpur Upazila',
 
     // Support Page
     supportTitle: 'Help & Support',
@@ -783,6 +849,37 @@ export const TRANSLATIONS = {
     area_southsurmaupazila: 'দক্ষিণ সুরমা উপজেলা',
     area_zakiganjupazila: 'জকিগঞ্জ উপজেলা',
     area_balaganjupazila: 'বালাগঞ্জ উপজেলা',
+    // মৌলভীবাজার উপজেলা
+    area_moulvibazarsadarupazila: 'মৌলভীবাজার সদর উপজেলা',
+    area_barlekhaupazila: 'বড়লেখা উপজেলা',
+    area_juriupazila: 'জুড়ী উপজেলা',
+    area_kamalganjupazila: 'কমলগঞ্জ উপজেলা',
+    area_kulauraupazila: 'কুলাউড়া উপজেলা',
+    area_rajnagarupazila: 'রাজনগর উপজেলা',
+    area_sreemangalupazila: 'শ্রীমঙ্গল উপজেলা',
+    // হবিগঞ্জ উপজেলা
+    area_habiganjsadarupazila: 'হবিগঞ্জ সদর উপজেলা',
+    area_ajmiriganjupazila: 'আজমিরীগঞ্জ উপজেলা',
+    area_bahubalupazila: 'বাহুবল উপজেলা',
+    area_baniachangupazila: 'বানিয়াচং উপজেলা',
+    area_chunarughatupazila: 'চুনারুঘাট উপজেলা',
+    area_lakhaiupazila: 'লাখাই উপজেলা',
+    area_madhabpurupazila: 'মাধবপুর উপজেলা',
+    area_nabiganjupazila: 'নবীগঞ্জ উপজেলা',
+    area_sayestaganjupazila: 'শায়েস্তাগঞ্জ উপজেলা',
+    // সুনামগঞ্জ উপজেলা
+    area_sunamganjsadarupazila: 'সুনামগঞ্জ সদর উপজেলা',
+    area_bishwamvarpurupazila: 'বিশ্বম্ভরপুর উপজেলা',
+    area_chhatakupazila: 'ছাতক উপজেলা',
+    area_deraiupazila: 'দিরাই উপজেলা',
+    area_dharampashaupazila: 'ধর্মপাশা উপজেলা',
+    area_dowarabazarupazila: 'দোয়ারাবাজার উপজেলা',
+    area_jagannathpurupazila: 'জগন্নাথপুর উপজেলা',
+    area_jamalganjupazila: 'জামালগঞ্জ উপজেলা',
+    area_madyanagarupazila: 'মধ্যনগর উপজেলা',
+    area_shantiganjupazila: 'শান্তিগঞ্জ উপজেলা',
+    area_sullahupazila: 'শাল্লা উপজেলা',
+    area_tahirpurupazila: 'তাহিরপুর উপজেলা',
 
     // Support Page
     supportTitle: 'সাহায্য ও সহযোগিতা',
