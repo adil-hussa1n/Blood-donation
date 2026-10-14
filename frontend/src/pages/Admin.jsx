@@ -751,7 +751,31 @@ export default function Admin() {
                         {paginatedDonors.map((donor) => (
                           <tr key={donor.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
                             <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={donor.name}>
-                              {donor.name}
+                              <div className="flex items-center gap-2.5">
+                                {donor.avatar_url ? (
+                                  <div className="relative shrink-0">
+                                    <img 
+                                      src={donor.avatar_url} 
+                                      alt={donor.name}
+                                      referrerPolicy="no-referrer"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        const fallback = e.currentTarget.nextElementSibling;
+                                        if (fallback) fallback.style.display = 'flex';
+                                      }}
+                                      className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
+                                    />
+                                    <div className="w-8 h-8 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 font-bold text-xs items-center justify-center border border-red-500/20 hidden">
+                                      {donor.name?.charAt(0) || 'D'}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-bold text-xs flex items-center justify-center border border-slate-200/60 dark:border-zinc-700 shrink-0">
+                                    {donor.name?.charAt(0) || 'D'}
+                                  </div>
+                                )}
+                                <span className="truncate">{donor.name}</span>
+                              </div>
                             </td>
                             <td className="p-4">
                               <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-2 py-0.5 rounded-md text-xs">
@@ -793,13 +817,37 @@ export default function Admin() {
                     {paginatedDonors.map((donor) => (
                       <div key={donor.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
                         <div className="flex justify-between items-start">
-                          <div className="text-left space-y-1">
-                            <span className="font-extrabold text-slate-900 dark:text-white text-base block">
-                              {donor.name}
-                            </span>
-                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
-                              {donor.phone}
-                            </span>
+                          <div className="flex items-center gap-2.5 text-left">
+                            {donor.avatar_url ? (
+                              <div className="relative shrink-0">
+                                <img 
+                                  src={donor.avatar_url} 
+                                  alt={donor.name}
+                                  referrerPolicy="no-referrer"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    const fallback = e.currentTarget.nextElementSibling;
+                                    if (fallback) fallback.style.display = 'flex';
+                                  }}
+                                  className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
+                                />
+                                <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 font-bold text-sm items-center justify-center border border-red-500/20 hidden">
+                                  {donor.name?.charAt(0) || 'D'}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-bold text-sm flex items-center justify-center border border-slate-200/60 dark:border-zinc-700 shrink-0">
+                                {donor.name?.charAt(0) || 'D'}
+                              </div>
+                            )}
+                            <div className="space-y-0.5">
+                              <span className="font-extrabold text-slate-900 dark:text-white text-base block">
+                                {donor.name}
+                              </span>
+                              <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                                {donor.phone}
+                              </span>
+                            </div>
                           </div>
                           <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-3 py-1 rounded-lg text-xs">
                             {donor.blood_group}

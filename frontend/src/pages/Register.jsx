@@ -507,12 +507,23 @@ export default function Register() {
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 shadow-sm">
               <div className="flex items-center gap-3">
                 {googleProfile.avatar_url ? (
-                  <img src={googleProfile.avatar_url} alt={googleProfile.name} className="w-10 h-10 rounded-full border border-blue-300 dark:border-blue-700 shadow-sm" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                    {googleProfile.name?.charAt(0) || 'G'}
-                  </div>
-                )}
+                  <img 
+                    src={googleProfile.avatar_url} 
+                    alt={googleProfile.name} 
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.nextElementSibling;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                    className="w-10 h-10 rounded-full border border-blue-300 dark:border-blue-700 shadow-sm object-cover" 
+                  />
+                ) : null}
+                <div 
+                  className={`w-10 h-10 rounded-full bg-blue-500 text-white items-center justify-center font-bold text-sm shadow-sm ${googleProfile.avatar_url ? 'hidden' : 'flex'}`}
+                >
+                  {googleProfile.name?.charAt(0) || 'G'}
+                </div>
                 <div>
                   <span className="text-xs font-bold text-blue-900 dark:text-blue-100 flex items-center gap-1.5">
                     {googleProfile.name}
@@ -811,8 +822,32 @@ export default function Register() {
                   
                   <div className="flex items-center justify-between gap-3 relative z-10">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500 text-white font-black text-lg sm:text-xl flex items-center justify-center shadow-md">
-                        {foundDonor.blood_group}
+                      <div className="relative shrink-0">
+                        {foundDonor.avatar_url ? (
+                          <div className="relative">
+                            <img 
+                              src={foundDonor.avatar_url} 
+                              alt={foundDonor.name} 
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                const fallback = e.currentTarget.nextElementSibling;
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                              className="w-12 h-12 rounded-2xl object-cover border-2 border-red-500/30 shadow-md"
+                            />
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white font-black text-xl items-center justify-center shadow-md hidden">
+                              {foundDonor.blood_group}
+                            </div>
+                            <span className="absolute -bottom-1 -right-1 bg-gradient-to-br from-red-600 to-rose-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-md shadow-sm border border-white dark:border-zinc-900 leading-tight">
+                              {foundDonor.blood_group}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500 text-white font-black text-lg sm:text-xl flex items-center justify-center shadow-md">
+                            {foundDonor.blood_group}
+                          </div>
+                        )}
                       </div>
                       <div>
                         <h4 className="font-extrabold text-slate-900 dark:text-white text-base flex items-center gap-1.5">

@@ -56,10 +56,32 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            {/* Blood Group Squircle */}
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white font-black text-lg shadow-md shadow-red-500/25 flex items-center justify-center shrink-0 tracking-wider">
-              {donor.blood_group}
-            </div>
+            {/* Blood Group / Avatar Squircle */}
+            {donor.avatar_url ? (
+              <div className="relative shrink-0">
+                <img 
+                  src={donor.avatar_url} 
+                  alt={donor.name}
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                    const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'flex';
+                  }}
+                  className="w-12 h-12 rounded-2xl object-cover border-2 border-red-500/20 shadow-md shadow-red-500/10"
+                />
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white font-black text-lg items-center justify-center shadow-md shadow-red-500/25 tracking-wider hidden">
+                  {donor.blood_group}
+                </div>
+                <span className="absolute -bottom-1 -right-1 bg-gradient-to-br from-red-600 to-rose-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-md shadow-sm border border-white dark:border-zinc-900 leading-tight">
+                  {donor.blood_group}
+                </span>
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white font-black text-lg shadow-md shadow-red-500/25 flex items-center justify-center shrink-0 tracking-wider">
+                {donor.blood_group}
+              </div>
+            )}
 
             {/* Donor Identity */}
             <div className="min-w-0">

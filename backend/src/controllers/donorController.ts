@@ -281,6 +281,7 @@ export async function updateDonorProfile(req: Request, res: Response): Promise<v
     if (profileData.total_donations !== undefined) { updates.push('total_donations = ?'); values.push(profileData.total_donations); }
     if (profileData.lifetime_donation_count !== undefined) { updates.push('lifetime_donation_count = ?'); values.push(profileData.lifetime_donation_count); }
     if (profileData.dob !== undefined) { updates.push('dob = ?'); values.push(profileData.dob || null); }
+    if (profileData.avatar_url !== undefined) { updates.push('avatar_url = ?'); values.push(profileData.avatar_url ? String(profileData.avatar_url).trim() : null); }
     if (profileData.new_password) {
       const newHash = await bcrypt.hash(profileData.new_password, 10);
       updates.push('password_hash = ?');

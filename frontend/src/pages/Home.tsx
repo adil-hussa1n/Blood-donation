@@ -572,13 +572,37 @@ export default function Home() {
                                 return (
                                   <tr key={normalizedDonor.id} className="hover:bg-slate-50/70 dark:hover:bg-zinc-800/40 transition-colors duration-150">
                                     <td className="py-4 px-4 align-middle">
-                                      <div className="flex flex-col gap-1">
-                                        <span className="font-extrabold text-slate-900 dark:text-white leading-snug">
-                                          {normalizedDonor.name}
-                                        </span>
-                                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide w-fit ${badge.color}`}>
-                                          {getDonorBadgeLabel(badge.label, t)}
-                                        </span>
+                                      <div className="flex items-center gap-3">
+                                        {normalizedDonor.avatar_url ? (
+                                          <div className="relative shrink-0">
+                                            <img 
+                                              src={normalizedDonor.avatar_url} 
+                                              alt={normalizedDonor.name}
+                                              referrerPolicy="no-referrer"
+                                              onError={(e) => {
+                                                (e.target as HTMLElement).style.display = 'none';
+                                                const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
+                                                if (fallback) fallback.style.display = 'flex';
+                                              }}
+                                              className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
+                                            />
+                                            <div className="w-9 h-9 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 font-bold text-xs items-center justify-center border border-red-500/20 hidden">
+                                              {normalizedDonor.name?.charAt(0) || 'D'}
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-bold text-xs flex items-center justify-center border border-slate-200/60 dark:border-zinc-700 shrink-0">
+                                            {normalizedDonor.name?.charAt(0) || 'D'}
+                                          </div>
+                                        )}
+                                        <div className="flex flex-col gap-1 min-w-0">
+                                          <span className="font-extrabold text-slate-900 dark:text-white leading-snug truncate">
+                                            {normalizedDonor.name}
+                                          </span>
+                                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide w-fit ${badge.color}`}>
+                                            {getDonorBadgeLabel(badge.label, t)}
+                                          </span>
+                                        </div>
                                       </div>
                                     </td>
                                     <td className="py-4 px-4 align-middle">
