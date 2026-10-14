@@ -14,7 +14,7 @@ const DB_NAME = process.env.DB_NAME || 'blood_donation_db';
 export async function initDatabase() {
   console.log('🔄 Initializing MySQL Database...');
 
-  // Step 1: Connect without database specified to create database if not exists
+  // Step 1: Attempt to create database if not exists (gracefully skips on managed cloud DBs where user has restricted scope)
   let rootConn;
   try {
     rootConn = await mysql.createConnection({
@@ -30,9 +30,11 @@ export async function initDatabase() {
     console.log(`✅ Database '${DB_NAME}' verified/created.`);
     await rootConn.end();
   } catch (err: any) {
-    console.error('❌ Failed to create/verify database:', err.message);
-    if (rootConn) await rootConn.end();
-    return false;
+    // If user lacks global CREATE DATABASE privilege (common on cloud hosting like cPanel/managed MySQL), log warning and continue
+    console.warn(`⚠️ Note on DB verification (${err.message}). Connecting directly to '${DB_NAME}'...`);
+    if (rootConn) {
+      try { await rootConn.end(); } catch (_) {}
+    }
   }
 
   // Step 2: Connect to the specific database and create tables
