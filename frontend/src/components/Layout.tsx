@@ -262,13 +262,13 @@ export default function Layout({ children }: LayoutProps) {
               target="_blank"
               rel="noopener noreferrer"
               className="group flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-purple-500/10 via-fuchsia-500/10 to-indigo-500/10 dark:from-purple-950/40 dark:via-fuchsia-950/30 dark:to-indigo-950/40 border border-purple-500/25 hover:border-purple-500/50 shadow-xs hover:shadow-md hover:scale-[1.02] transition-all duration-300"
-              title="Visit Darun tech Private Limited - daruntech.com"
+              title="Visit Darun Tech Private Limited - daruntech.com"
             >
               <div className="w-8 h-8 rounded-xl bg-white p-1 shadow-xs flex items-center justify-center shrink-0 border border-purple-200/50 dark:border-purple-800/40 group-hover:rotate-6 transition-transform duration-300">
-                <img 
-                  src="/daruntech-icon.png" 
-                  alt="Darun Tech Icon" 
-                  className="w-full h-full object-contain" 
+                <img
+                  src="/daruntech-icon.png"
+                  alt="Darun Tech Icon"
+                  className="w-full h-full object-contain"
                 />
               </div>
               <div className="text-left md:text-right">
@@ -277,7 +277,7 @@ export default function Layout({ children }: LayoutProps) {
                 </span>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors leading-tight">
-                    Darun tech Private Limited
+                    Darun Tech Private Limited
                   </span>
                   <ExternalLink className="w-3 h-3 text-purple-500 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                 </div>

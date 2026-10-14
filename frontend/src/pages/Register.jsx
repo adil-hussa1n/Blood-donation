@@ -1372,7 +1372,7 @@ export default function Register() {
       {/* Confirmation Modal Before Logging New Donation */}
       {showDonationConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 border border-slate-200 dark:border-zinc-800 shadow-2xl animate-scale-up relative bg-white/95 dark:bg-zinc-900/95">
+          <div className="w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 border border-slate-200 dark:border-zinc-800 shadow-2xl animate-scale-up relative bg-white dark:bg-zinc-900">
             {/* Header Icon */}
             <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto shadow-inner">
               <History className="w-7 h-7" />
