@@ -467,7 +467,29 @@ export default function Register() {
             onSubmit={handleRegister} 
             className="md:col-span-8 md:col-start-3 glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-slate-200/50 dark:border-zinc-800/50 space-y-5 sm:space-y-6 animate-scale-up"
           >
-            <div className="flex items-center gap-3 pb-4 border-b border-slate-200/50 dark:border-zinc-800/50">
+            {/* High-Visibility Profile Completion Warning Banner */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-red-500/15 border-2 border-amber-500/40 dark:border-amber-500/30 p-4 sm:p-5 shadow-lg shadow-amber-500/5 animate-pulse-glow">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-red-500 text-white flex items-center justify-center shrink-0 shadow-md">
+                  <AlertTriangle className="w-5 h-5 animate-bounce" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-black text-slate-900 dark:text-white text-sm sm:text-base tracking-tight">
+                      {t('completeProfileBannerTitle')}
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500 text-white shadow-sm">
+                      {t('completeProfileStepNotice')}
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-xs text-slate-700 dark:text-zinc-300 font-medium leading-relaxed">
+                    {t('completeProfileBannerDesc')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
               <div className="w-9 h-9 rounded-xl bg-red-500 text-white flex items-center justify-center shadow-md">
                 <UserPlus className="w-5 h-5" />
               </div>
@@ -531,9 +553,15 @@ export default function Register() {
 
               {/* Phone Number */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                  {t('phoneUnique')}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1">
+                    <span>{t('phoneUnique')}</span>
+                    <span className="text-red-500 font-black">*</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded border border-red-200/50 dark:border-red-900/50">
+                    {language === 'bn' ? 'জরুরি প্রয়োজনে আবশ্যক' : 'Required for emergencies'}
+                  </span>
+                </div>
                 <div className="relative">
                   <input
                     type="tel"
@@ -541,22 +569,28 @@ export default function Register() {
                     placeholder={t('phonePlaceholder')}
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-red-200 dark:border-red-900/40 bg-red-50/20 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white font-medium"
                   />
-                  <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <Phone className="w-4 h-4 text-red-500 absolute left-3.5 top-3.5" />
                 </div>
               </div>
 
 
               {/* Blood Group */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                  {t('bloodGroup')}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1">
+                    <span>{t('bloodGroup')}</span>
+                    <span className="text-red-500 font-black">*</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded border border-red-200/50 dark:border-red-900/50">
+                    {language === 'bn' ? 'সঠিক গ্রুপ দিন' : 'Accurate Match'}
+                  </span>
+                </div>
                 <select
                   value={regBloodGroup}
                   onChange={(e) => setRegBloodGroup(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
+                  className="w-full px-4 py-2.5 rounded-xl border-2 border-red-200 dark:border-red-900/40 bg-red-50/20 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer font-bold"
                 >
                   {BLOOD_GROUPS.map(g => (
                     <option key={g} value={g}>{g}</option>
@@ -566,13 +600,19 @@ export default function Register() {
 
               {/* Area */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                  {t('selectArea')}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1">
+                    <span>{t('selectArea')}</span>
+                    <span className="text-red-500 font-black">*</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
+                    {language === 'bn' ? 'সিলেট বিভাগের উপজেলা' : 'Sylhet Division'}
+                  </span>
+                </div>
                 <select
                   value={regArea}
                   onChange={(e) => setRegArea(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
+                  className="w-full px-4 py-2.5 rounded-xl border-2 border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer font-medium"
                 >
                   {DISTRICT_AREAS.map((district) => (
                     <optgroup
@@ -685,9 +725,10 @@ export default function Register() {
             <button
               type="submit"
               disabled={formLoading}
-              className="w-full bg-red-500 hover:bg-red-600 text-white font-extrabold py-3 px-4 rounded-xl shadow-lg shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 mt-6 text-sm cursor-pointer"
+              className="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 hover:to-rose-500 text-white font-black py-3.5 px-6 rounded-2xl shadow-xl shadow-red-500/25 active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2.5 mt-6 text-sm sm:text-base cursor-pointer tracking-wide"
             >
-              {formLoading ? t('registeringButton') : t('saveAndEnterDashboard')}
+              <CheckCircle2 className="w-5 h-5" />
+              <span>{formLoading ? t('registeringButton') : t('saveAndEnterDashboard')}</span>
             </button>
           </form>
         )}
