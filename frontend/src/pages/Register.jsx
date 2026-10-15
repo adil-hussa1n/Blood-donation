@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, Sparkles, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock, Download, Printer, ShieldCheck, Check } from 'lucide-react';
-import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel, calculateDaysSince } from '../context/AppContext';
+import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getDonorDonationCount, getAreaLabel, calculateDaysSince } from '../context/AppContext';
 import { dbService } from '../services/db';
 import GoogleAuthButton from '../components/GoogleAuthButton';
 import { appStorage as localStorage } from '../services/storage';
@@ -676,9 +676,11 @@ export default function Register() {
           setDonorHistory(historyRes.data || []);
         }
 
+        const newCount = getDonorDonationCount(foundDonor) + 1;
         const updatedDonor = normalizeDonor({
           ...foundDonor,
-          total_donations: (foundDonor.total_donations || 0) + 1,
+          total_donations: newCount,
+          lifetime_donation_count: newCount,
           last_donation_date: newDonationDate,
           is_available: false
         });
