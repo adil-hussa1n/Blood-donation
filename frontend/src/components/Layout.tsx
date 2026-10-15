@@ -294,7 +294,7 @@ export default function Layout({ children }: LayoutProps) {
       </header>
 
       {/* Main Body */}
-      <main className="flex-grow max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8 animate-fade-in" style={{ paddingLeft: 'max(0.75rem, env(safe-area-inset-left))', paddingRight: 'max(0.75rem, env(safe-area-inset-right))' }}>
+      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8 animate-fade-in">
         {children}
       </main>
 
@@ -313,6 +313,20 @@ export default function Layout({ children }: LayoutProps) {
                 className="text-xs sm:text-sm font-bold text-slate-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 transition-colors"
               >
                 {t('supportTitle')}
+              </Link>
+              <span className="text-slate-300 dark:text-zinc-700">|</span>
+              <Link
+                to="/terms"
+                className="text-xs sm:text-sm font-bold text-slate-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 transition-colors"
+              >
+                {t('termsNav')}
+              </Link>
+              <span className="text-slate-300 dark:text-zinc-700">|</span>
+              <Link
+                to="/privacy"
+                className="text-xs sm:text-sm font-bold text-slate-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 transition-colors"
+              >
+                {t('privacyNav')}
               </Link>
             </div>
             <span className="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-400 font-semibold tracking-wide">

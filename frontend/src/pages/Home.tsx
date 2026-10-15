@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Navigation, Sparkles } from 'lucide-react';
+import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Navigation, Leaf, Lock } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
 import QuickStats from '../components/QuickStats';
 import DonorCard from '../components/DonorCard';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 import { Donor, EmergencyRequest } from '../types';
 
 export default function Home() {
@@ -30,31 +32,31 @@ export default function Home() {
 
   // Security: track revealed contact numbers
   const [revealedContacts, setRevealedContacts] = useState<Record<string, boolean>>({});
+  const [showLoginPromptModal, setShowLoginPromptModal] = useState(false);
+  const [targetDonorForLogin, setTargetDonorForLogin] = useState<Donor | null>(null);
 
-  // Table vs Grid View State: auto-selects 'grid' on mobile screens (< 768px)
+  const handleRevealContact = (donor: Donor) => {
+    if (!currentDonor) {
+      setTargetDonorForLogin(donor);
+      setShowLoginPromptModal(true);
+      return;
+    }
+    setRevealedContacts(prev => ({ ...prev, [donor.id]: true }));
+  };
+
+  // Table vs Grid View State: auto-selects 'grid' on mobile screens (< 768px) by default, while allowing users to switch freely
   const [viewMode, setViewMode] = useState<'table' | 'grid'>(() => {
     if (typeof window !== 'undefined') {
-      // If on mobile device screen, auto select grid view
+      const saved = localStorage.getItem('bloodify_donors_view');
+      // If user has explicitly chosen a view mode before, honor their choice
+      if (saved === 'table' || saved === 'grid') return saved;
+      // Default to grid view on mobile devices
       if (window.innerWidth < 768) {
         return 'grid';
       }
-      const saved = localStorage.getItem('bloodify_donors_view');
-      if (saved === 'table' || saved === 'grid') return saved;
     }
     return 'table';
   });
-
-  // Automatically switch to grid view when viewport resizes to mobile
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setViewMode('grid');
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const handleViewModeChange = (mode: 'table' | 'grid') => {
     setViewMode(mode);
@@ -170,9 +172,17 @@ export default function Home() {
         <div className="absolute left-1/3 bottom-0 w-64 h-64 bg-red-400/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
 
         <div className="max-w-3xl relative z-10 space-y-6 text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-xs font-semibold uppercase tracking-wider text-red-200">
-            <Heart className="w-3.5 h-3.5 fill-current text-red-500 animate-pulse" />
-            {t('empoweringCommunity')}
+          {/* Sylhet Tea Leaf Inspired Dark Green Badge */}
+          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-950 via-green-900 to-teal-950 text-white border border-emerald-400/40 shadow-lg shadow-emerald-950/40 backdrop-blur-md transition-all hover:scale-[1.02] group">
+            <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-400/50 flex items-center justify-center shrink-0">
+              <Leaf className="w-3.5 h-3.5 text-emerald-300 fill-emerald-400/30 group-hover:rotate-12 transition-transform duration-300" />
+            </div>
+            <span className="text-xs sm:text-sm font-black tracking-wide text-white drop-shadow-sm font-sans flex items-center gap-1.5">
+              <span>{t('empoweringCommunity')}</span>
+              <span className="text-[10px] bg-emerald-400/25 text-emerald-200 border border-emerald-300/40 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-widest hidden xs:inline-block">
+                🍃 {language === 'bn' ? 'দুটি পাতা একটি কুঁড়ি' : 'Land of Two Leaves'}
+              </span>
+            </span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl md:text-5xl font-black tracking-tight leading-tight">
@@ -205,140 +215,167 @@ export default function Home() {
       {/* Stats Dashboard */}
       <QuickStats donors={donors} emergencyRequests={emergencyRequests} />
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
-
-        {/* Left Filters Panel */}
-        <div className="lg:col-span-1 space-y-3 lg:space-y-6">
-          {/* Mobile filter toggle */}
+      {/* Top Filter Panel (Full-Width Responsive Bar) */}
+      <div className="space-y-4 text-left">
+        {/* Mobile Filter Toggle Button */}
+        <div className="flex md:hidden items-center justify-between">
           <button
             type="button"
             onClick={() => setFilterOpen(prev => !prev)}
-            className="lg:hidden w-full flex items-center justify-between px-4 py-3 glass-panel rounded-2xl border border-slate-200/50 dark:border-zinc-800/50 text-sm font-bold text-slate-700 dark:text-zinc-300 cursor-pointer"
+            className="w-full flex items-center justify-between px-4 py-3 glass-panel rounded-2xl border border-slate-200/50 dark:border-zinc-800/50 text-sm font-bold text-slate-700 dark:text-zinc-300 cursor-pointer shadow-xs"
           >
             <span className="flex items-center gap-2">
               <Search className="w-4 h-4 text-red-500" />
               {t('filterDonorsTitle')}
               {(appliedBloodGroup || appliedArea || appliedSearchQuery) && (
-                <span className="w-2 h-2 bg-red-500 rounded-full" />
+                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               )}
             </span>
             <span className={`text-slate-400 text-xs transition-transform duration-200 ${filterOpen ? 'rotate-180' : ''}`}>▼</span>
           </button>
-          <form
-            onSubmit={handleSearchSubmit}
-            className={`glass-panel rounded-2xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 text-left space-y-5 ${filterOpen ? 'block' : 'hidden'} lg:block`}
-          >
-            <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-800/50 pb-3">
-              <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-sm md:text-base">
-                <Search className="w-4 h-4 text-red-500" /> {t('filterDonorsTitle')}
-              </h3>
-              {(localBloodGroup || localArea || localSearchQuery || appliedBloodGroup || appliedArea || appliedSearchQuery) && (
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="text-xs font-semibold text-red-500 hover:text-red-650 flex items-center gap-0.5 cursor-pointer"
-                >
-                  <X className="w-3 h-3" /> {t('clearButton')}
-                </button>
-              )}
-            </div>
-
-            <div className="space-y-4">
-              {/* Search input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-                  {t('searchByNamePhoneLabel')}
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder={t('searchQueryPlaceholder')}
-                    value={localSearchQuery}
-                    onChange={(e) => setLocalSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all dark:text-white"
-                  />
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-                </div>
-              </div>
-
-              {/* Area select */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-                    {t('selectAreaLabel')}
-                  </label>
-                  {currentDonor?.area && localArea === currentDonor.area && (
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 animate-fade-in">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                      {language === 'bn' ? 'স্বয়ংক্রিয় সনাক্তকৃত' : 'Auto-detected'}
-                    </span>
-                  )}
-                </div>
-                <div className="relative">
-                  <select
-                    value={localArea}
-                    onChange={(e) => setLocalArea(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all dark:text-white appearance-none cursor-pointer"
-                  >
-                    <option value="">{t('allBeanibazarAreas')}</option>
-                    {DISTRICT_AREAS.map((district) => (
-                      <optgroup
-                        key={district.id}
-                        label={`📍 ${language === 'bn' ? district.nameBn : district.name}`}
-                        className={district.color.optGroupClass}
-                      >
-                        {district.upazilas.map((area) => (
-                          <option key={area} value={area} className="text-slate-800 dark:text-zinc-200 font-normal">
-                            {getAreaLabel(area, t)} {currentDonor?.area === area ? (language === 'bn' ? '⭐ (আপনার এলাকা)' : '⭐ (Your Area)') : ''}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                  <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-                </div>
-              </div>
-
-              {/* Quick Blood Group pills */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                  {t('bloodGroup')}
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {BLOOD_GROUPS.map((group) => {
-                    const active = localBloodGroup === group;
-                    return (
-                      <button
-                        type="button"
-                        key={group}
-                        onClick={() => setLocalBloodGroup(active ? '' : group)}
-                        className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${active
-                          ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/10'
-                          : 'border-slate-200 dark:border-zinc-800 hover:border-red-500 dark:hover:border-red-500/50 bg-slate-50/30 dark:bg-zinc-900/30 text-slate-700 dark:text-zinc-300'
-                          }`}
-                      >
-                        {group}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Search Submit Button */}
-            <button
-              type="submit"
-              className="w-full bg-red-500 hover:bg-red-650 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-md hover:shadow-red-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer mt-4"
-            >
-              <Search className="w-4 h-4" />
-              {t('searchButton')}
-            </button>
-          </form>
         </div>
 
-        {/* Right Donors List + Emergency feed */}
-        <div className="lg:col-span-3 space-y-8 text-left">
+        {/* Filter Card Form (Visible on desktop/tablet, toggleable on mobile) */}
+        <form
+          onSubmit={handleSearchSubmit}
+          className={`glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/60 dark:border-zinc-800/60 space-y-4 sm:space-y-5 shadow-xs ${filterOpen ? 'block' : 'hidden'} md:block animate-fade-in`}
+        >
+          {/* Header Row */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-red-500/10 dark:bg-red-500/20 text-red-500 flex items-center justify-center shrink-0">
+                <Search className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base leading-tight">
+                  {t('filterDonorsTitle')}
+                </h3>
+                <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+                  {language === 'bn' ? 'সিলেটের রক্তদাতা ও এলাকা অনুযায়ী সন্ধান করুন' : 'Search across Sylhet by blood group, area, or name'}
+                </span>
+              </div>
+            </div>
+
+            {(localBloodGroup || localArea || localSearchQuery || appliedBloodGroup || appliedArea || appliedSearchQuery) && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="text-xs font-bold text-red-500 hover:text-red-650 dark:text-red-400 dark:hover:text-red-300 flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>{t('clearButton')}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Primary Filter Controls: Search Input + Area Select + Submit Button */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5 items-end">
+            {/* Search by Name/Phone */}
+            <div className="lg:col-span-5 space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider block">
+                {t('searchByNamePhoneLabel')}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder={t('searchQueryPlaceholder')}
+                  value={localSearchQuery}
+                  onChange={(e) => setLocalSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all dark:text-white"
+                />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+              </div>
+            </div>
+
+            {/* Select Area */}
+            <div className="lg:col-span-5 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider block">
+                  {t('selectAreaLabel')}
+                </label>
+                {currentDonor?.area && localArea === currentDonor.area && (
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 animate-fade-in">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    {language === 'bn' ? 'স্বয়ংক্রিয় সনাক্তকৃত' : 'Auto-detected'}
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <select
+                  value={localArea}
+                  onChange={(e) => setLocalArea(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all dark:text-white appearance-none cursor-pointer"
+                >
+                  <option value="">{t('allBeanibazarAreas')}</option>
+                  {DISTRICT_AREAS.map((district) => (
+                    <optgroup
+                      key={district.id}
+                      label={`📍 ${language === 'bn' ? district.nameBn : district.name}`}
+                      className={district.color.optGroupClass}
+                    >
+                      {district.upazilas.map((area) => (
+                        <option key={area} value={area} className="text-slate-800 dark:text-zinc-200 font-normal">
+                          {getAreaLabel(area, t)} {currentDonor?.area === area ? (language === 'bn' ? '⭐ (আপনার এলাকা)' : '⭐ (Your Area)') : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+              </div>
+            </div>
+
+            {/* Submit Filter Button */}
+            <div className="sm:col-span-2 lg:col-span-2">
+              <button
+                type="submit"
+                className="w-full bg-red-500 hover:bg-red-650 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-md hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer h-[42px]"
+              >
+                <Search className="w-4 h-4" />
+                <span>{t('searchButton')}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Blood Group Filter Pills */}
+          <div className="space-y-2 pt-1 border-t border-slate-200/40 dark:border-zinc-800/40">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider block">
+                {t('bloodGroup')}
+              </label>
+              <span className="text-[11px] text-slate-400 dark:text-zinc-500">
+                {localBloodGroup ? `${t('selectedLabel') || 'Selected'}: ${localBloodGroup}` : (language === 'bn' ? 'সব রক্তের গ্রুপ' : 'All Blood Groups')}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+              {BLOOD_GROUPS.map((group) => {
+                const active = localBloodGroup === group;
+                return (
+                  <button
+                    type="button"
+                    key={group}
+                    onClick={() => {
+                      const next = active ? '' : group;
+                      setLocalBloodGroup(next);
+                      setAppliedBloodGroup(next);
+                    }}
+                    className={`py-2 px-1 rounded-xl text-xs font-extrabold border transition-all cursor-pointer text-center ${active
+                      ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/20 scale-[1.02]'
+                      : 'border-slate-200 dark:border-zinc-800 hover:border-red-500 dark:hover:border-red-500/50 bg-slate-50/40 dark:bg-zinc-900/40 text-slate-700 dark:text-zinc-300'
+                      }`}
+                  >
+                    {group}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </form>
+      </div>
+
+      {/* Main Content Area: Full Width */}
+      <div className="space-y-8 text-left w-full">
+
 
           {/* Recent Emergencies Highlight banner */}
           {recentRequests.length > 0 && (
@@ -585,7 +622,7 @@ export default function Home() {
                                   <tr key={normalizedDonor.id} className="hover:bg-slate-50/70 dark:hover:bg-zinc-800/40 transition-colors duration-150">
                                     <td className="py-4 px-4 align-middle">
                                       <div className="flex items-center gap-3">
-                                        {normalizedDonor.avatar_url ? (
+                                        {normalizedDonor.avatar_url && !normalizedDonor.hide_photo ? (
                                           <div className="relative shrink-0">
                                             <img
                                               src={normalizedDonor.avatar_url}
@@ -624,7 +661,15 @@ export default function Home() {
                                     </td>
                                     <td className="py-4 px-4 align-middle">
                                       <span className="inline-block font-mono text-xs font-bold text-slate-700 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800/80 px-2.5 py-1 rounded-lg border border-slate-200/60 dark:border-zinc-700/60 whitespace-nowrap">
-                                        {revealedContacts[normalizedDonor.id] ? normalizedDonor.phone : maskPhone(normalizedDonor.phone)}
+                                        {isCooldownActive ? (
+                                          <span className="text-amber-600 dark:text-amber-400 font-semibold italic text-[11px]">
+                                            {language === 'bn' ? 'গোপন (বিশ্রামে)' : 'Hidden (Resting)'}
+                                          </span>
+                                        ) : revealedContacts[normalizedDonor.id] ? (
+                                          normalizedDonor.phone
+                                        ) : (
+                                          maskPhone(normalizedDonor.phone)
+                                        )}
                                       </span>
                                     </td>
                                     <td className="py-4 px-4 align-middle">
@@ -653,9 +698,14 @@ export default function Home() {
                                       }
                                     </td>
                                     <td className="py-4 px-4 align-middle text-right whitespace-nowrap">
-                                      {!revealedContacts[normalizedDonor.id] ? (
+                                      {isCooldownActive ? (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[11px] font-semibold border border-amber-500/20">
+                                          <Clock className="w-3 h-3 text-amber-500" />
+                                          <span>{language === 'bn' ? 'বিশ্রামে' : 'Resting'}</span>
+                                        </span>
+                                      ) : !revealedContacts[normalizedDonor.id] ? (
                                         <button
-                                          onClick={() => setRevealedContacts(prev => ({ ...prev, [normalizedDonor.id]: true }))}
+                                          onClick={() => handleRevealContact(normalizedDonor)}
                                           className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
                                           title={t('showContact')}
                                         >
@@ -690,14 +740,14 @@ export default function Home() {
                         </div>
                       </div>
                     ) : (
-                      /* GRID VIEW */
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 animate-fade-in">
+                      /* GRID VIEW: 1 col on mobile, 2 col on tablet/iPad, 3 col on laptops, 4 col on large screens */
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 animate-fade-in">
                         {paginatedDonors.map((donor) => (
                           <DonorCard
                             key={donor.id}
                             donor={donor}
                             revealed={!!revealedContacts[donor.id]}
-                            onReveal={() => setRevealedContacts(prev => ({ ...prev, [donor.id]: true }))}
+                            onReveal={() => handleRevealContact(donor)}
                           />
                         ))}
                       </div>
@@ -734,9 +784,75 @@ export default function Home() {
               </>
             )}
           </div>
-        </div>
 
       </div>
+
+      {/* LOGIN REQUIRED MODAL TO VIEW CONTACTS */}
+      {showLoginPromptModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fade-in">
+          <div 
+            className="relative w-full max-w-md rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200/80 dark:border-zinc-800 space-y-5 animate-scale-up"
+            style={{ backgroundColor: 'var(--modal-bg, #ffffff)' }}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowLoginPromptModal(false);
+                setTargetDonorForLogin(null);
+              }}
+              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Icon & Title */}
+            <div className="flex items-center gap-3.5 pr-8">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center shadow-lg shadow-red-500/25 shrink-0">
+                <Lock className="w-6 h-6" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-extrabold text-slate-900 dark:text-white text-lg sm:text-xl truncate">
+                  {t('loginRequiredToViewContact')}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium truncate">
+                  {targetDonorForLogin?.name ? (
+                    language === 'bn' ? `${targetDonorForLogin.name}-এর নম্বর দেখতে লগইন করুন` : `Viewing ${targetDonorForLogin.name}'s contact`
+                  ) : (
+                    language === 'bn' ? 'রক্তদাতার নম্বর দেখতে সাইন ইন আবশ্যক' : 'Sign in to access donor numbers'
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Privacy Explanation Banner */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200/60 dark:border-zinc-800 text-xs text-slate-600 dark:text-zinc-300 leading-relaxed space-y-1">
+              <p className="font-semibold text-slate-800 dark:text-zinc-200">
+                {t('donorCommunityProtectedNotice')}
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                {t('loginRequiredDesc')}
+              </p>
+            </div>
+
+            {/* Sign-In Options */}
+            <div className="space-y-3 pt-1">
+              <GoogleAuthButton
+                mode="login"
+                onSuccess={() => {
+                  setShowLoginPromptModal(false);
+                  if (targetDonorForLogin) {
+                    setRevealedContacts(prev => ({ ...prev, [targetDonorForLogin.id]: true }));
+                    setTargetDonorForLogin(null);
+                  }
+                }}
+                onError={(err) => console.error(err)}
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

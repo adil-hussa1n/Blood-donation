@@ -71,3 +71,13 @@ export async function requireAdmin(req: AuthRequest, res: Response, next: NextFu
 
   res.status(401).json({ error: { message: 'Unauthorized: Admin authentication required.' } });
 }
+
+// Middleware: Authenticates admin OR donor self-action
+export async function requireAdminOrDonor(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  const isDonorSelfDelete = req.body?.isDonorSelfDelete;
+  if (isDonorSelfDelete) {
+    next();
+    return;
+  }
+  return requireAdmin(req, res, next);
+}

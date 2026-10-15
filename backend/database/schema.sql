@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS donors (
   email VARCHAR(255) NULL UNIQUE,
   google_id VARCHAR(100) NULL UNIQUE,
   avatar_url VARCHAR(500) NULL,
+  hide_photo TINYINT(1) DEFAULT 0 NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_blood_group (blood_group),
   INDEX idx_area (area),

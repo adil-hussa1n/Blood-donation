@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, Sparkles, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock, Download, Printer, ShieldCheck, Check } from 'lucide-react';
+import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock, Download, Printer, ShieldCheck, Check, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getDonorDonationCount, getAreaLabel, calculateDaysSince } from '../context/AppContext';
 import { dbService } from '../services/db';
 import GoogleAuthButton from '../components/GoogleAuthButton';
 import { appStorage as localStorage } from '../services/storage';
 
 export default function Register() {
-  const { registerDonor, updateDonorProfile, addDonationHistory, currentDonor, setCurrentDonor, logoutDonor, language, t } = useApp();
+  const { registerDonor, updateDonorProfile, addDonationHistory, deleteDonor, currentDonor, setCurrentDonor, logoutDonor, language, t } = useApp();
   
   // Tab control: 'register' or 'update'
   const [activeTab, setActiveTab] = useState('register');
@@ -334,6 +335,7 @@ export default function Register() {
         setEditName(donor.name);
         setEditArea(donor.area);
         setEditAvailable(donor.is_available);
+        setEditHidePhoto(Boolean(donor.hide_photo));
         setActiveTab('update');
         
         setHistoryLoading(true);
@@ -390,10 +392,17 @@ export default function Register() {
   const [editName, setEditName] = useState('');
   const [editArea, setEditArea] = useState('');
   const [editAvailable, setEditAvailable] = useState(true);
+  const [editHidePhoto, setEditHidePhoto] = useState(false);
   
   // Add new donation event field
   const [newDonationDate, setNewDonationDate] = useState(new Date().toISOString().split('T')[0]);
   const [showDonationConfirmModal, setShowDonationConfirmModal] = useState(false);
+
+  // Account deletion states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePasswordInput, setDeletePasswordInput] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // ----------------------------------------
   // ACTIONS: GOOGLE AUTHENTICATION
@@ -422,6 +431,7 @@ export default function Register() {
       setEditName(donor.name);
       setEditArea(donor.area);
       setEditAvailable(donor.is_available);
+      setEditHidePhoto(Boolean(donor.hide_photo));
       setGoogleProfile(null);
       setSuccessMsg(t('googleAuthSuccess'));
 
@@ -612,16 +622,17 @@ export default function Register() {
       const profileData = {
         name: editName.trim(),
         area: editArea,
-        is_available: editAvailable
+        is_available: editAvailable,
+        hide_photo: editHidePhoto
       };
 
       const res = await updateDonorProfile(foundDonor.id, profileData, searchPassword);
       if (res.success) {
         setSuccessMsg(t('profileUpdateSuccess'));
-        const updatedDonor = {
+        const updatedDonor = normalizeDonor({
           ...foundDonor,
           ...profileData
-        };
+        });
         setFoundDonor(updatedDonor);
         try {
           localStorage.setItem('bb_donor_session', JSON.stringify({ donor: updatedDonor, password: searchPassword }));
@@ -702,6 +713,44 @@ export default function Register() {
     } finally {
       setFormLoading(false);
       setHistoryLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!foundDonor) return;
+
+    // If Google user without custom password, require typing DELETE
+    const isGoogleDonor = Boolean(foundDonor.google_id);
+    if (isGoogleDonor && deleteConfirmText.trim().toUpperCase() !== 'DELETE') {
+      setErrorMsg(language === 'bn' ? 'নিশ্চিত করতে DELETE লিখুন' : 'Please type DELETE to confirm');
+      return;
+    }
+
+    setDeleteLoading(true);
+    setErrorMsg('');
+    try {
+      const passwordToUse = deletePasswordInput || searchPassword;
+      const res = await deleteDonor(foundDonor.id, {
+        password: passwordToUse,
+        isDonorSelfDelete: true
+      });
+
+      if (res.success) {
+        setShowDeleteModal(false);
+        setFoundDonor(null);
+        setDonorHistory([]);
+        setSearchPassword('');
+        setDeletePasswordInput('');
+        setDeleteConfirmText('');
+        setActiveTab('register');
+        setSuccessMsg(t('accountDeletedSuccess'));
+      } else {
+        setErrorMsg(res.error?.message || (language === 'bn' ? 'অ্যাকাউন্ট মুছতে ব্যর্থ হয়েছে' : 'Failed to delete account'));
+      }
+    } catch (err) {
+      setErrorMsg(t('unexpectedError'));
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -1069,6 +1118,20 @@ export default function Register() {
               />
             </div>
 
+            {/* Terms and Privacy Policy Notice */}
+            <div className="pt-2 text-center">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400">
+                {t('agreeToTermsPrefix')}{' '}
+                <Link to="/terms" target="_blank" rel="noopener noreferrer" className="font-bold text-red-600 dark:text-red-400 hover:underline">
+                  {t('termsAndConditionsText')}
+                </Link>{' '}
+                {t('andText')}{' '}
+                <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="font-bold text-red-600 dark:text-red-400 hover:underline">
+                  {t('privacyPolicyText')}
+                </Link>.
+              </p>
+            </div>
+
             <button
               type="submit"
               disabled={formLoading}
@@ -1159,7 +1222,7 @@ export default function Register() {
                   <div className="flex items-center justify-between gap-3 relative z-10">
                     <div className="flex items-center gap-3">
                       <div className="relative shrink-0">
-                        {foundDonor.avatar_url ? (
+                        {foundDonor.avatar_url && !foundDonor.hide_photo ? (
                           <div className="relative">
                             <img 
                               src={foundDonor.avatar_url} 
@@ -1186,9 +1249,8 @@ export default function Register() {
                         )}
                       </div>
                       <div>
-                        <h4 className="font-extrabold text-slate-900 dark:text-white text-base flex items-center gap-1.5">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white text-base">
                           {foundDonor.name}
-                          <Sparkles className="w-3.5 h-3.5 text-yellow-500 fill-current animate-pulse" />
                         </h4>
                         <span className="text-xs text-slate-400 dark:text-zinc-500 font-semibold">
                           {getAreaLabel(foundDonor.area, t)} • {foundDonor.phone}
@@ -1247,10 +1309,24 @@ export default function Register() {
                       onClick={() => setShowCertificate(true)}
                       className="w-full mt-2 py-2 px-3 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/35 border border-red-200/50 dark:border-red-900/30 text-red-650 dark:text-red-400 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-yellow-500 fill-current" />
+                      <Award className="w-4 h-4 text-amber-500 shrink-0" />
                       {language === 'bn' ? 'প্রশংসাপত্র ডাউনলোড করুন' : 'Download Appreciation Certificate'}
                     </button>
                   )}
+
+                  {/* Delete Account Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeletePasswordInput(searchPassword || '');
+                      setDeleteConfirmText('');
+                      setShowDeleteModal(true);
+                    }}
+                    className="w-full mt-2 py-2 px-3 bg-rose-50/60 hover:bg-rose-100/80 dark:bg-rose-950/15 dark:hover:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/30 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>{t('deleteAccountBtn')}</span>
+                  </button>
                 </div>
             </div>
 
@@ -1434,6 +1510,32 @@ export default function Register() {
                         </span>
                       </label>
                     </div>
+
+                    {/* Google Profile Photo Visibility Toggle */}
+                    {Boolean(foundDonor.avatar_url || foundDonor.google_id) && (
+                      <div className="space-y-1.5 sm:col-span-2 flex items-start gap-2.5 pt-2 border-t border-slate-200/50 dark:border-zinc-800/50">
+                        <input
+                          type="checkbox"
+                          id="editHidePhoto"
+                          checked={editHidePhoto}
+                          onChange={(e) => setEditHidePhoto(e.target.checked)}
+                          className="w-5 h-5 mt-0.5 rounded border-slate-300 text-red-500 focus:ring-red-500 cursor-pointer"
+                        />
+                        <label htmlFor="editHidePhoto" className="cursor-pointer select-none flex-1">
+                          <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
+                            {editHidePhoto ? (
+                              <EyeOff className="w-4 h-4 text-amber-500 shrink-0" />
+                            ) : (
+                              <Eye className="w-4 h-4 text-emerald-500 shrink-0" />
+                            )}
+                            <span>{t('hideGooglePhoto')}</span>
+                          </span>
+                          <span className="text-[11px] text-slate-500 dark:text-zinc-400 block mt-0.5 leading-relaxed">
+                            {t('hideGooglePhotoDesc')}
+                          </span>
+                        </label>
+                      </div>
+                    )}
                   </div>
 
                   <button
@@ -1805,6 +1907,104 @@ export default function Register() {
                 className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {formLoading ? t('loggingButton') : t('confirmDonationProceedButton')}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Account Deletion Confirmation Modal */}
+      {showDeleteModal && foundDonor && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div 
+            className="w-full max-w-md rounded-3xl p-6 sm:p-7 shadow-2xl border border-rose-200/50 dark:border-rose-900/30 space-y-5 animate-scale-up"
+            style={{ backgroundColor: 'var(--modal-bg, #ffffff)' }}
+          >
+            {/* Header Icon */}
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto shadow-inner">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                {t('deleteAccountConfirmTitle')}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-300 font-medium">
+                {t('deleteAccountConfirmDesc')}
+              </p>
+            </div>
+
+            {/* Warning Callout Box */}
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-700 dark:text-rose-300 text-xs space-y-1 leading-relaxed">
+              <div className="flex items-center gap-1.5 font-bold">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span>{language === 'bn' ? 'স্থায়ী পরিবর্তন' : 'Permanent Action'}</span>
+              </div>
+              <p className="text-[11px] text-rose-900/80 dark:text-rose-300/80 font-medium">
+                {t('deleteAccountWarning')}
+              </p>
+            </div>
+
+            {/* Verification Input (Password or Google confirmation text) */}
+            <div className="space-y-2">
+              {foundDonor.google_id ? (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">
+                    {t('deleteAccountGooglePrompt')}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="DELETE"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-white text-xs font-mono tracking-widest focus:ring-2 focus:ring-rose-500 outline-none"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">
+                    {t('deleteAccountPasswordPrompt')}
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={deletePasswordInput}
+                    onChange={(e) => setDeletePasswordInput(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-white text-xs tracking-wider focus:ring-2 focus:ring-rose-500 outline-none"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletePasswordInput('');
+                  setDeleteConfirmText('');
+                }}
+                disabled={deleteLoading}
+                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold text-xs transition-colors cursor-pointer"
+              >
+                {t('cancelDeleteBtn')}
+              </button>
+              <button
+                type="button"
+                disabled={deleteLoading || (Boolean(foundDonor.google_id) && deleteConfirmText.trim().toUpperCase() !== 'DELETE')}
+                onClick={handleDeleteAccount}
+                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-extrabold text-xs shadow-lg shadow-rose-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {deleteLoading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>{language === 'bn' ? 'মুছে ফেলা হচ্ছে...' : 'Deleting...'}</span>
+                  </span>
+                ) : (
+                  <span>{t('confirmDeleteAccountBtn')}</span>
+                )}
               </button>
             </div>
           </div>

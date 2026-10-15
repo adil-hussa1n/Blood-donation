@@ -13,6 +13,7 @@ export interface Donor {
   email?: string | null;
   google_id?: string | null;
   avatar_url?: string | null;
+  hide_photo?: boolean;
   created_at?: string;
 }
 

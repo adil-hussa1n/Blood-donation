@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Flame, AlertTriangle, CheckCircle2, Phone, MapPin, ClipboardList, MessageCircle, Calendar, Trash2, Key, X, Clock, Eye, EyeOff, ChevronLeft, ChevronRight, ShieldCheck, Sparkles, Check, LayoutGrid, LayoutList, Navigation } from 'lucide-react';
+import { Flame, AlertTriangle, CheckCircle2, Phone, MapPin, ClipboardList, MessageCircle, Calendar, Trash2, Key, X, Clock, Eye, EyeOff, ChevronLeft, ChevronRight, ShieldCheck, Check, LayoutGrid, LayoutList, Navigation, Search, PlusCircle } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, getAreaLabel } from '../context/AppContext';
 import TimelineTrack from '../components/TimelineTrack';
 import EmergencyForm from '../components/EmergencyForm';
@@ -12,28 +12,20 @@ export default function Emergency() {
   const [currentPage, setCurrentPage] = useState(1);
   const [feedBloodFilter, setFeedBloodFilter] = useState('');
   const [feedAreaFilter, setFeedAreaFilter] = useState(currentDonor?.area || '');
+  const [showCreateRequest, setShowCreateRequest] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>(() => {
     if (typeof window !== 'undefined') {
-      // If on mobile device screen, auto select grid view
+      const saved = localStorage.getItem('bloodify_emergency_view');
+      // If user has explicitly chosen a view mode before, honor their choice
+      if (saved === 'table' || saved === 'grid') return saved as 'table' | 'grid';
+      // Default to grid view on mobile devices
       if (window.innerWidth < 768) {
         return 'grid';
       }
-      return (localStorage.getItem('bloodify_emergency_view') as 'table' | 'grid') || 'table';
     }
     return 'table';
   });
-
-  // Automatically switch to grid view when viewport resizes to mobile
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setViewMode('grid');
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const handleViewModeChange = (mode: 'table' | 'grid') => {
     setViewMode(mode);
@@ -290,7 +282,7 @@ export default function Emergency() {
                   ) : selectedStatus === 'responded' ? (
                     <Clock className="w-5 h-5" />
                   ) : (
-                    <Sparkles className="w-5 h-5" />
+                    <CheckCircle2 className="w-5 h-5" />
                   )}
                 </div>
                 <div>
@@ -378,7 +370,7 @@ export default function Emergency() {
                       value: 'fulfilled',
                       label: language === 'bn' ? 'রক্তদান সম্পন্ন (Life Saved!)' : 'Life Saved!',
                       desc: language === 'bn' ? 'সফলভাবে রক্তদান সম্পন্ন হয়েছে এবং রোগীর জীবন রক্ষা পেয়েছে' : 'Blood donation is completed successfully — life saved!',
-                      icon: Sparkles,
+                      icon: CheckCircle2,
                       activeCard: 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500 dark:border-emerald-500',
                       activeIcon: 'bg-emerald-600 text-white',
                       radioActive: 'bg-emerald-600 border-emerald-600 text-white'
@@ -603,35 +595,79 @@ export default function Emergency() {
         </div>
       )}
 
-      {/* Main Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-7xl mx-auto">
+      {/* Top Action & Filter Row */}
+      <div className="space-y-4 max-w-7xl mx-auto w-full">
+        {/* Top Control Bar: Post Request Button + Mobile Filter Toggle */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setShowCreateRequest(prev => !prev)}
+            className={`flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer ${
+              showCreateRequest
+                ? 'bg-slate-800 text-white dark:bg-zinc-800 hover:bg-slate-900'
+                : 'bg-gradient-to-r from-red-600 via-rose-600 to-red-500 hover:from-red-700 hover:to-rose-700 text-white shadow-red-500/25 active:scale-[0.98]'
+            }`}
+          >
+            {showCreateRequest ? (
+              <>
+                <X className="w-4 h-4" />
+                <span>{language === 'bn' ? 'অনুরোধ ফর্ম বন্ধ করুন' : 'Close Request Form'}</span>
+              </>
+            ) : (
+              <>
+                <PlusCircle className="w-4 h-4" />
+                <span>{t('createRequestTitle')}</span>
+              </>
+            )}
+          </button>
 
-        {/* Left: Request Form */}
-        <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
-          <EmergencyForm onSuccess={setSuccessMsg} onError={setErrorMsg} />
-        </div>
-
-        {/* Right: Requests Board */}
-        <div className="lg:col-span-8 space-y-6 text-left">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-            <h3 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
-              <ClipboardList className="w-5 h-5 text-slate-500" />
-              {t('activeFeedTitle')}
-              <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-900 px-2 py-0.5 rounded-md border border-slate-200/30 dark:border-zinc-800/30">
-                {filteredEmergencyRequests.length} {t('activeCount')}
-                {feedBloodFilter && (
-                  <span className="text-red-500 dark:text-red-400"> · {feedBloodFilter}</span>
+          {/* Mobile Filter Toggle */}
+          <div className="flex md:hidden">
+            <button
+              type="button"
+              onClick={() => setFilterOpen(prev => !prev)}
+              className="w-full flex items-center justify-between px-4 py-2.5 glass-panel rounded-2xl border border-slate-200/50 dark:border-zinc-800/50 text-xs font-bold text-slate-700 dark:text-zinc-300 cursor-pointer shadow-xs"
+            >
+              <span className="flex items-center gap-2">
+                <Search className="w-4 h-4 text-red-500" />
+                {t('filterDonorsTitle')}
+                {(feedBloodFilter || feedAreaFilter) && (
+                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                 )}
               </span>
-            </h3>
+              <span className={`text-slate-400 text-xs transition-transform duration-200 ${filterOpen ? 'rotate-180' : ''}`}>▼</span>
+            </button>
           </div>
+        </div>
+
+        {/* Side-by-side or Stacked Container for Urgent Request Form and Filter Panel */}
+        <div className={showCreateRequest ? "grid grid-cols-1 lg:grid-cols-12 gap-5 items-start" : "space-y-4"}>
+          {/* Create Urgent Request Form */}
+          {showCreateRequest && (
+            <div className="lg:col-span-6 animate-scale-up">
+              <EmergencyForm 
+                onSuccess={(msg) => {
+                  setSuccessMsg(msg);
+                  setShowCreateRequest(false);
+                }} 
+                onError={setErrorMsg} 
+              />
+            </div>
+          )}
+
+          {/* Filter Panel (Side-by-side when form is open, full-width otherwise) */}
           {!loading && emergencyRequests.length > 0 && (
-            <div className="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-200/50 dark:border-zinc-800/50 space-y-4">
+            <div className={`${showCreateRequest ? 'lg:col-span-6' : 'w-full'} glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/60 dark:border-zinc-800/60 space-y-4 shadow-xs ${filterOpen ? 'block' : 'hidden'} md:block animate-fade-in`}>
               {/* Header */}
-              <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-200/20 dark:border-zinc-800/30">
-                <span className="text-xs font-extrabold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
-                  {t('filterDonorsTitle')}
-                </span>
+              <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-200/40 dark:border-zinc-800/40">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-red-500/10 dark:bg-red-500/20 text-red-500 flex items-center justify-center shrink-0">
+                    <Search className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-xs font-extrabold text-slate-800 dark:text-zinc-200 uppercase tracking-wider">
+                    {t('filterDonorsTitle')}
+                  </span>
+                </div>
                 {(feedBloodFilter || feedAreaFilter) && (
                   <button
                     type="button"
@@ -639,26 +675,78 @@ export default function Emergency() {
                       setFeedBloodFilter('');
                       setFeedAreaFilter('');
                     }}
-                    className="text-xs font-semibold text-red-500 hover:text-red-655 flex items-center gap-0.5 cursor-pointer"
+                    className="text-xs font-bold text-red-500 hover:text-red-655 flex items-center gap-1 px-2 py-0.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
-                    {t('clearButton')}
+                    <span>{t('clearButton')}</span>
                   </button>
                 )}
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
+                {/* Area selection */}
+                <div className={showCreateRequest ? "md:col-span-12 space-y-1.5" : "md:col-span-5 space-y-1.5"}>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider block">
+                      {t('filterEmergencyByArea')}
+                    </label>
+                    {currentDonor?.area && feedAreaFilter === currentDonor.area && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 animate-fade-in">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        {language === 'bn' ? 'স্বয়ংক্রিয় সনাক্তকৃত' : 'Auto-detected'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={feedAreaFilter}
+                      onChange={(e) => setFeedAreaFilter(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all dark:text-white appearance-none cursor-pointer"
+                    >
+                      <option value="">{t('allAreas')}</option>
+                      {DISTRICT_AREAS.map((district) => (
+                        <optgroup
+                          key={district.id}
+                          label={`📍 ${language === 'bn' ? district.nameBn : district.name}`}
+                          className={district.color.optGroupClass}
+                        >
+                          {district.upazilas.map((a) => (
+                            <option key={a} value={a} className="text-slate-800 dark:text-zinc-200 font-normal">
+                              {getAreaLabel(a, t)} {currentDonor?.area === a ? (language === 'bn' ? '⭐ (আপনার এলাকা)' : '⭐ (Your Area)') : ''}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                  </div>
+                </div>
+
+                {/* Status Info */}
+                <div className={`${showCreateRequest ? 'md:col-span-12' : 'md:col-span-7'} flex items-center justify-between md:justify-end gap-3 text-xs text-slate-500 dark:text-zinc-400 pb-2`}>
+                  <span>
+                    {language === 'bn' ? 'মোট সক্রিয় চাহিদা:' : 'Total Active:'} <strong className="text-slate-800 dark:text-white font-extrabold">{emergencyRequests.length}</strong>
+                  </span>
+                  {feedBloodFilter && (
+                    <span className="px-2 py-0.5 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 font-bold">
+                      {feedBloodFilter}
+                    </span>
+                  )}
+                </div>
+              </div>
+
               {/* Blood Group selection */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+              <div className="space-y-2 pt-2 border-t border-slate-200/40 dark:border-zinc-800/40">
+                <label className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider block">
                   {t('filterEmergencyByBlood')}
                 </label>
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                <div className={`grid ${showCreateRequest ? 'grid-cols-3 sm:grid-cols-5 md:grid-cols-3 xl:grid-cols-5' : 'grid-cols-3 sm:grid-cols-5 md:grid-cols-9'} gap-2`}>
                   <button
                     type="button"
                     onClick={() => setFeedBloodFilter('')}
-                    className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${!feedBloodFilter
-                        ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/10'
-                        : 'border-slate-200 dark:border-zinc-800 hover:border-red-500 dark:hover:border-red-500/50 bg-slate-50/30 dark:bg-zinc-900/30 text-slate-700 dark:text-zinc-300'
+                    className={`py-2 px-1 rounded-xl text-xs font-extrabold border transition-all cursor-pointer text-center ${!feedBloodFilter
+                        ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/20 scale-[1.02]'
+                        : 'border-slate-200 dark:border-zinc-800 hover:border-red-500 dark:hover:border-red-500/50 bg-slate-50/40 dark:bg-zinc-900/40 text-slate-700 dark:text-zinc-300'
                       }`}
                   >
                     {t('allBloodGroups')}
@@ -675,11 +763,11 @@ export default function Emergency() {
                         key={group}
                         onClick={() => setFeedBloodFilter(active ? '' : group)}
                         disabled={count === 0}
-                        className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${count === 0
-                            ? 'border-slate-100 dark:border-zinc-900 text-slate-300 dark:text-zinc-600 cursor-not-allowed opacity-60'
+                        className={`py-2 px-1 rounded-xl text-xs font-extrabold border transition-all text-center ${count === 0
+                            ? 'border-slate-100 dark:border-zinc-900 text-slate-300 dark:text-zinc-600 cursor-not-allowed opacity-50'
                             : active
-                              ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/10 cursor-pointer'
-                              : 'border-slate-200 dark:border-zinc-800 hover:border-red-500 dark:hover:border-red-500/50 bg-slate-50/30 dark:bg-zinc-900/30 text-slate-700 dark:text-zinc-300 cursor-pointer'
+                              ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/20 scale-[1.02] cursor-pointer'
+                              : 'border-slate-200 dark:border-zinc-800 hover:border-red-500 dark:hover:border-red-500/50 bg-slate-50/40 dark:bg-zinc-900/40 text-slate-700 dark:text-zinc-300 cursor-pointer'
                           }`}
                       >
                         {group}
@@ -691,97 +779,63 @@ export default function Emergency() {
                   })}
                 </div>
               </div>
-
-              {/* Area selection */}
-              <div className="space-y-2 pt-2 border-t border-slate-200/20 dark:border-zinc-800/30">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                    {t('filterEmergencyByArea')}
-                  </label>
-                  {currentDonor?.area && feedAreaFilter === currentDonor.area && (
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 animate-fade-in">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                      {language === 'bn' ? 'স্বয়ংক্রিয় সনাক্তকৃত' : 'Auto-detected'}
-                    </span>
-                  )}
-                </div>
-                <div className="relative">
-                  <select
-                    value={feedAreaFilter}
-                    onChange={(e) => setFeedAreaFilter(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all dark:text-white appearance-none cursor-pointer"
-                  >
-                    <option value="">{t('allAreas')}</option>
-                    {DISTRICT_AREAS.map((district) => (
-                      <optgroup
-                        key={district.id}
-                        label={`📍 ${language === 'bn' ? district.nameBn : district.name}`}
-                        className={district.color.optGroupClass}
-                      >
-                        {district.upazilas.map((a) => (
-                          <option key={a} value={a} className="text-slate-800 dark:text-zinc-200 font-normal">
-                            {getAreaLabel(a, t)} {currentDonor?.area === a ? (language === 'bn' ? '⭐ (আপনার এলাকা)' : '⭐ (Your Area)') : ''}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                  <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-                </div>
-              </div>
             </div>
           )}
+        </div>
+      </div>
 
-          {loading ? (
-            <div className="glass-panel border rounded-2xl overflow-hidden animate-pulse">
-              <div className="h-12 bg-slate-100 dark:bg-zinc-900 w-full" />
-              <div className="p-4 space-y-4">
-                {[...Array(3)].map((_, idx) => (
-                  <div key={idx} className="flex gap-4 items-center justify-between">
-                    <div className="h-4 bg-slate-200 dark:bg-zinc-800 rounded w-12" />
-                    <div className="h-4 bg-slate-200 dark:bg-zinc-800 rounded w-1/4" />
-                    <div className="h-4 bg-slate-200 dark:bg-zinc-800 rounded w-1/3" />
-                    <div className="h-8 bg-slate-200 dark:bg-zinc-800 rounded w-28" />
-                  </div>
-                ))}
-              </div>
+      {/* Main Content: Full-Width Requests Feed */}
+      <div className="space-y-6 text-left max-w-7xl mx-auto w-full">
+        {loading ? (
+          <div className="glass-panel border rounded-2xl overflow-hidden animate-pulse">
+            <div className="h-12 bg-slate-100 dark:bg-zinc-900 w-full" />
+            <div className="p-4 space-y-4">
+              {[...Array(3)].map((_, idx) => (
+                <div key={idx} className="flex gap-4 items-center justify-between">
+                  <div className="h-4 bg-slate-200 dark:bg-zinc-800 rounded w-12" />
+                  <div className="h-4 bg-slate-200 dark:bg-zinc-800 rounded w-1/4" />
+                  <div className="h-4 bg-slate-200 dark:bg-zinc-800 rounded w-1/3" />
+                  <div className="h-8 bg-slate-200 dark:bg-zinc-800 rounded w-28" />
+                </div>
+              ))}
             </div>
-          ) : emergencyRequests.length === 0 ? (
-            <div className="glass-panel rounded-3xl p-10 text-center border space-y-4">
-              <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-lg text-slate-800 dark:text-white">{t('allAddressedTitle')}</h3>
-              <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
-                {t('allAddressedDesc')}
-              </p>
+          </div>
+        ) : emergencyRequests.length === 0 ? (
+          <div className="glass-panel rounded-3xl p-10 text-center border space-y-4">
+            <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
             </div>
-          ) : filteredEmergencyRequests.length === 0 ? (
-            <div className="glass-panel rounded-3xl p-10 text-center border space-y-4">
-              <div className="w-12 h-12 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-lg text-slate-800 dark:text-white">
-                {language === 'en'
-                  ? 'No active requests matching your filters.'
-                  : 'আপনার ফিল্টারের সাথে মিলে যায় এমন কোনো সক্রিয় অনুরোধ পাওয়া যায়নি।'}
-              </h3>
-              <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
-                {t('noEmergencyForBloodGroupDesc')}
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setFeedBloodFilter('');
-                  setFeedAreaFilter('');
-                }}
-                className="inline-flex items-center gap-1.5 text-sm font-bold text-red-500 hover:text-red-655 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-                {t('resetFiltersButton')}
-              </button>
+            <h3 className="font-bold text-lg text-slate-800 dark:text-white">{t('allAddressedTitle')}</h3>
+            <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
+              {t('allAddressedDesc')}
+            </p>
+          </div>
+        ) : filteredEmergencyRequests.length === 0 ? (
+          <div className="glass-panel rounded-3xl p-10 text-center border space-y-4">
+            <div className="w-12 h-12 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6" />
             </div>
-          ) : (
+            <h3 className="font-bold text-lg text-slate-800 dark:text-white">
+              {language === 'en'
+                ? 'No active requests matching your filters.'
+                : 'আপনার ফিল্টারের সাথে মিলে যায় এমন কোনো সক্রিয় অনুরোধ পাওয়া যায়নি।'}
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
+              {t('noEmergencyForBloodGroupDesc')}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setFeedBloodFilter('');
+                setFeedAreaFilter('');
+              }}
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-red-500 hover:text-red-655 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+              {t('resetFiltersButton')}
+            </button>
+          </div>
+        ) : (
             <div className="space-y-4">
               {/* Results Count & View Mode Switcher Header */}
               <div className="flex flex-wrap justify-between items-center gap-3 pt-1">
@@ -990,8 +1044,8 @@ export default function Emergency() {
                   </div>
                 </div>
               ) : (
-                /* GRID VIEW */
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4.5 animate-fade-in">
+                /* GRID VIEW: 1 col on mobile, 2 col on tablet/iPad, 3 col on laptops, 4 col on large screens */
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 animate-fade-in">
                   {paginatedRequests.map((req) => {
                     const createdDate = new Date(req.created_at);
                     const hours = calculateHoursSince(req.created_at);
@@ -1173,8 +1227,6 @@ export default function Emergency() {
               )}
             </div>
           )}
-        </div>
-
       </div>
     </div>
   );

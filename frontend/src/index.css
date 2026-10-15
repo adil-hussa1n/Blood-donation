@@ -67,10 +67,8 @@ h1, h2, h3, h4, h5, h6 {
 body {
   @apply bg-slate-50 text-slate-800 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-300 antialiased overflow-x-hidden;
   min-height: 100dvh; /* dynamic viewport height — handles Safari/Chrome mobile chrome */
-  /* Safe area padding for notch / Dynamic Island / pill devices */
-  padding-top: env(safe-area-inset-top);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  margin: 0;
+  padding: 0;
 }
 
 /* ===========================

@@ -30,8 +30,8 @@ import {
   submitSupportRequest,
   getSupportRequests,
 } from '../controllers/supportController.js';
-import { honeypotCheck, registrationRateLimiter } from '../middleware/rateLimiter.js';
-import { requireAdmin } from '../middleware/auth.js';
+import { honeypotCheck, registrationRateLimiter, emergencyRequestRateLimiter } from '../middleware/rateLimiter.js';
+import { requireAdmin, requireAdminOrDonor } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -53,13 +53,13 @@ router.put('/donors/:id', updateDonorProfile);
 router.post('/donors/reset-password', resetDonorPassword);
 router.post('/donors/:id/donations', addDonationEvent);
 router.get('/donors/:id/history', getDonationHistory);
-router.delete('/donors/:id', requireAdmin, deleteDonor);
+router.delete('/donors/:id', requireAdminOrDonor, deleteDonor);
 
 // ==========================================
 // EMERGENCY REQUESTS ROUTES
 // ==========================================
 router.get('/emergencies', getEmergencyRequests);
-router.post('/emergencies', honeypotCheck, createEmergencyRequest);
+router.post('/emergencies', honeypotCheck, emergencyRequestRateLimiter(3, 15), createEmergencyRequest);
 router.patch('/emergencies/:id/status', updateEmergencyRequestStatus);
 router.delete('/emergencies/:id', deleteEmergencyRequest);
 

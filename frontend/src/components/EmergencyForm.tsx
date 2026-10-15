@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Megaphone, MapPin, Phone, ClipboardList, ShieldAlert, LogIn, Clock, CheckCircle2, UserCheck, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Megaphone, MapPin, Phone, ClipboardList, ShieldCheck, Clock, CheckCircle2, UserCheck, Sparkles } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, BLOOD_GROUPS, getAreaLabel } from '../context/AppContext';
 import GoogleAuthButton from './GoogleAuthButton';
 
@@ -119,70 +119,75 @@ export default function EmergencyForm({ onSuccess, onError }: EmergencyFormProps
   // If user is NOT logged in, show authentication gate card
   if (!currentDonor) {
     return (
-      <div className="glass-panel rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-rose-500/30 dark:border-rose-500/20 shadow-xl space-y-5 text-left relative overflow-hidden bg-gradient-to-b from-rose-500/[0.04] to-transparent">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
-        
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-500 flex items-center justify-center shrink-0 border border-rose-500/25">
-            <ShieldAlert className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-black text-slate-900 dark:text-white text-base">
-              {t('loginRequiredToPost')}
-            </h3>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium">
-              {language === 'bn' ? 'রোগী ও রক্তদাতার নিরাপত্তা নিশ্চিতকরণ' : 'Patient & Donor Safety Verification'}
-            </p>
+      <div className="glass-panel rounded-2xl sm:rounded-3xl p-6 sm:p-7 border border-rose-500/25 dark:border-rose-500/20 shadow-xl shadow-rose-500/5 space-y-6 text-left relative overflow-hidden bg-gradient-to-br from-rose-500/[0.05] via-transparent to-rose-500/[0.02]">
+        {/* Ambient glow decoration */}
+        <div className="absolute top-0 right-0 w-44 h-44 bg-rose-500/10 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10" />
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-rose-500/15 dark:border-rose-500/15">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-600 to-red-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-500/25 ring-2 ring-rose-500/20">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-black text-slate-900 dark:text-white text-base sm:text-lg tracking-tight">
+                  {t('loginRequiredToPost')}
+                </h3>
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                  <Sparkles className="w-3 h-3" />
+                  {language === 'bn' ? 'যাচাইকরণ' : 'Verified Only'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium mt-0.5">
+                {language === 'bn' ? 'রোগী ও রক্তদাতার নিরাপত্তা নিশ্চিতকরণে লগইন আবশ্যক' : 'Patient & donor safety verification required before posting'}
+              </p>
+            </div>
           </div>
         </div>
 
-        <p className="text-xs text-slate-650 dark:text-zinc-350 leading-relaxed font-medium">
+        {/* Explanation */}
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-normal">
           {t('loginRequiredToPostDesc')}
         </p>
 
-        <div className="space-y-2.5 p-3.5 rounded-2xl bg-slate-500/5 dark:bg-zinc-900/50 border border-slate-200/60 dark:border-zinc-800/60 text-xs text-slate-700 dark:text-zinc-300">
-          <div className="flex items-center gap-2 font-semibold">
+        {/* Benefits Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50/80 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 text-xs text-slate-700 dark:text-zinc-300 font-medium">
             <UserCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span>{language === 'bn' ? 'যাচাইকৃত ফোন নম্বর সরাসরি যুক্ত হয়' : 'Verified phone automatically attached'}</span>
+            <span className="leading-tight">{language === 'bn' ? 'যাচাইকৃত ফোন সরাসরি যুক্ত' : 'Verified phone auto-attached'}</span>
           </div>
-          <div className="flex items-center gap-2 font-semibold">
+          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50/80 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 text-xs text-slate-700 dark:text-zinc-300 font-medium">
             <Clock className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>{language === 'bn' ? '২৪ ঘণ্টা পর স্বয়ংক্রিয়ভাবে মুছে যায়' : 'Auto-deleted after 24 hours'}</span>
+            <span className="leading-tight">{language === 'bn' ? '২৪ ঘণ্টা পর স্বয়ংক্রিয়ভাবে মুছে যায়' : 'Auto-deleted after 24 hours'}</span>
           </div>
-          <div className="flex items-center gap-2 font-semibold">
-            <Sparkles className="w-4 h-4 text-rose-500 shrink-0" />
-            <span>{language === 'bn' ? 'লগইন থাকা অবস্থায় যেকোনো সময় ১-ক্লিকে মুছুন' : 'Delete anytime with 1-click while logged in'}</span>
+          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50/80 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 text-xs text-slate-700 dark:text-zinc-300 font-medium">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span className="leading-tight">{language === 'bn' ? 'লগইনে যেকোনো সময় ১-ক্লিকে মুছুন' : 'Delete anytime with 1-click'}</span>
           </div>
         </div>
 
-        {/* Direct Google Sign In Button & Link */}
-        <div className="space-y-3 pt-1">
-          <GoogleAuthButton
-            mode="login"
-            onSuccess={(data) => {
-              if (data.isNewUser) {
-                navigate('/register');
-              } else if (data.donor) {
-                setCurrentDonor(data.donor);
-                onSuccess(language === 'bn' ? 'গুগল দিয়ে সফলভাবে লগইন হয়েছে!' : 'Signed in with Google successfully!');
-              }
-            }}
-            onError={(err) => onError(err)}
-          />
-
-          <div className="flex items-center gap-2 text-slate-300 dark:text-zinc-700">
-            <div className="flex-1 border-t border-slate-200 dark:border-zinc-800" />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">{t('orDivider')}</span>
-            <div className="flex-1 border-t border-slate-200 dark:border-zinc-800" />
+        {/* Unified Single Google Sign In */}
+        <div className="pt-2 flex flex-col items-center">
+          <div className="w-full max-w-sm">
+            <GoogleAuthButton
+              mode="login"
+              onSuccess={(data) => {
+                if (data.isNewUser) {
+                  navigate('/register');
+                } else if (data.donor) {
+                  setCurrentDonor(data.donor);
+                  onSuccess(language === 'bn' ? 'গুগল দিয়ে সফলভাবে লগইন হয়েছে!' : 'Signed in with Google successfully!');
+                }
+              }}
+              onError={(err) => onError(err)}
+            />
           </div>
-
-          <Link
-            to="/register"
-            className="w-full py-3.5 px-4 rounded-xl font-extrabold text-xs text-white bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 transition-all shadow-lg shadow-red-500/20 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
-          >
-            <LogIn className="w-4 h-4" />
-            <span>{t('signInToPostUrgent')}</span>
-          </Link>
+          <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-2.5 text-center">
+            {language === 'bn' 
+              ? 'নতুন ও নিবন্ধিত উভয় ব্যবহারকারী এক ক্লিকেই এগিয়ে যেতে পারবেন।' 
+              : 'Both new and registered users can proceed in one click.'}
+          </p>
         </div>
       </div>
     );

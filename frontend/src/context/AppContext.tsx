@@ -61,7 +61,7 @@ interface AppContextType {
   updateDonorAvailability: (id: string, isAvailable: boolean, password?: string) => Promise<{ success: boolean; data?: any; error?: any }>;
   updateDonorProfile: (id: string, profileData: any, password?: string) => Promise<{ success: boolean; data?: any; error?: any }>;
   addDonationHistory: (donorId: string, donationDate: string, password?: string) => Promise<{ success: boolean; data?: any; error?: any }>;
-  deleteDonor: (id: string) => Promise<{ success: boolean; error?: any }>;
+  deleteDonor: (id: string, options?: { password?: string; isDonorSelfDelete?: boolean }) => Promise<{ success: boolean; error?: any }>;
   createEmergencyRequest: (requestData: any, honeypot?: string) => Promise<{ success: boolean; data?: any; error?: any }>;
   deleteEmergencyRequest: (id: string, userPasscode?: string, options?: { donorId?: string; donorPhone?: string }) => Promise<{ success: boolean; error?: any }>;
   updateEmergencyRequestStatus: (id: string, status: 'needed' | 'responded' | 'fulfilled' | string, userPasscode?: string, options?: { donorId?: string; donorPhone?: string }) => Promise<{ success: boolean; data?: any; error?: any }>;
@@ -340,6 +340,9 @@ export const TRANSLATIONS = {
     donationDate: 'Donation Date',
     updateDetailsTitle: 'Update Profile Details',
     saveChanges: 'Save Changes',
+    hideGooglePhoto: 'Hide Profile Photo',
+    hideGooglePhotoDesc: 'Hide your Google profile photo from public donor lists and use your blood group badge instead.',
+    showGooglePhoto: 'Show Profile Photo',
     totalDonationsCount: 'Total Donations',
     times: 'times',
     never: 'Not Mentioned',
@@ -353,6 +356,21 @@ export const TRANSLATIONS = {
     daysRemainingCooldown: '{days} days remaining until eligible',
     cooldownEndsOn: 'Cooldown ends on {date}',
     cooldownRestrictedNotice: 'Donation Logging Restricted During Cooldown',
+    cooldownResting: 'Recovering (In Cooldown)',
+    cooldownRestingDesc: 'Donor is in mandatory 90-day medical recovery cooldown. Contact details are hidden to ensure restful recovery without disturbances.',
+    loginRequiredToViewContact: 'Sign In Required',
+    loginRequiredDesc: 'To protect our donors from spam and unauthorized disturbance, please sign in or register with your account to view contact numbers.',
+    loginToViewContactButton: 'Sign In to View Contact',
+    donorCommunityProtectedNotice: 'Donor privacy protected. Please sign in to reveal verified phone numbers.',
+    deleteAccountBtn: 'Delete Account',
+    deleteAccountConfirmTitle: 'Permanently Delete Account',
+    deleteAccountConfirmDesc: 'Are you sure you want to permanently delete your donor account? All your donation records and personal details will be completely removed.',
+    deleteAccountWarning: 'Warning: This action cannot be undone. You will no longer appear in donor directories.',
+    deleteAccountPasswordPrompt: 'Enter your account password to confirm deletion:',
+    deleteAccountGooglePrompt: 'Type DELETE to confirm deletion of your Google-linked account:',
+    confirmDeleteAccountBtn: 'Permanently Delete My Account',
+    cancelDeleteBtn: 'Keep Account',
+    accountDeletedSuccess: 'Your donor account has been successfully deleted.',
 
     // Emergency Page
     emergencyTitle: 'Emergency Blood Requests',
@@ -484,7 +502,7 @@ export const TRANSLATIONS = {
     lifesaverWord: 'Lifesaver',
     heroDescText: 'A local network connecting blood donors in Sylhet. Search by blood group, check real-time donor availability, and respond to local emergencies.',
     registerAsDonorButton: 'Register as Donor',
-    filterDonorsTitle: 'Filter Donors',
+    filterDonorsTitle: 'Filter Search',
     clearButton: 'Clear',
     searchByNamePhoneLabel: 'Search by name / phone',
     selectAreaLabel: 'Select Area',
@@ -621,6 +639,14 @@ export const TRANSLATIONS = {
     fakeDonor: 'Report Fake Donor Profile',
     incorrectDonorDetails: 'Incorrect Donor Details',
     otherIssue: 'Other Problem',
+
+    // Legal & Privacy
+    termsNav: 'Terms & Conditions',
+    privacyNav: 'Privacy Policy',
+    agreeToTermsPrefix: 'By registering, you agree to our',
+    termsAndConditionsText: 'Terms & Conditions',
+    andText: 'and',
+    privacyPolicyText: 'Privacy Policy',
   },
   bn: {
     // Navigation
@@ -751,6 +777,9 @@ export const TRANSLATIONS = {
     donationDate: 'রক্তদানের তারিখ',
     updateDetailsTitle: 'প্রোফাইলের তথ্য সংশোধন',
     saveChanges: 'পরিবর্তন সংরক্ষণ করুন',
+    hideGooglePhoto: 'প্রোফাইল ছবি লুকিয়ে রাখুন',
+    hideGooglePhotoDesc: 'পাবলিক রক্তদাতা তালিকা থেকে আপনার গুগল ছবি গোপন রাখুন এবং রক্তের গ্রুপের ব্যাজ দেখান।',
+    showGooglePhoto: 'প্রোফাইল ছবি প্রদর্শন করুন',
     totalDonationsCount: 'মোট রক্তদান',
     times: 'বার',
     never: 'উল্লেখ নেই',
@@ -764,6 +793,21 @@ export const TRANSLATIONS = {
     daysRemainingCooldown: 'পুনরায় রক্তদানে আরও {days} দিন বাকি',
     cooldownEndsOn: 'কুলডাউন শেষ হবে: {date}',
     cooldownRestrictedNotice: 'কুলডাউন চলাকালীন নতুন রক্তদান যোগ করা নিষিদ্ধ',
+    cooldownResting: 'বিশ্রামে আছেন (কুলডাউন)',
+    cooldownRestingDesc: 'রক্তদাতা ৯০ দিনের বিশ্রাম ও শারীরিক সুরক্ষার কুলডাউনে আছেন। সুস্থতা নিশ্চিতে এই সময়ে যোগাযোগ তথ্য গোপন রাখা হয়েছে।',
+    loginRequiredToViewContact: 'লগইন আবশ্যক',
+    loginRequiredDesc: 'রক্তদাতাদের নিরাপত্তা ও অপ্রয়োজনীয় বিরক্তি রোধে নম্বর দেখতে অনুগ্রহ করে অ্যাকাউন্টে লগইন অথবা রেজিস্ট্রেশন করুন।',
+    loginToViewContactButton: 'নম্বর দেখতে লগইন করুন',
+    donorCommunityProtectedNotice: 'রক্তদাতাদের নিরাপত্তা সুরক্ষিত। নম্বর দেখতে সাইন ইন করুন।',
+    deleteAccountBtn: 'অ্যাকাউন্ট মুছে ফেলুন',
+    deleteAccountConfirmTitle: 'স্থায়ীভাবে অ্যাকাউন্ট মুছে ফেলা',
+    deleteAccountConfirmDesc: 'আপনি কি নিশ্চিত যে আপনার রক্তদাতা অ্যাকাউন্টটি স্থায়ীভাবে মুছে ফেলতে চান? আপনার সকল রক্তদানের তথ্য ও প্রোফাইল স্থায়ীভাবে ডিলিট হয়ে যাবে।',
+    deleteAccountWarning: 'সতর্কতা: এই কাজটি পূর্বাবস্থায় ফিরিয়ে আনা সম্ভব নয়। আপনি আর রক্তদাতা তালিকায় উপস্থিত থাকবেন না।',
+    deleteAccountPasswordPrompt: 'অ্যাকাউন্ট ডিলিট নিশ্চিত করতে আপনার পাসওয়ার্ড দিন:',
+    deleteAccountGooglePrompt: 'আপনার গুগল অ্যাকাউন্ট নিশ্চিত করতে DELETE টাইপ করুন:',
+    confirmDeleteAccountBtn: 'স্থায়ীভাবে অ্যাকাউন্ট ডিলিট করুন',
+    cancelDeleteBtn: 'অ্যাকাউন্ট রাখুন',
+    accountDeletedSuccess: 'আপনার রক্তদাতা অ্যাকাউন্টটি সফলভাবে মুছে ফেলা হয়েছে।',
 
     // Emergency Page
     emergencyTitle: 'জরুরি রক্তের অনুরোধসমূহ',
@@ -1021,6 +1065,14 @@ export const TRANSLATIONS = {
     fakeDonor: 'ভুয়া দাতার তথ্য রিপোর্ট',
     incorrectDonorDetails: 'দাতার ভুল তথ্য সংশোধন',
     otherIssue: 'অন্যান্য সমস্যা',
+
+    // Legal & Privacy
+    termsNav: 'শর্তাবলী',
+    privacyNav: 'গোপনীয়তা নীতি',
+    agreeToTermsPrefix: 'নিবন্ধন সম্পন্ন করার মাধ্যমে আপনি আমাদের',
+    termsAndConditionsText: 'ব্যবহারের শর্তাবলী',
+    andText: 'ও',
+    privacyPolicyText: 'গোপনীয়তা নীতি',
   }
 };
 
@@ -1063,6 +1115,7 @@ export const normalizeDonor = (donor) => {
   const count = getDonorDonationCount(donor);
   return {
     ...donor,
+    hide_photo: Boolean(donor.hide_photo),
     lifetime_donation_count: count,
     total_donations: count,
   };
@@ -1623,20 +1676,24 @@ export const AppProvider = ({ children }) => {
     return { success: true, data };
   };
 
-  const deleteDonor = async (id) => {
-    if (!isAdmin) {
+  const deleteDonor = async (id, options?: { password?: string; isDonorSelfDelete?: boolean }) => {
+    if (!isAdmin && !options?.isDonorSelfDelete) {
       setError("Unauthorized access");
       return { success: false, error: "Unauthorized" };
     }
     setError(null);
     const adminUser = adminCredentials?.username || '';
     const adminPass = adminCredentials?.password || '';
-    const { success, error } = await dbService.deleteDonor(id, adminUser, adminPass);
+    const { success, error } = await dbService.deleteDonor(id, adminUser, adminPass, options);
     if (error) {
       setError(error.message);
       return { success: false, error };
     }
     setDonors(prev => prev.filter(d => d.id !== id));
+    if (options?.isDonorSelfDelete) {
+      logoutDonor();
+    }
+    await refreshData(true);
     return { success: true };
   };
 

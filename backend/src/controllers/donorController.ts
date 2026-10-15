@@ -11,6 +11,7 @@ function formatDonor(row: any) {
   return {
     ...row,
     is_available: Boolean(row.is_available),
+    hide_photo: Boolean(row.hide_photo),
     total_donations: Number(row.total_donations) || 0,
     lifetime_donation_count: Number(row.lifetime_donation_count) || 0,
     // Ensure password_hash is NEVER exposed to clients
@@ -22,7 +23,7 @@ export async function getDonors(req: Request, res: Response): Promise<void> {
   try {
     const [rows]: any = await pool.query(
       `SELECT id, name, phone, blood_group, area, last_donation_date, is_available, 
-              total_donations, lifetime_donation_count, email, google_id, avatar_url, created_at 
+              total_donations, lifetime_donation_count, email, google_id, avatar_url, hide_photo, created_at 
        FROM donors 
        ORDER BY created_at DESC`
     );
@@ -38,7 +39,7 @@ export async function getDonorByPhone(req: Request, res: Response): Promise<void
   try {
     const [rows]: any = await pool.query(
       `SELECT id, name, phone, blood_group, area, last_donation_date, is_available, 
-              total_donations, lifetime_donation_count, email, google_id, avatar_url, created_at 
+              total_donations, lifetime_donation_count, email, google_id, avatar_url, hide_photo, created_at 
        FROM donors 
        WHERE phone = ?`,
       [phone]
@@ -164,11 +165,12 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
     const passwordHash = password ? await bcrypt.hash(password, 10) : (googleId ? await bcrypt.hash(crypto.randomUUID(), 10) : null);
     const id = crypto.randomUUID();
     const isAvailable = donorData.is_available ?? true;
+    const hidePhoto = Boolean(donorData.hide_photo);
 
     await pool.query(
       `INSERT INTO donors 
-       (id, name, phone, blood_group, area, last_donation_date, is_available, total_donations, lifetime_donation_count, password_hash, dob, email, google_id, avatar_url) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, name, phone, blood_group, area, last_donation_date, is_available, total_donations, lifetime_donation_count, password_hash, dob, email, google_id, avatar_url, hide_photo) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         donorData.name.trim(),
@@ -184,6 +186,7 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
         email,
         googleId,
         avatarUrl,
+        hidePhoto ? 1 : 0,
       ]
     );
 
@@ -203,6 +206,7 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
       email,
       google_id: googleId,
       avatar_url: avatarUrl,
+      hide_photo: hidePhoto,
       created_at: new Date().toISOString(),
     };
 
@@ -322,6 +326,7 @@ export async function updateDonorProfile(req: Request, res: Response): Promise<v
     if (profileData.lifetime_donation_count !== undefined) { updates.push('lifetime_donation_count = ?'); values.push(profileData.lifetime_donation_count); }
     if (profileData.dob !== undefined) { updates.push('dob = ?'); values.push(profileData.dob || null); }
     if (profileData.avatar_url !== undefined) { updates.push('avatar_url = ?'); values.push(profileData.avatar_url ? String(profileData.avatar_url).trim() : null); }
+    if (profileData.hide_photo !== undefined) { updates.push('hide_photo = ?'); values.push(profileData.hide_photo ? 1 : 0); }
     if (profileData.new_password) {
       const newHash = await bcrypt.hash(profileData.new_password, 10);
       updates.push('password_hash = ?');
@@ -447,7 +452,30 @@ export async function getDonationHistory(req: Request, res: Response): Promise<v
 
 export async function deleteDonor(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
+  const { password, isDonorSelfDelete } = req.body || {};
+
   try {
+    const [donorRows]: any = await pool.query('SELECT * FROM donors WHERE id = ?', [id]);
+    if (!donorRows || donorRows.length === 0) {
+      res.status(404).json({ success: false, error: { message: 'Donor account not found' } });
+      return;
+    }
+
+    const donor = donorRows[0];
+
+    // If deleting self from profile
+    if (isDonorSelfDelete) {
+      if (password) {
+        const match = await bcrypt.compare(String(password), donor.password_hash) || donor.password_hash === password;
+        if (!match) {
+          res.status(401).json({ success: false, error: { message: 'Incorrect password. Account deletion canceled.' } });
+          return;
+        }
+      }
+    }
+
+    // Delete donor history and record
+    await pool.query('DELETE FROM donation_history WHERE donor_id = ?', [id]);
     await pool.query('DELETE FROM donors WHERE id = ?', [id]);
     res.json({ success: true, error: null });
   } catch (error: any) {

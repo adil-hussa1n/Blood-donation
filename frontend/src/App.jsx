@@ -26,6 +26,7 @@ const Register = React.lazy(() => import('./pages/Register'));
 const Emergency = React.lazy(() => import('./pages/Emergency'));
 const Admin = React.lazy(() => import('./pages/Admin'));
 const Support = React.lazy(() => import('./pages/Support'));
+const Legal = React.lazy(() => import('./pages/Legal'));
 
 // Lightweight loading fallback for lazy-loaded routes
 function RouteLoader() {
@@ -53,6 +54,9 @@ export default function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/emergency" element={<Emergency />} />
               <Route path="/support" element={<Support />} />
+              <Route path="/terms" element={<Legal />} />
+              <Route path="/privacy" element={<Legal />} />
+              <Route path="/legal" element={<Legal />} />
 
               {/* Admin routes: support /admin, /adil, and /darun */}
               <Route path="/admin" element={<Admin />} />

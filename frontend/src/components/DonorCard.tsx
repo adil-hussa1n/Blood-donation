@@ -54,10 +54,10 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
 
       {/* Header: Blood Group, Name, Area & Tier Badge */}
       <div className="space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             {/* Blood Group / Avatar Squircle */}
-            {donor.avatar_url ? (
+            {donor.avatar_url && !donor.hide_photo ? (
               <div className="relative shrink-0">
                 <img 
                   src={donor.avatar_url} 
@@ -68,37 +68,40 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
                     const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
                     if (fallback) fallback.style.display = 'flex';
                   }}
-                  className="w-12 h-12 rounded-2xl object-cover border-2 border-red-500/20 shadow-md shadow-red-500/10"
+                  className="w-14 h-14 rounded-2xl object-cover border-2 border-red-500/20 shadow-md shadow-red-500/10"
                 />
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white font-black text-lg items-center justify-center shadow-md shadow-red-500/25 tracking-wider hidden">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 to-rose-700 text-white font-black text-xl items-center justify-center shadow-md shadow-red-500/25 tracking-wider hidden">
                   {donor.blood_group}
                 </div>
-                <span className="absolute -bottom-1 -right-1 bg-gradient-to-br from-red-600 to-rose-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-md shadow-sm border border-white dark:border-zinc-900 leading-tight">
+                {/* Prominent high-contrast blood group badge */}
+                <span className="absolute -bottom-1.5 -right-1.5 bg-gradient-to-r from-red-650 via-red-600 to-rose-600 text-white text-xs font-black px-2 py-0.5 rounded-lg shadow-md border-2 border-white dark:border-zinc-900 tracking-wider">
                   {donor.blood_group}
                 </span>
               </div>
             ) : (
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white font-black text-lg shadow-md shadow-red-500/25 flex items-center justify-center shrink-0 tracking-wider">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 via-rose-600 to-red-700 text-white font-black text-xl shadow-lg shadow-red-500/30 flex items-center justify-center shrink-0 tracking-wider border-2 border-red-400/30">
                 {donor.blood_group}
               </div>
             )}
 
             {/* Donor Identity */}
-            <div className="min-w-0">
-              <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+            <div className="min-w-0 flex-1">
+              <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight break-words group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                 {donor.name}
               </h4>
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400 font-medium mt-1 truncate">
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${getDistrictBadge(donor.area, language).color.bg} ${getDistrictBadge(donor.area, language).color.text} ${getDistrictBadge(donor.area, language).color.border}`}>
+              <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 dark:text-zinc-300 font-medium mt-1">
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border shrink-0 ${getDistrictBadge(donor.area, language).color.bg} ${getDistrictBadge(donor.area, language).color.text} ${getDistrictBadge(donor.area, language).color.border}`}>
                   {getDistrictBadge(donor.area, language).label}
                 </span>
-                <span className="truncate">{getAreaLabel(donor.area, t)}</span>
+                <span className="break-words leading-tight text-[11px] font-semibold text-slate-600 dark:text-zinc-400">
+                  {getAreaLabel(donor.area, t)}
+                </span>
               </div>
             </div>
           </div>
 
           {/* Tier Badge */}
-          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase border shrink-0 ${badge.color}`}>
+          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase border shrink-0 self-start ${badge.color}`}>
             {getDonorBadgeLabel(badge.label, t)}
           </span>
         </div>
@@ -142,7 +145,15 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
               {t('phone')}
             </span>
             <div className="font-mono font-bold text-slate-800 dark:text-zinc-200 text-xs tracking-tight">
-              {revealed ? donor.phone : maskPhone(donor.phone)}
+              {isCooldownActive ? (
+                <span className="text-amber-600 dark:text-amber-400 font-semibold italic text-[11px]">
+                  {language === 'bn' ? 'গোপন রাখা হয়েছে' : 'Hidden for rest'}
+                </span>
+              ) : revealed ? (
+                donor.phone
+              ) : (
+                maskPhone(donor.phone)
+              )}
             </div>
           </div>
 
@@ -173,7 +184,14 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
 
       {/* Footer Actions */}
       <div className="pt-2">
-        {!revealed ? (
+        {isCooldownActive ? (
+          <div className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold select-none text-center">
+            <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span className="text-[11px] leading-tight">
+              {t('cooldownResting')} • {t('daysLeft', { days: daysRemaining })}
+            </span>
+          </div>
+        ) : !revealed ? (
           <button
             type="button"
             onClick={onReveal}

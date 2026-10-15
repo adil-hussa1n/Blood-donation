@@ -153,7 +153,7 @@ export const dbService = {
     });
   },
 
-  async deleteDonor(id: string, adminUsername?: string, adminPassword?: string): Promise<{ success: boolean; error: any }> {
+  async deleteDonor(id: string, adminUsername?: string, adminPassword?: string, options?: { password?: string; isDonorSelfDelete?: boolean }): Promise<{ success: boolean; error: any }> {
     if (isDemoMode) {
       await delay();
       let donors = JSON.parse(localStore.getItem('bb_donors') || '[]') as Donor[];
@@ -162,9 +162,15 @@ export const dbService = {
       return { success: true, error: null };
     }
 
+    const payload: any = {};
+    if (adminUsername) payload.adminUsername = adminUsername;
+    if (adminPassword) payload.adminPassword = adminPassword;
+    if (options?.password) payload.password = options.password;
+    if (options?.isDonorSelfDelete) payload.isDonorSelfDelete = true;
+
     const res = await apiRequest(`/donors/${id}`, {
       method: 'DELETE',
-      body: JSON.stringify({ adminUsername, adminPassword }),
+      body: JSON.stringify(payload),
     });
     return { success: !!res.success, error: res.error };
   },
