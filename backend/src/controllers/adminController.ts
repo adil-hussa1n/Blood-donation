@@ -40,7 +40,7 @@ export async function googleAdminLogin(req: Request, res: Response): Promise<voi
   }
 
   // 3. Strict Single-Account Security Check
-  const configuredAdminEmail = (process.env.ADMIN_GOOGLE_EMAIL || process.env.ADMIN_EMAIL || 'adilh5353@gmail.com').toLowerCase().trim();
+  const configuredAdminEmail = (process.env.ADMIN_GOOGLE_EMAIL || process.env.ADMIN_EMAIL || 'adilh5353@gmail.com,daruntech.pvt.ltd@gmail.com').toLowerCase().trim();
   const allowedEmails = configuredAdminEmail.split(',').map(e => e.trim().toLowerCase());
 
   if (!allowedEmails.includes(email)) {

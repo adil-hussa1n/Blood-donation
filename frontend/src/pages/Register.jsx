@@ -805,8 +805,8 @@ export default function Register() {
             </div>
 
             {/* Google Verified Account Badge */}
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 shadow-sm">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 shadow-sm">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 {googleProfile.avatar_url ? (
                   <img 
                     src={googleProfile.avatar_url} 
@@ -817,23 +817,25 @@ export default function Register() {
                       const fallback = e.currentTarget.nextElementSibling;
                       if (fallback) fallback.style.display = 'flex';
                     }}
-                    className="w-10 h-10 rounded-full border border-blue-300 dark:border-blue-700 shadow-sm object-cover" 
+                    className="w-10 h-10 shrink-0 rounded-full border border-blue-300 dark:border-blue-700 shadow-sm object-cover" 
                   />
                 ) : null}
                 <div 
-                  className={`w-10 h-10 rounded-full bg-blue-500 text-white items-center justify-center font-bold text-sm shadow-sm ${googleProfile.avatar_url ? 'hidden' : 'flex'}`}
+                  className={`w-10 h-10 shrink-0 rounded-full bg-blue-500 text-white items-center justify-center font-bold text-sm shadow-sm ${googleProfile.avatar_url ? 'hidden' : 'flex'}`}
                 >
                   {googleProfile.name?.charAt(0) || 'G'}
                 </div>
-                <div>
-                  <span className="text-xs font-bold text-blue-900 dark:text-blue-100 flex items-center gap-1.5">
-                    {googleProfile.name}
-                    <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" />
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="text-sm font-bold text-blue-900 dark:text-blue-100 truncate max-w-full">
+                      {googleProfile.name}
+                    </span>
+                    <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold inline-flex items-center gap-1 whitespace-nowrap">
+                      <CheckCircle2 className="w-3 h-3 shrink-0" />
                       {t('googleAccountConnected')}
                     </span>
-                  </span>
-                  <span className="text-[11px] text-blue-600 dark:text-blue-300 block">
+                  </div>
+                  <span className="text-xs text-blue-600 dark:text-blue-300 block truncate">
                     {googleProfile.email}
                   </span>
                 </div>
@@ -841,7 +843,7 @@ export default function Register() {
               <button
                 type="button"
                 onClick={() => { setGoogleProfile(null); setErrorMsg(''); setSuccessMsg(''); }}
-                className="text-xs font-semibold text-slate-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 cursor-pointer px-2 py-1 transition-colors"
+                className="self-end sm:self-center shrink-0 text-xs font-semibold text-slate-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 cursor-pointer px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 hover:border-red-300 transition-colors"
               >
                 Disconnect
               </button>

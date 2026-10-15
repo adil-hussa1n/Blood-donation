@@ -223,6 +223,24 @@ export async function initDatabase() {
       console.log(`✅ Default admin created: ${adminUser}`);
     }
 
+    // Register Google admin emails (ADMIN_GOOGLE_EMAIL) in the admins table
+    const adminEmails = (process.env.ADMIN_GOOGLE_EMAIL || process.env.ADMIN_EMAIL || 'adilh5353@gmail.com,daruntech.pvt.ltd@gmail.com')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+    for (const email of adminEmails) {
+      const [existing]: any = await dbConn.query('SELECT id FROM admins WHERE LOWER(username) = ?', [email]);
+      if (!existing || existing.length === 0) {
+        // Google admins sign in via OAuth; store an unusable random password hash
+        const unusableHash = await bcrypt.hash(crypto.randomUUID(), 10);
+        await dbConn.query(
+          'INSERT INTO admins (id, username, password_hash) VALUES (?, ?, ?)',
+          [crypto.randomUUID(), email, unusableHash]
+        );
+        console.log(`✅ Admin registered: ${email}`);
+      }
+    }
+
     // Seed initial Sylhet demo donors if donors table is empty
     const [donorsCount]: any = await dbConn.query('SELECT COUNT(*) as count FROM donors');
     if (donorsCount[0].count === 0) {
