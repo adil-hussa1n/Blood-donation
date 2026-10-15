@@ -364,6 +364,7 @@ export default function Register() {
   const [regTotalDonations, setRegTotalDonations] = useState('');
   const [regAvailable, setRegAvailable] = useState(true);
   const [regDob, setRegDob] = useState('');
+  const [regAgreeTerms, setRegAgreeTerms] = useState(false);
 
   // ----------------------------------------
   // UPDATE FORM STATE
@@ -462,8 +463,12 @@ export default function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
     setFormLoading(true);
-    setSuccessMsg('');
-    setErrorMsg('');
+    // 0. Terms & Conditions and Privacy Policy agreement check
+    if (!regAgreeTerms) {
+      setErrorMsg(t('mustAgreeTermsError'));
+      setFormLoading(false);
+      return;
+    }
 
     // 1. Bot check: Honeypot
     if (honeypot.trim() !== '') {
@@ -580,6 +585,7 @@ export default function Register() {
         setRegLastDonationDate('');
         setRegTotalDonations('');
         setRegAvailable(true);
+        setRegAgreeTerms(false);
         setHoneypot('');
 
         if (googleProfile) {
@@ -1118,18 +1124,49 @@ export default function Register() {
               />
             </div>
 
-            {/* Terms and Privacy Policy Notice */}
-            <div className="pt-2 text-center">
-              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400">
-                {t('agreeToTermsPrefix')}{' '}
-                <Link to="/terms" target="_blank" rel="noopener noreferrer" className="font-bold text-red-600 dark:text-red-400 hover:underline">
-                  {t('termsAndConditionsText')}
-                </Link>{' '}
-                {t('andText')}{' '}
-                <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="font-bold text-red-600 dark:text-red-400 hover:underline">
-                  {t('privacyPolicyText')}
-                </Link>.
-              </p>
+            {/* Terms & Conditions and Privacy Policy Interactive Toggle */}
+            <div className={`p-4 rounded-2xl border transition-all duration-200 mt-2 ${
+              regAgreeTerms
+                ? 'bg-red-50/50 dark:bg-red-950/20 border-red-500/40 shadow-xs'
+                : 'bg-slate-50/80 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700'
+            }`}>
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  required
+                  checked={regAgreeTerms}
+                  onChange={(e) => setRegAgreeTerms(e.target.checked)}
+                  className="mt-0.5 w-5 h-5 rounded-md border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer shrink-0"
+                />
+                <div className="text-xs leading-relaxed text-slate-700 dark:text-zinc-300">
+                  <span className="font-semibold">{t('agreeToTermsPrefix')} </span>
+                  <Link
+                    to="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="font-extrabold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-0.5"
+                  >
+                    {t('termsAndConditionsText')}
+                  </Link>{' '}
+                  <span className="font-semibold">{t('andText')} </span>
+                  <Link
+                    to="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="font-extrabold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-0.5"
+                  >
+                    {t('privacyPolicyText')}
+                  </Link>
+                  <span className="text-red-500 font-bold ml-1">*</span>
+                  <span className="block text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5 font-normal">
+                    {language === 'bn'
+                      ? 'নিবন্ধন সম্পন্ন ও রক্তদাতা প্রোফাইল চালু করতে এই বক্সে টিক দিয়ে সম্মতি জানান।'
+                      : 'Toggle this checkbox to confirm your agreement before creating your donor profile.'}
+                  </span>
+                </div>
+              </label>
             </div>
 
             <button

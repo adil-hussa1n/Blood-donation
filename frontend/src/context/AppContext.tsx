@@ -643,10 +643,11 @@ export const TRANSLATIONS = {
     // Legal & Privacy
     termsNav: 'Terms & Conditions',
     privacyNav: 'Privacy Policy',
-    agreeToTermsPrefix: 'By registering, you agree to our',
+    agreeToTermsPrefix: 'I have read and agree to the',
     termsAndConditionsText: 'Terms & Conditions',
     andText: 'and',
     privacyPolicyText: 'Privacy Policy',
+    mustAgreeTermsError: 'You must agree to the Terms & Conditions and Privacy Policy to register.',
   },
   bn: {
     // Navigation
@@ -1069,10 +1070,11 @@ export const TRANSLATIONS = {
     // Legal & Privacy
     termsNav: 'শর্তাবলী',
     privacyNav: 'গোপনীয়তা নীতি',
-    agreeToTermsPrefix: 'নিবন্ধন সম্পন্ন করার মাধ্যমে আপনি আমাদের',
+    agreeToTermsPrefix: 'আমি প্ল্যাটফর্মের',
     termsAndConditionsText: 'ব্যবহারের শর্তাবলী',
     andText: 'ও',
     privacyPolicyText: 'গোপনীয়তা নীতি',
+    mustAgreeTermsError: 'নিবন্ধন সম্পন্ন করতে শর্তাবলী ও গোপনীয়তা নীতিতে সম্মতি জানানো আবশ্যক।',
   }
 };
 
@@ -1218,12 +1220,20 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     const root = window.document.documentElement;
-    if (theme === 'dark') {
+    const isDark = theme === 'dark';
+    if (isDark) {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
     localStorage.setItem('theme', theme);
+
+    // Dynamically update mobile browser status bar theme color
+    const targetColor = isDark ? '#09090b' : '#ffffff';
+    const themeColorMetas = document.querySelectorAll('meta[name="theme-color"]');
+    themeColorMetas.forEach((meta) => {
+      meta.setAttribute('content', targetColor);
+    });
   }, [theme]);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
