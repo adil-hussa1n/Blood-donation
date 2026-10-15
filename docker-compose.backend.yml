@@ -2,29 +2,7 @@ version: '3.8'
 
 services:
   # ==========================================
-  # 1. MySQL Database Service
-  # ==========================================
-  mysql:
-    image: mysql:8.0
-    container_name: blood_donation_mysql
-    restart: unless-stopped
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-Adil@1267}
-      MYSQL_DATABASE: ${DB_NAME:-blood_donation_db}
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - blood_network
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-
-  # ==========================================
-  # 2. Express Node.js API Backend
+  # 1. Express Node.js API Backend
   # ==========================================
   bloodify:
     build:
@@ -32,17 +10,14 @@ services:
       dockerfile: Dockerfile
     container_name: blood_donation_backend
     restart: unless-stopped
-    depends_on:
-      mysql:
-        condition: service_healthy
     environment:
       PORT: 5000
       NODE_ENV: production
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: root
-      DB_PASSWORD: ${DB_PASSWORD:-Adil@1267}
-      DB_NAME: ${DB_NAME:-blood_donation_db}
+      DB_HOST: ${DB_HOST:-sql.daruntech.cloud}
+      DB_PORT: ${DB_PORT:-12345}
+      DB_USER: ${DB_USER:-darun_for_donors_user}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-darun_for_donors}
       JWT_SECRET: ${JWT_SECRET:-super_secret_blood_donation_jwt_key_2026}
       FRONTEND_URL: ${FRONTEND_URL:-*}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
@@ -52,10 +27,6 @@ services:
       - "${BACKEND_PORT:-5000}:5000"
     networks:
       - blood_network
-
-volumes:
-  mysql_data:
-    name: blood_donation_mysql_data
 
 networks:
   blood_network:
