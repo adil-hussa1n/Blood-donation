@@ -274,6 +274,179 @@ export async function initDatabase() {
       ) ENGINE=InnoDB;
     `);
 
+    // 11. Donor Card Customization Configuration (Admin Editable)
+    await dbConn.query(`
+      CREATE TABLE IF NOT EXISTS donor_card_config (
+        id VARCHAR(36) PRIMARY KEY,
+        card_title VARCHAR(150) DEFAULT 'Official Voluntary Blood Donor Card',
+        card_subtitle VARCHAR(255) DEFAULT 'Sylhet Emergency Blood Network • Darun Donors',
+        front_notes TEXT NULL,
+        back_terms TEXT NULL,
+        emergency_hotline VARCHAR(50) DEFAULT '+880 1700-000000',
+        authorized_signatory_title VARCHAR(100) DEFAULT 'Medical & Registry Director',
+        badge_accent_color VARCHAR(30) DEFAULT '#dc2626',
+        card_theme VARCHAR(50) DEFAULT 'crimson_dark',
+        badge_text VARCHAR(100) DEFAULT 'Life Saver',
+        issue_org VARCHAR(150) DEFAULT '',
+        website_url VARCHAR(150) DEFAULT 'donors.daruntech.com',
+        valid_years INT DEFAULT 3,
+        show_qr TINYINT(1) DEFAULT 1,
+        front_tag_label VARCHAR(100) DEFAULT 'REGISTERED LIFE SAVER',
+        qr_label VARCHAR(100) DEFAULT 'SCAN TO VERIFY',
+        back_guidelines_title VARCHAR(150) DEFAULT 'Guidelines & Partner Benefits',
+        security_strip_text VARCHAR(255) DEFAULT 'DARUN DONORS DIGITAL SECURITY STRIP • VERIFIED VOLUNTARY REGISTRY',
+        blood_group_label VARCHAR(50) DEFAULT 'GROUP',
+        district_label VARCHAR(100) DEFAULT 'District / Area',
+        donations_label VARCHAR(100) DEFAULT 'Total Donations',
+        valid_thru_label VARCHAR(100) DEFAULT 'Valid Thru',
+        verified_status_text VARCHAR(100) DEFAULT 'Verified Voluntary Donor',
+        footer_sponsor_text VARCHAR(255) DEFAULT 'Partner discounts valid at recognized diagnostic centers and clinics.',
+        show_magnetic_strip TINYINT(1) DEFAULT 1,
+        issued_by_label VARCHAR(50) DEFAULT 'Issued by:',
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB;
+    `);
+
+    // Migration check for donor_card_config columns
+    const cardConfigCols = [
+      { name: 'card_theme', def: "VARCHAR(50) DEFAULT 'crimson_dark' AFTER badge_accent_color" },
+      { name: 'badge_text', def: "VARCHAR(100) DEFAULT 'Life Saver' AFTER card_theme" },
+      { name: 'issue_org', def: "VARCHAR(150) DEFAULT 'Darun Tech' AFTER badge_text" },
+      { name: 'website_url', def: "VARCHAR(150) DEFAULT 'donors.daruntech.com' AFTER issue_org" },
+      { name: 'valid_years', def: 'INT DEFAULT 3 AFTER website_url' },
+      { name: 'show_qr', def: 'TINYINT(1) DEFAULT 1 AFTER valid_years' },
+      { name: 'front_tag_label', def: "VARCHAR(100) DEFAULT 'REGISTERED LIFE SAVER' AFTER show_qr" },
+      { name: 'qr_label', def: "VARCHAR(100) DEFAULT 'SCAN TO VERIFY' AFTER front_tag_label" },
+      { name: 'back_guidelines_title', def: "VARCHAR(150) DEFAULT 'Guidelines & Partner Benefits' AFTER qr_label" },
+      { name: 'security_strip_text', def: "VARCHAR(255) DEFAULT 'DARUN DONORS DIGITAL SECURITY STRIP • VERIFIED VOLUNTARY REGISTRY' AFTER back_guidelines_title" },
+      { name: 'blood_group_label', def: "VARCHAR(50) DEFAULT 'GROUP' AFTER security_strip_text" },
+      { name: 'district_label', def: "VARCHAR(100) DEFAULT 'District / Area' AFTER blood_group_label" },
+      { name: 'donations_label', def: "VARCHAR(100) DEFAULT 'Total Donations' AFTER district_label" },
+      { name: 'valid_thru_label', def: "VARCHAR(100) DEFAULT 'Valid Thru' AFTER donations_label" },
+      { name: 'verified_status_text', def: "VARCHAR(100) DEFAULT 'Verified Voluntary Donor' AFTER valid_thru_label" },
+      { name: 'footer_sponsor_text', def: "VARCHAR(255) DEFAULT 'Partner discounts valid at recognized diagnostic centers and clinics.' AFTER verified_status_text" },
+      { name: 'show_magnetic_strip', def: "TINYINT(1) DEFAULT 1 AFTER footer_sponsor_text" },
+      { name: 'issued_by_label', def: "VARCHAR(50) DEFAULT 'Issued by:' AFTER show_magnetic_strip" }
+    ];
+
+    for (const c of cardConfigCols) {
+      try {
+        const [hasCol]: any = await dbConn.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'donor_card_config' AND COLUMN_NAME = ?
+        `, [DB_NAME, c.name]);
+
+        if (!hasCol || hasCol.length === 0) {
+          await dbConn.query(`ALTER TABLE donor_card_config ADD COLUMN ${c.name} ${c.def}`);
+          console.log(`✅ Added ${c.name} to donor_card_config.`);
+        }
+      } catch (err: any) {
+        console.warn(`Migration check for donor_card_config.${c.name}:`, err.message);
+      }
+    }
+
+    // One-time cleanup migration: ensure no legacy "Sylhet Health & Blood Foundation" remains in issue_org or issued_by_label
+    try {
+      await dbConn.query(`
+        UPDATE donor_card_config 
+        SET 
+          issue_org = TRIM(REPLACE(issue_org, 'Sylhet Health & Blood Foundation', '')),
+          issued_by_label = CASE 
+            WHEN issued_by_label LIKE '%Darun Tech%' THEN 'Issued by:'
+            ELSE issued_by_label
+          END
+        WHERE issue_org LIKE '%Sylhet Health & Blood Foundation%' 
+           OR issued_by_label LIKE '%Sylhet Health & Blood Foundation%'
+           OR issued_by_label LIKE '%Darun Tech%';
+      `);
+    } catch (cleanErr: any) {
+      console.warn('donor_card_config cleanup migration error:', cleanErr.message);
+    }
+
+    // Insert default donor card configuration if empty
+    const [cardCfgRows]: any = await dbConn.query('SELECT id FROM donor_card_config LIMIT 1');
+    if (!cardCfgRows || cardCfgRows.length === 0) {
+      await dbConn.query(`
+        INSERT INTO donor_card_config (id, card_title, card_subtitle, front_notes, back_terms, emergency_hotline, authorized_signatory_title, badge_accent_color, card_theme, badge_text, issue_org, website_url, valid_years, show_qr)
+        VALUES (
+          'default_config',
+          'Official Voluntary Blood Donor Card',
+          'Sylhet Emergency Blood Network • Darun Donors',
+          'This card certifies that the bearer is a verified voluntary blood donor dedicated to saving human lives.',
+          '1. This card is non-transferable and strictly voluntary.\\n2. Valid across partner health clinics, blood transfusion centers, and community sponsors.\\n3. Present this card or QR code to redeem partner benefits and donor discounts.\\n4. Always verify medical eligibility before transfusion.',
+          '+880 1700-000000',
+          'Medical & Registry Director',
+          '#dc2626',
+          'crimson_dark',
+          'Life Saver',
+          '',
+          'donors.daruntech.com',
+          3,
+          1
+        )
+      `);
+    }
+
+    // 12. Donor Card Sponsorship Offers & Partner Discounts
+    await dbConn.query(`
+      CREATE TABLE IF NOT EXISTS donor_card_offers (
+        id VARCHAR(36) PRIMARY KEY,
+        sponsor_name VARCHAR(150) NOT NULL,
+        sponsor_logo VARCHAR(500) NULL,
+        title VARCHAR(200) NOT NULL,
+        discount_text VARCHAR(100) NOT NULL,
+        description TEXT NULL,
+        promo_code VARCHAR(50) NULL,
+        valid_until VARCHAR(100) NULL,
+        category VARCHAR(50) DEFAULT 'healthcare',
+        is_active TINYINT(1) DEFAULT 1 NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB;
+    `);
+
+    // Seed initial sponsorship offers if table is empty
+    const [offerRows]: any = await dbConn.query('SELECT id FROM donor_card_offers LIMIT 1');
+    if (!offerRows || offerRows.length === 0) {
+      await dbConn.query(`
+        INSERT INTO donor_card_offers (id, sponsor_name, title, discount_text, description, promo_code, valid_until, category, is_active)
+        VALUES 
+        (
+          'offer-1',
+          'Popular Diagnostic Centre',
+          'Full Blood & Health Checkup Package',
+          '25% OFF',
+          'Special discount for registered voluntary donors on CBC, Serum Ferritin, and screening profiles.',
+          'DARUNHEALTH25',
+          'Dec 31, 2026',
+          'diagnostic',
+          1
+        ),
+        (
+          'offer-2',
+          'Sylhet Eye Hospital & Laser',
+          'Free Consultation & Eye Checkup',
+          '100% FREE',
+          'Complimentary comprehensive vision screening and consultation upon presenting this card.',
+          'DARUNEYE',
+          'Dec 31, 2026',
+          'consultation',
+          1
+        ),
+        (
+          'offer-3',
+          'MedLife Pharmacy Network',
+          'Prescription Medicines & First Aid',
+          '12% OFF',
+          'Instant flat discount on all essential medicines and first-aid kits across Sylhet branches.',
+          'DARUNMED12',
+          'Dec 31, 2026',
+          'pharmacy',
+          1
+        )
+      `);
+    }
+
     console.log('✅ All tables verified/created successfully.');
 
     // Seed default admin if not exists

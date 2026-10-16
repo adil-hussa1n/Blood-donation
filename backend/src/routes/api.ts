@@ -27,6 +27,12 @@ import {
   checkIfBlocked,
   getDeletedDonors,
   getDeletedEmergencies,
+  getDonorCardConfig,
+  updateDonorCardConfig,
+  getDonorCardOffers,
+  createDonorCardOffer,
+  updateDonorCardOffer,
+  deleteDonorCardOffer,
 } from '../controllers/adminController.js';
 import {
   submitSupportRequest,
@@ -87,6 +93,14 @@ router.get('/admin/blocked', requireAdmin, getBlockedPhones);
 router.get('/admin/check-blocked/:phone', checkIfBlocked);
 router.get('/admin/deleted-donors', requireAdmin, getDeletedDonors);
 router.get('/admin/deleted-emergencies', requireAdmin, getDeletedEmergencies);
+
+// Donor Card Configuration & Sponsorship Offers (Public view + Admin management)
+router.get('/donor-card/config', getDonorCardConfig);
+router.put('/donor-card/config', requireAdmin, updateDonorCardConfig);
+router.get('/donor-card/offers', getDonorCardOffers);
+router.post('/donor-card/offers', requireAdmin, createDonorCardOffer);
+router.put('/donor-card/offers/:id', requireAdmin, updateDonorCardOffer);
+router.delete('/donor-card/offers/:id', requireAdmin, deleteDonorCardOffer);
 
 // ==========================================
 // PUSH NOTIFICATIONS ROUTES

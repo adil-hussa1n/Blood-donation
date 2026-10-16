@@ -1,15 +1,16 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X, UserX, FileX, Clock, Phone, AlertCircle } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X, UserX, FileX, Clock, Phone, AlertCircle, CreditCard, Tag, Plus, Edit3, Save } from 'lucide-react';
 import { useApp, BLOOD_GROUPS, DISTRICT_AREAS, normalizeDonor, getAreaLabel, getDistrictBadge } from '../context/AppContext';
 
 export default function Admin() {
-  const { 
-    donors, 
-    emergencyRequests, 
-    isAdmin, 
+  const {
+    donors,
+    emergencyRequests,
+    isAdmin,
     loginAdminWithGoogle,
-    logoutAdmin, 
-    deleteDonor, 
+    logoutAdmin,
+    deleteDonor,
     deleteEmergencyRequest,
     blockDonorByPhone,
     unblockDonorByPhone,
@@ -17,14 +18,20 @@ export default function Admin() {
     getSupportRequests,
     getDeletedDonors,
     getDeletedEmergencies,
+    getDonorCardConfig,
+    updateDonorCardConfig,
+    getDonorCardOffers,
+    createDonorCardOffer,
+    updateDonorCardOffer,
+    deleteDonorCardOffer,
     showToast,
     language,
     t
   } = useApp();
 
-  // Dashboard view state: 'donors' | 'emergencies' | 'blocked' | 'support' | 'deleted_donors' | 'deleted_emergencies'
+  // Dashboard view state: 'donors' | 'emergencies' | 'blocked' | 'support' | 'deleted_donors' | 'deleted_emergencies' | 'donor_card'
   const [adminTab, setAdminTab] = useState('donors');
-  
+
   // Blood group filter in Donors view
   const [bloodGroupFilter, setBloodGroupFilter] = useState(''); // '' means All
 
@@ -33,6 +40,69 @@ export default function Admin() {
   const [adminAreaFilter, setAdminAreaFilter] = useState('');
   const [adminDateFrom, setAdminDateFrom] = useState('');
   const [adminDateTo, setAdminDateTo] = useState('');
+
+  const [cardConfigForm, setCardConfigForm] = useState({
+    card_title: 'Official Voluntary Blood Donor Card',
+    card_subtitle: 'Sylhet Emergency Blood Network • Darun Donors',
+    front_notes: '',
+    back_terms: '',
+    emergency_hotline: '+880 1700-000000',
+    authorized_signatory_title: 'Medical & Registry Director',
+    badge_accent_color: '#dc2626',
+    card_theme: 'crimson_dark',
+    badge_text: 'Life Saver',
+    issue_org: '',
+    website_url: 'donors.daruntech.com',
+    valid_years: 3,
+    show_qr: 1,
+    front_tag_label: 'REGISTERED LIFE SAVER',
+    qr_label: 'SCAN TO VERIFY',
+    back_guidelines_title: 'Guidelines & Partner Benefits',
+    security_strip_text: 'DARUN DONORS DIGITAL SECURITY STRIP • VERIFIED VOLUNTARY REGISTRY',
+    blood_group_label: 'GROUP',
+    district_label: 'District / Area',
+    donations_label: 'Total Donations',
+    valid_thru_label: 'Valid Thru',
+    verified_status_text: 'Verified Voluntary Donor',
+    footer_sponsor_text: 'Partner discounts valid at recognized diagnostic centers and clinics.'
+  });
+  const [cardConfigSaving, setCardConfigSaving] = useState(false);
+  const [cardOffersList, setCardOffersList] = useState([]);
+  const [cardOffersLoading, setCardOffersLoading] = useState(false);
+  const [showAddOfferModal, setShowAddOfferModal] = useState(false);
+  const [editingOffer, setEditingOffer] = useState(null);
+  const [offerForm, setOfferForm] = useState({
+    sponsor_name: '',
+    sponsor_logo: '',
+    title: '',
+    discount_text: '',
+    description: '',
+    promo_code: '',
+    valid_until: '',
+    category: 'healthcare',
+    is_active: true
+  });
+
+  const fetchCardData = async () => {
+    setCardOffersLoading(true);
+    try {
+      const [cfgRes, offersRes] = await Promise.all([
+        getDonorCardConfig(),
+        getDonorCardOffers()
+      ]);
+      if (cfgRes?.data) setCardConfigForm(cfgRes.data);
+      if (offersRes?.data) setCardOffersList(offersRes.data);
+    } catch (err) {
+      console.warn("Failed to load donor card admin data:", err);
+    }
+    setCardOffersLoading(false);
+  };
+
+  useEffect(() => {
+    if (isAdmin && adminTab === 'donor_card') {
+      fetchCardData();
+    }
+  }, [isAdmin, adminTab]);
 
   // Blocked phone states
   const [blockedPhones, setBlockedPhones] = useState([]);
@@ -162,6 +232,7 @@ export default function Admin() {
   // Modal / Confirm state
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmDeleteType, setConfirmDeleteType] = useState(null); // 'donor' or 'emergency'
+  const [confirmDeleteOffer, setConfirmDeleteOffer] = useState(null); // { id, name }
   const [deleting, setDeleting] = useState(false);
 
   // Google Admin Login states & logic
@@ -272,7 +343,7 @@ export default function Admin() {
   const executeDelete = async () => {
     if (!confirmDeleteId || !confirmDeleteType) return;
     setDeleting(true);
-    
+
     try {
       if (confirmDeleteType === 'donor') {
         const res = await deleteDonor(confirmDeleteId);
@@ -490,9 +561,9 @@ export default function Admin() {
           {/* Google Authentication Actions - Displays exactly ONE button */}
           <div className="pt-2 flex flex-col items-center justify-center w-full">
             {/* Real Google Button Container when initialized */}
-            <div 
-              ref={googleBtnRef} 
-              className={hasRenderedGoogleBtn ? 'flex justify-center w-full min-h-[44px]' : 'hidden'} 
+            <div
+              ref={googleBtnRef}
+              className={hasRenderedGoogleBtn ? 'flex justify-center w-full min-h-[44px]' : 'hidden'}
             />
 
             {/* Direct Google Sign In Button - Only shown when Google Identity iframe is not rendered */}
@@ -604,7 +675,7 @@ export default function Admin() {
   // ==============================================================
   return (
     <div className="space-y-5 sm:space-y-8 max-w-6xl mx-auto relative">
-      
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 bg-slate-100 dark:bg-zinc-900/50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200/50 dark:border-zinc-800/30">
         <div className="flex items-center gap-3">
@@ -620,7 +691,7 @@ export default function Admin() {
             </p>
           </div>
         </div>
-        
+
         <button
           onClick={logoutAdmin}
           className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 dark:text-rose-400 rounded-xl text-xs font-bold transition-all self-start sm:self-auto"
@@ -634,11 +705,10 @@ export default function Admin() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         <button
           onClick={() => setAdminTab('donors')}
-          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
-            adminTab === 'donors'
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${adminTab === 'donors'
               ? 'border-red-500/40 ring-1 ring-red-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
-          }`}
+            }`}
         >
           <div className="space-y-0.5 sm:space-y-1 min-w-0">
             <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
@@ -655,11 +725,10 @@ export default function Admin() {
 
         <button
           onClick={() => setAdminTab('emergencies')}
-          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
-            adminTab === 'emergencies'
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${adminTab === 'emergencies'
               ? 'border-rose-500/40 ring-1 ring-rose-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
-          }`}
+            }`}
         >
           <div className="space-y-0.5 sm:space-y-1 min-w-0">
             <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
@@ -676,11 +745,10 @@ export default function Admin() {
 
         <button
           onClick={() => setAdminTab('blocked')}
-          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
-            adminTab === 'blocked'
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${adminTab === 'blocked'
               ? 'border-zinc-500/40 ring-1 ring-zinc-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
-          }`}
+            }`}
         >
           <div className="space-y-0.5 sm:space-y-1 min-w-0">
             <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
@@ -697,11 +765,10 @@ export default function Admin() {
 
         <button
           onClick={() => setAdminTab('support')}
-          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
-            adminTab === 'support'
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${adminTab === 'support'
               ? 'border-blue-500/40 ring-1 ring-blue-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
-          }`}
+            }`}
         >
           <div className="space-y-0.5 sm:space-y-1 min-w-0">
             <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
@@ -718,11 +785,10 @@ export default function Admin() {
 
         <button
           onClick={() => setAdminTab('deleted_donors')}
-          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
-            adminTab === 'deleted_donors'
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${adminTab === 'deleted_donors'
               ? 'border-purple-500/40 ring-1 ring-purple-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
-          }`}
+            }`}
         >
           <div className="space-y-0.5 sm:space-y-1 min-w-0">
             <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
@@ -739,11 +805,10 @@ export default function Admin() {
 
         <button
           onClick={() => setAdminTab('deleted_emergencies')}
-          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
-            adminTab === 'deleted_emergencies'
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${adminTab === 'deleted_emergencies'
               ? 'border-amber-500/40 ring-1 ring-amber-500/10 shadow-md'
               : 'hover:border-slate-300 dark:hover:border-zinc-700'
-          }`}
+            }`}
         >
           <div className="space-y-0.5 sm:space-y-1 min-w-0">
             <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
@@ -755,6 +820,26 @@ export default function Admin() {
           </div>
           <div className="p-2 sm:p-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
             <FileX className="w-4 h-4 sm:w-6 sm:h-6" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('donor_card')}
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${adminTab === 'donor_card'
+              ? 'border-emerald-500/40 ring-1 ring-emerald-500/10 shadow-md'
+              : 'hover:border-slate-300 dark:hover:border-zinc-700'
+            }`}
+        >
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
+              {language === 'bn' ? 'ডোনার কার্ড ও অফার' : 'Card & Offers'}
+            </span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+              {cardOffersList.length}
+            </span>
+          </div>
+          <div className="p-2 sm:p-3 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+            <CreditCard className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </button>
       </div>
@@ -918,130 +1003,256 @@ export default function Admin() {
         )}
       </div>
 
-      {/* Delete Confirmation Alert Banner */}
-      {confirmDeleteId && (
-        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-300 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-            <div className="text-left">
-              <h4 className="font-bold text-sm">{t('areYouSureTitle')}</h4>
-              <p className="text-xs text-rose-700/80 dark:text-rose-300/80 mt-0.5">
-                {t('permanentActionWarning', { type: confirmDeleteType === 'donor' ? t('registeredDonorWord') : t('emergencyRequestWord') })}
-              </p>
+      {/* Premium Delete Confirmation Modal (Donor & Emergency Request) */}
+      {confirmDeleteId && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 w-screen h-screen z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+          onClick={cancelDeleteConfirm}
+        >
+          <div
+            className="relative w-full max-w-md rounded-3xl p-6 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl text-left space-y-4 animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 ring-4 ring-rose-500/10">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-extrabold text-base text-slate-900 dark:text-white">
+                  {t('areYouSureTitle') || 'Confirm Deletion'}
+                </h4>
+                <p className="text-xs text-slate-400 font-medium">
+                  {confirmDeleteType === 'donor' ? 'Voluntary Donor Record' : 'Emergency Request'}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed font-normal bg-slate-50 dark:bg-zinc-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-zinc-800">
+              {t('permanentActionWarning', { type: confirmDeleteType === 'donor' ? t('registeredDonorWord') : t('emergencyRequestWord') })}
+            </p>
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={cancelDeleteConfirm}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 text-xs transition-colors cursor-pointer"
+              >
+                {t('cancelButton') || 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={executeDelete}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-md shadow-rose-600/25 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{deleting ? t('deletingButton') : (t('confirmDeleteButton') || 'Delete')}</span>
+              </button>
             </div>
           </div>
-          <div className="flex gap-2 self-end sm:self-center">
-            <button
-              onClick={cancelDeleteConfirm}
-              className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
-            >
-              {t('cancelButton')}
-            </button>
-            <button
-              onClick={executeDelete}
-              disabled={deleting}
-              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              {deleting ? t('deletingButton') : t('confirmDeleteButton')}
-            </button>
-          </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Block Confirmation Alert Banner */}
-      {confirmBlockData && (
-        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-300 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-            <div className="text-left">
-              <h4 className="font-bold text-sm">Are you absolutely sure?</h4>
-              <p className="text-xs text-rose-700/80 dark:text-rose-300/80 mt-0.5">
-                You are about to block the phone number <span className="font-extrabold">{confirmBlockData.phone}</span>. If they have an active session, they will be logged out and prohibited from registering or creating emergency posts.
+      {/* Premium Delete Offer Confirmation Modal */}
+      {confirmDeleteOffer && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 w-screen h-screen z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+          onClick={() => setConfirmDeleteOffer(null)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-3xl p-6 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl text-left space-y-4 animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 ring-4 ring-rose-500/10">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-extrabold text-base text-slate-900 dark:text-white">
+                  Delete Sponsorship Offer?
+                </h4>
+                <p className="text-xs text-slate-400 font-medium truncate">
+                  {confirmDeleteOffer.name}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed font-normal bg-slate-50 dark:bg-zinc-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-zinc-800 space-y-1">
+              <p>
+                Are you sure you want to permanently remove the partner offer for <strong className="text-slate-900 dark:text-white font-bold">{confirmDeleteOffer.name}</strong>?
               </p>
+              {confirmDeleteOffer.title && (
+                <p className="text-[11px] text-slate-400 dark:text-zinc-400">
+                  Offer: "{confirmDeleteOffer.title}"
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteOffer(null)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 text-xs transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const offerToDelete = confirmDeleteOffer;
+                  setConfirmDeleteOffer(null);
+                  const res = await deleteDonorCardOffer(offerToDelete.id);
+                  if (res.success) {
+                    showToast('Offer deleted successfully', 'success');
+                    setCardOffersList(prev => prev.filter(o => o.id !== offerToDelete.id));
+                  } else {
+                    showToast(res.error?.message || 'Failed to delete offer', 'error');
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-md shadow-rose-600/25 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Offer</span>
+              </button>
             </div>
           </div>
-          <div className="flex gap-2 self-end sm:self-center">
-            <button
-              onClick={() => setConfirmBlockData(null)}
-              className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={async () => {
-                const data = confirmBlockData;
-                setConfirmBlockData(null);
-                await executeBlock(data.phone, data.reason);
-              }}
-              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md cursor-pointer"
-            >
-              <Ban className="w-3.5 h-3.5" />
-              Confirm Block
-            </button>
-          </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Unblock Confirmation Alert Banner */}
-      {confirmUnblockPhone && (
-        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-900 text-amber-800 dark:text-amber-350 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-            <div className="text-left">
-              <h4 className="font-bold text-sm">Are you sure?</h4>
-              <p className="text-xs text-amber-700/80 dark:text-amber-300/80 mt-0.5">
-                You are about to unblock the phone number <span className="font-bold">{confirmUnblockPhone}</span>. This will restore their access to register, login, and post emergency requests.
-              </p>
+      {/* Premium Block Phone Modal */}
+      {confirmBlockData && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 w-screen h-screen z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+          onClick={() => setConfirmBlockData(null)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-3xl p-6 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl text-left space-y-4 animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-500/10 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0 ring-4 ring-zinc-500/10">
+                <Ban className="w-6 h-6 text-rose-500" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-extrabold text-base text-slate-900 dark:text-white">
+                  Confirm Account Block
+                </h4>
+                <p className="text-xs text-slate-400 font-mono font-bold">
+                  {confirmBlockData.phone}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed font-normal bg-slate-50 dark:bg-zinc-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-zinc-800">
+              You are about to block phone number <strong className="text-slate-900 dark:text-white font-mono">{confirmBlockData.phone}</strong>. Any active session will be invalidated, preventing them from registering or creating emergency blood requests.
+            </p>
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmBlockData(null)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 text-xs transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const data = confirmBlockData;
+                  setConfirmBlockData(null);
+                  await executeBlock(data.phone, data.reason);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-800 hover:bg-rose-600 dark:hover:bg-rose-600 text-white font-extrabold text-xs shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Ban className="w-4 h-4" />
+                <span>Confirm Block</span>
+              </button>
             </div>
           </div>
-          <div className="flex gap-2 self-end sm:self-center">
-            <button
-              onClick={() => setConfirmUnblockPhone(null)}
-              className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={async () => {
-                const phone = confirmUnblockPhone;
-                setConfirmUnblockPhone(null);
-                await executeUnblock(phone);
-              }}
-              className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md cursor-pointer"
-            >
-              <CheckCircle className="w-3.5 h-3.5" />
-              Confirm Unblock
-            </button>
+        </div>,
+        document.body
+      )}
+
+      {/* Premium Unblock Phone Modal */}
+      {confirmUnblockPhone && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 w-screen h-screen z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+          onClick={() => setConfirmUnblockPhone(null)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-3xl p-6 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl text-left space-y-4 animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0 ring-4 ring-amber-500/10">
+                <CheckCircle className="w-6 h-6" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-extrabold text-base text-slate-900 dark:text-white">
+                  Confirm Phone Unblock
+                </h4>
+                <p className="text-xs text-slate-400 font-mono font-bold">
+                  {confirmUnblockPhone}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed font-normal bg-slate-50 dark:bg-zinc-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-zinc-800">
+              Restore full access for <strong className="text-slate-900 dark:text-white font-mono">{confirmUnblockPhone}</strong>. They will be able to register, log in, and post emergency blood requests immediately.
+            </p>
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmUnblockPhone(null)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 text-xs transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const phone = confirmUnblockPhone;
+                  setConfirmUnblockPhone(null);
+                  await executeUnblock(phone);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs shadow-md shadow-amber-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>Confirm Unblock</span>
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Main Tables */}
       <div className="glass-panel border rounded-3xl overflow-hidden">
         {adminTab === 'donors' && (
           <div className="space-y-4">
-            
+
             {/* Header with categories */}
             <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 space-y-4 text-left">
               <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
                 {t('donorRecordsHeader')}
               </h3>
-              
+
               {/* Category selector */}
               <div className="flex flex-wrap gap-2 items-center animate-fade-in">
                 <span className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mr-2">
                   {t('categoryLabel')}
                 </span>
-                
+
                 {/* All pill */}
                 <button
                   onClick={() => setBloodGroupFilter('')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    bloodGroupFilter === ''
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${bloodGroupFilter === ''
                       ? 'bg-red-500 text-white shadow-sm shadow-red-500/10'
                       : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   {t('allCategoryPill')} ({groupCounts.All})
                 </button>
@@ -1051,18 +1262,17 @@ export default function Admin() {
                   <button
                     key={group}
                     onClick={() => setBloodGroupFilter(group)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      bloodGroupFilter === group
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${bloodGroupFilter === group
                         ? 'bg-red-500 text-white shadow-sm shadow-red-500/10'
                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200'
-                    }`}
+                      }`}
                   >
                     {group} ({groupCounts[group]})
                   </button>
                 ))}
               </div>
             </div>
-            
+
             {adminFilteredDonors.length === 0 ? (
               <div className="p-8 text-center text-sm text-slate-500 dark:text-zinc-400">
                 {t('noDonorsInCategory', { category: bloodGroupFilter || t('allCategoryPill') })}
@@ -1090,8 +1300,8 @@ export default function Admin() {
                               <div className="flex items-center gap-2.5">
                                 {donor.avatar_url ? (
                                   <div className="relative shrink-0">
-                                    <img 
-                                      src={donor.avatar_url} 
+                                    <img
+                                      src={donor.avatar_url}
                                       alt={donor.name}
                                       referrerPolicy="no-referrer"
                                       onError={(e) => {
@@ -1156,8 +1366,8 @@ export default function Admin() {
                           <div className="flex items-center gap-2.5 text-left">
                             {donor.avatar_url ? (
                               <div className="relative shrink-0">
-                                <img 
-                                  src={donor.avatar_url} 
+                                <img
+                                  src={donor.avatar_url}
                                   alt={donor.name}
                                   referrerPolicy="no-referrer"
                                   onError={(e) => {
@@ -1189,7 +1399,7 @@ export default function Admin() {
                             {donor.blood_group}
                           </span>
                         </div>
-                        
+
                         <div className="flex items-center justify-between text-xs text-slate-650 dark:text-zinc-300 pt-1">
                           <span className="flex items-center gap-1">
                             <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
@@ -1213,34 +1423,34 @@ export default function Admin() {
                     ))}
                   </div>
                 </div>
-              {/* Pagination Controls */}
-              {totalDonorPages > 1 && (
-                <div className="flex justify-between items-center p-5 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
-                  <button
-                    type="button"
-                    onClick={() => setDonorPage(prev => Math.max(1, prev - 1))}
-                    disabled={donorPage === 1}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    {t('previousPage')}
-                  </button>
-                  <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
-                    {t('pageIndicator', { current: donorPage, total: totalDonorPages })}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setDonorPage(prev => Math.min(totalDonorPages, prev + 1))}
-                    disabled={donorPage === totalDonorPages}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {t('nextPage')}
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </>
-          )}
+                {/* Pagination Controls */}
+                {totalDonorPages > 1 && (
+                  <div className="flex justify-between items-center p-5 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
+                    <button
+                      type="button"
+                      onClick={() => setDonorPage(prev => Math.max(1, prev - 1))}
+                      disabled={donorPage === 1}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      {t('previousPage')}
+                    </button>
+                    <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
+                      {t('pageIndicator', { current: donorPage, total: totalDonorPages })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setDonorPage(prev => Math.min(totalDonorPages, prev + 1))}
+                      disabled={donorPage === totalDonorPages}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {t('nextPage')}
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
@@ -1251,7 +1461,7 @@ export default function Admin() {
                 {t('activeEmergencyRecordsHeader')}
               </h3>
             </div>
-            
+
             {safeEmergencies.length === 0 ? (
               <div className="p-8 text-center text-sm text-slate-500 dark:text-zinc-400">
                 {t('noActiveEmergencies')}
@@ -1348,34 +1558,34 @@ export default function Admin() {
                     ))}
                   </div>
                 </div>
-              {/* Pagination Controls */}
-              {totalEmergencyPages > 1 && (
-                <div className="flex justify-between items-center p-5 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
-                  <button
-                    type="button"
-                    onClick={() => setEmergencyPage(prev => Math.max(1, prev - 1))}
-                    disabled={emergencyPage === 1}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    {t('previousPage')}
-                  </button>
-                  <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
-                    {t('pageIndicator', { current: emergencyPage, total: totalEmergencyPages })}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setEmergencyPage(prev => Math.min(totalEmergencyPages, prev + 1))}
-                    disabled={emergencyPage === totalEmergencyPages}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {t('nextPage')}
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </>
-          )}
+                {/* Pagination Controls */}
+                {totalEmergencyPages > 1 && (
+                  <div className="flex justify-between items-center p-5 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
+                    <button
+                      type="button"
+                      onClick={() => setEmergencyPage(prev => Math.max(1, prev - 1))}
+                      disabled={emergencyPage === 1}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      {t('previousPage')}
+                    </button>
+                    <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
+                      {t('pageIndicator', { current: emergencyPage, total: totalEmergencyPages })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setEmergencyPage(prev => Math.min(totalEmergencyPages, prev + 1))}
+                      disabled={emergencyPage === totalEmergencyPages}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {t('nextPage')}
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
@@ -1444,70 +1654,70 @@ export default function Admin() {
               ) : safeBlockedPhones.length === 0 ? (
                 <p className="text-xs text-slate-400 dark:text-zinc-500 font-semibold py-4">No blocked phone numbers.</p>
               ) : (
-              <>
-              {/* Blocked phones — Desktop table */}
-              <div className="hidden md:block overflow-x-auto border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">
-                      <th className="p-3">Phone</th>
-                      <th className="p-3">Reason</th>
-                      <th className="p-3">Blocked By</th>
-                      <th className="p-3">Blocked At</th>
-                      <th className="p-3 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-zinc-900 text-slate-700 dark:text-zinc-350">
+                <>
+                  {/* Blocked phones — Desktop table */}
+                  <div className="hidden md:block overflow-x-auto border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">
+                          <th className="p-3">Phone</th>
+                          <th className="p-3">Reason</th>
+                          <th className="p-3">Blocked By</th>
+                          <th className="p-3">Blocked At</th>
+                          <th className="p-3 text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-zinc-900 text-slate-700 dark:text-zinc-350">
+                        {safeBlockedPhones.map((b) => (
+                          <tr key={b.phone} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                            <td className="p-3 font-bold">{b.phone}</td>
+                            <td className="p-3">{b.reason || 'Blocked by admin'}</td>
+                            <td className="p-3">{b.blocked_by || 'Admin'}</td>
+                            <td className="p-3">{b.blocked_at ? new Date(b.blocked_at).toLocaleString() : 'N/A'}</td>
+                            <td className="p-3 text-center">
+                              <button
+                                onClick={() => handleUnblockPhone(b.phone)}
+                                disabled={blockedLoading}
+                                className="px-2.5 py-1 bg-green-500/15 hover:bg-green-500/25 text-green-600 dark:text-green-400 rounded-lg text-[10px] font-extrabold cursor-pointer transition-all border border-green-500/20 hover:scale-[1.02]"
+                              >
+                                Unblock
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Blocked phones — Mobile cards */}
+                  <div className="md:hidden space-y-3">
                     {safeBlockedPhones.map((b) => (
-                      <tr key={b.phone} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
-                        <td className="p-3 font-bold">{b.phone}</td>
-                        <td className="p-3">{b.reason || 'Blocked by admin'}</td>
-                        <td className="p-3">{b.blocked_by || 'Admin'}</td>
-                        <td className="p-3">{b.blocked_at ? new Date(b.blocked_at).toLocaleString() : 'N/A'}</td>
-                        <td className="p-3 text-center">
+                      <div key={b.phone} className="glass-panel border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl p-4 space-y-3">
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="space-y-0.5">
+                            <span className="font-black text-slate-900 dark:text-white text-base block">{b.phone}</span>
+                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">{b.reason || 'Blocked by admin'}</span>
+                          </div>
+                          <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15">
+                            BLOCKED
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500">
+                            {b.blocked_at ? new Date(b.blocked_at).toLocaleString() : 'N/A'}
+                          </span>
                           <button
                             onClick={() => handleUnblockPhone(b.phone)}
                             disabled={blockedLoading}
-                            className="px-2.5 py-1 bg-green-500/15 hover:bg-green-500/25 text-green-600 dark:text-green-400 rounded-lg text-[10px] font-extrabold cursor-pointer transition-all border border-green-500/20 hover:scale-[1.02]"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/15 hover:bg-green-500/25 text-green-600 dark:text-green-400 rounded-xl text-xs font-extrabold cursor-pointer transition-all border border-green-500/20"
                           >
                             Unblock
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Blocked phones — Mobile cards */}
-              <div className="md:hidden space-y-3">
-                {safeBlockedPhones.map((b) => (
-                  <div key={b.phone} className="glass-panel border border-slate-200/50 dark:border-zinc-800/50 rounded-2xl p-4 space-y-3">
-                    <div className="flex justify-between items-start gap-3">
-                      <div className="space-y-0.5">
-                        <span className="font-black text-slate-900 dark:text-white text-base block">{b.phone}</span>
-                        <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">{b.reason || 'Blocked by admin'}</span>
+                        </div>
                       </div>
-                      <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15">
-                        BLOCKED
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
-                      <span className="text-[10px] text-slate-400 dark:text-zinc-500">
-                        {b.blocked_at ? new Date(b.blocked_at).toLocaleString() : 'N/A'}
-                      </span>
-                      <button
-                        onClick={() => handleUnblockPhone(b.phone)}
-                        disabled={blockedLoading}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/15 hover:bg-green-500/25 text-green-600 dark:text-green-400 rounded-xl text-xs font-extrabold cursor-pointer transition-all border border-green-500/20"
-                      >
-                        Unblock
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              </>
+                </>
               )}
             </div>
           </div>
@@ -1567,11 +1777,10 @@ export default function Admin() {
                       {safeSupportRequests.map((req) => (
                         <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
                           <td className="p-4">
-                            <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${
-                              req.type === 'problem'
+                            <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${req.type === 'problem'
                                 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
                                 : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                            }`}>
+                              }`}>
                               {req.type === 'problem' ? 'Problem' : 'Support'}
                             </span>
                           </td>
@@ -1613,11 +1822,10 @@ export default function Admin() {
                             {req.phone}
                           </span>
                         </div>
-                        <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${
-                          req.type === 'problem'
+                        <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${req.type === 'problem'
                             ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
                             : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                        }`}>
+                          }`}>
                           {req.type === 'problem' ? 'Problem' : 'Support'}
                         </span>
                       </div>
@@ -1658,8 +1866,8 @@ export default function Admin() {
                   {language === 'bn' ? 'মুছে ফেলা রক্তদাতাদের তালিকা (অডিট লগ)' : 'Deleted Donors Archive (Audit Trail)'}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                  {language === 'bn' 
-                    ? 'কোন রক্তদাতা অ্যাকাউন্টটি মুছে ফেলেছেন বা অ্যাডমিন মুছে দিয়েছেন তার সম্পূর্ণ বিবরণ।' 
+                  {language === 'bn'
+                    ? 'কোন রক্তদাতা অ্যাকাউন্টটি মুছে ফেলেছেন বা অ্যাডমিন মুছে দিয়েছেন তার সম্পূর্ণ বিবরণ।'
                     : 'Full audit history of all deleted donor accounts with registration and deletion details.'}
                 </p>
               </div>
@@ -1728,11 +1936,10 @@ export default function Admin() {
                             )}
                           </td>
                           <td className="p-4 text-xs">
-                            <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${
-                              d.deleted_by?.includes('admin')
+                            <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${d.deleted_by?.includes('admin')
                                 ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                                 : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
-                            }`}>
+                              }`}>
                               {d.deleted_by || 'Unknown'}
                             </span>
                           </td>
@@ -1805,8 +2012,8 @@ export default function Admin() {
                   {language === 'bn' ? 'মুছে ফেলা জরুরি রক্তের অনুরোধ (অডিট লগ)' : 'Deleted Emergency Requests Archive'}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                  {language === 'bn' 
-                    ? 'আবেদনকারী বা অ্যাডমিন কর্তৃক মুছে ফেলা জরুরি রক্তের পোস্ট ও বিস্তারিত তথ্যাদি।' 
+                  {language === 'bn'
+                    ? 'আবেদনকারী বা অ্যাডমিন কর্তৃক মুছে ফেলা জরুরি রক্তের পোস্ট ও বিস্তারিত তথ্যাদি।'
                     : 'Full audit history of all emergency blood requests that were removed or completed.'}
                 </p>
               </div>
@@ -1878,11 +2085,10 @@ export default function Admin() {
                             {emg.note || <span className="text-slate-400 italic">—</span>}
                           </td>
                           <td className="p-4 text-xs">
-                            <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${
-                              emg.deleted_by?.includes('admin')
+                            <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${emg.deleted_by?.includes('admin')
                                 ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                                 : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                            }`}>
+                              }`}>
                               {emg.deleted_by || 'requester'}
                             </span>
                           </td>
@@ -1935,6 +2141,712 @@ export default function Admin() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* VIEW 7: DONOR CARD CUSTOMIZATION & SPONSORSHIP OFFERS          */}
+        {/* ============================================================== */}
+        {adminTab === 'donor_card' && (
+          <div className="space-y-6 animate-fade-in text-left">
+
+            {/* Section 1: Donor Card Content & Design Editor */}
+            <div className="glass-panel rounded-2xl p-5 sm:p-7 border border-slate-200/60 dark:border-zinc-800/60 space-y-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/50 dark:border-zinc-800/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                      {language === 'bn' ? 'স্মার্ট ডোনার কার্ড ডিজাইন ও টেক্সট এডিটর' : 'Smart Donor Card Design & Text Editor'}
+                    </h3>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 font-medium">
+                      {language === 'bn' ? 'ডোনার কার্ডের সামনের এবং পেছনের টেক্সট, টাইটেল, হটলাইন ও থিম কালার কাস্টমাইজ করুন।' : 'Customize card titles, guidelines, emergency hotlines, and theme colors shown to all donors.'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={cardConfigSaving}
+                  onClick={async () => {
+                    setCardConfigSaving(true);
+                    const res = await updateDonorCardConfig(cardConfigForm);
+                    if (res.success) {
+                      showToast(language === 'bn' ? 'ডোনার কার্ড সফলভাবে আপডেট হয়েছে!' : 'Donor Card updated successfully!', 'success');
+                    } else {
+                      showToast(res.error?.message || 'Failed to update donor card', 'error');
+                    }
+                    setCardConfigSaving(false);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{cardConfigSaving ? 'Saving...' : (language === 'bn' ? 'কার্ড সেভ করুন' : 'Save Card Changes')}</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Card Theme & Color Profile
+                  </label>
+                  <select
+                    value={cardConfigForm.card_theme || 'crimson_dark'}
+                    onChange={(e) => {
+                      const theme = e.target.value;
+                      let color = '#dc2626';
+                      if (theme === 'royal_navy') color = '#2563eb';
+                      else if (theme === 'emerald_prestige') color = '#059669';
+                      else if (theme === 'onyx_gold') color = '#d97706';
+                      setCardConfigForm({ ...cardConfigForm, card_theme: theme, badge_accent_color: color });
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="crimson_dark">Crimson Satin & Obsidian (Red Velvet)</option>
+                    <option value="royal_navy">Royal Navy & Sapphire (Executive Blue)</option>
+                    <option value="emerald_prestige">Emerald & Forest Gold (Life Prestige)</option>
+                    <option value="onyx_gold">Onyx Midnight & 24K Gold (VIP Black)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300 flex items-center justify-between">
+                    <span>Card Accent / Border Color</span>
+                    <span className="font-mono text-[10px] text-slate-400">{cardConfigForm.badge_accent_color || '#dc2626'}</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={cardConfigForm.badge_accent_color || '#dc2626'}
+                      onChange={(e) => setCardConfigForm({ ...cardConfigForm, badge_accent_color: e.target.value })}
+                      className="w-10 h-9 p-0.5 rounded-xl border border-slate-200 dark:border-zinc-700 cursor-pointer bg-white dark:bg-zinc-800 shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={cardConfigForm.badge_accent_color || '#dc2626'}
+                      onChange={(e) => setCardConfigForm({ ...cardConfigForm, badge_accent_color: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-mono uppercase focus:ring-2 focus:ring-emerald-500"
+                      placeholder="#dc2626"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Card Title (Front Header Brand)
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.card_title || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, card_title: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="DARUN DONORS"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Card Subtitle / Network Division
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.card_subtitle || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, card_subtitle: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Sylhet Emergency Blood Network"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Front Badge Seal Label
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.badge_text || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, badge_text: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Life Saver / Hero Donor"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Emergency Hotline
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.emergency_hotline || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, emergency_hotline: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-mono font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="+880 1700-000000"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Issuing Organization / Registry Board
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.issue_org || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, issue_org: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Darun Tech"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Signatory Authority Title
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.authorized_signatory_title || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, authorized_signatory_title: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Medical & Registry Director"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Verification Portal Website URL
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.website_url || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, website_url: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="donors.daruntech.com"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Card Validity Period (Years)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={cardConfigForm.valid_years || 3}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, valid_years: parseInt(e.target.value, 10) || 3 })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Front Side Commendation / Note
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={cardConfigForm.front_notes || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, front_notes: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="This card certifies that the bearer is a verified voluntary blood donor dedicated to saving human lives in emergency need."
+                  />
+                </div>
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Back Side Terms & Benefit Rules (1 per line)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={cardConfigForm.back_terms || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, back_terms: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-emerald-500"
+                    placeholder="1. Non-transferable voluntary donor identity.&#10;2. Present this card or QR code to claim partner benefits.&#10;3. Clinical cooldown of 90 days applies between whole blood donations.&#10;4. Always verify medical eligibility before transfusion."
+                  />
+                </div>
+
+                {/* Sub-section: Granular Card Label Customization */}
+                <div className="md:col-span-2 pt-3 pb-1 border-t border-slate-200/50 dark:border-zinc-800/50">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mb-1">
+                    <span>🔤</span>
+                    <span>{language === 'bn' ? 'কার্ডের ভেতরের প্রতিটি লেবেল ও টেক্সট কাস্টমাইজেশন' : 'Granular Card Labels & Static Text Customization'}</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400 dark:text-zinc-500">
+                    {language === 'bn'
+                      ? 'কার্ডের ভেতরের প্রতিটি ফিল্ডের শিরোনাম ও টেক্সট সরাসরি আপনার ইচ্ছামতো পরিবর্তন করুন।'
+                      : 'Every single title, badge, and label on the card can be customized below.'}
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Front Donor Title / Sub-header Label
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.front_tag_label || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, front_tag_label: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="REGISTERED LIFE SAVER"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Verified Status Label
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.verified_status_text || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, verified_status_text: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Verified Voluntary Donor"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Blood Group Seal Label
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.blood_group_label || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, blood_group_label: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="GROUP"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    1st Column Label (Area)
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.district_label || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, district_label: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="District / Area"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    2nd Column Label (Donations)
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.donations_label || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, donations_label: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Total Donations"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    3rd Column Label (Validity)
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.valid_thru_label || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, valid_thru_label: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Valid Thru"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    QR Verification Code Label
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.qr_label || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, qr_label: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="SCAN TO VERIFY"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Back Guidelines Header Title
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.back_guidelines_title || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, back_guidelines_title: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Guidelines & Partner Benefits"
+                  />
+                </div>
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Back Security Stripe Text
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.security_strip_text || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, security_strip_text: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-emerald-500"
+                    placeholder="DARUN DONORS DIGITAL SECURITY STRIP • VERIFIED VOLUNTARY REGISTRY"
+                  />
+                </div>
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    Back Footer Default Privilege Text
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.footer_sponsor_text || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, footer_sponsor_text: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Partner discounts valid at recognized diagnostic centers and clinics."
+                  />
+                </div>
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">
+                    "Issued by" Prefix Label
+                  </label>
+                  <input
+                    type="text"
+                    value={cardConfigForm.issued_by_label || ''}
+                    onChange={(e) => setCardConfigForm({ ...cardConfigForm, issued_by_label: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Issued by:"
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex flex-col sm:flex-row gap-4 pt-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="show_qr_toggle"
+                      checked={cardConfigForm.show_qr !== 0 && cardConfigForm.show_qr !== false}
+                      onChange={(e) => setCardConfigForm({ ...cardConfigForm, show_qr: e.target.checked ? 1 : 0 })}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    />
+                    <label htmlFor="show_qr_toggle" className="font-bold text-slate-700 dark:text-zinc-300 cursor-pointer text-xs">
+                      Enable Digital QR Code Verification on Back
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="show_mag_strip_toggle"
+                      checked={cardConfigForm.show_magnetic_strip !== 0 && cardConfigForm.show_magnetic_strip !== false}
+                      onChange={(e) => setCardConfigForm({ ...cardConfigForm, show_magnetic_strip: e.target.checked ? 1 : 0 })}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    />
+                    <label htmlFor="show_mag_strip_toggle" className="font-bold text-slate-700 dark:text-zinc-300 cursor-pointer text-xs">
+                      Enable Black Security Magnetic Strip on Back
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Sponsorship Offers & Partner Privileges Manager */}
+            <div className="glass-panel rounded-2xl p-5 sm:p-7 border border-slate-200/60 dark:border-zinc-800/60 space-y-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/50 dark:border-zinc-800/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <Tag className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                      {language === 'bn' ? 'স্পন্সরশিপ ও পার্টনার অফার ম্যানেজমেন্ট' : 'Sponsorship Offers & Partner Benefits'}
+                    </h3>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 font-medium">
+                      {language === 'bn' ? 'হাসপাতাল, ডায়াগনস্টিক সেন্টার বা ফার্মেসি পার্টনারদের ডিসকাউন্ট অফার যুক্ত ও পরিচালনা করুন।' : 'Add clinics, diagnostic centers, and pharmacies offering discounts to donors.'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingOffer(null);
+                    setOfferForm({
+                      sponsor_name: '',
+                      sponsor_logo: '',
+                      title: '',
+                      discount_text: '',
+                      description: '',
+                      promo_code: '',
+                      valid_until: 'Dec 31, 2026',
+                      category: 'healthcare',
+                      is_active: true
+                    });
+                    setShowAddOfferModal(true);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs shadow-md shadow-amber-500/20 active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{language === 'bn' ? 'নতুন অফার যুক্ত করুন' : 'Add New Offer'}</span>
+                </button>
+              </div>
+
+              {/* Offers Table / Grid */}
+              {cardOffersList.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-xs">
+                  {language === 'bn' ? 'কোনো অফার পাওয়া যায়নি। নতুন অফার যুক্ত করতে উপরের বাটনে ক্লিক করুন।' : 'No sponsor offers configured yet. Click above to add your first partner offer.'}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {cardOffersList.map((off) => (
+                    <div
+                      key={off.id}
+                      className="p-4 rounded-2xl bg-white dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 shadow-sm flex flex-col justify-between space-y-3"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                            {off.sponsor_name}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${off.is_active
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                              : 'bg-slate-200 text-slate-600 dark:bg-zinc-700 dark:text-zinc-400'
+                            }`}>
+                            {off.is_active ? 'Active' : 'Hidden'}
+                          </span>
+                        </div>
+
+                        <h4 className="text-sm font-extrabold text-slate-900 dark:text-white leading-snug">
+                          {off.title}
+                        </h4>
+
+                        <div className="inline-block px-2.5 py-1 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 font-black text-xs">
+                          {off.discount_text}
+                        </div>
+
+                        {off.description && (
+                          <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed line-clamp-2">
+                            {off.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 dark:border-zinc-700/60 flex items-center justify-between text-xs">
+                        <div className="font-mono text-[11px] text-slate-400">
+                          Code: <strong className="text-slate-700 dark:text-zinc-200">{off.promo_code || 'Card Only'}</strong>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingOffer(off);
+                              setOfferForm({
+                                sponsor_name: off.sponsor_name,
+                                sponsor_logo: off.sponsor_logo || '',
+                                title: off.title,
+                                discount_text: off.discount_text,
+                                description: off.description || '',
+                                promo_code: off.promo_code || '',
+                                valid_until: off.valid_until || '',
+                                category: off.category || 'healthcare',
+                                is_active: !!off.is_active
+                              });
+                              setShowAddOfferModal(true);
+                            }}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white bg-slate-100 dark:bg-zinc-700/60 cursor-pointer"
+                            title="Edit Offer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setConfirmDeleteOffer({
+                                id: off.id,
+                                name: off.sponsor_name,
+                                title: off.title
+                              });
+                            }}
+                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
+                            title="Delete Offer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Offer Modal (Create / Edit) Rendered via createPortal to span 100vw cleanly */}
+            {showAddOfferModal && typeof document !== 'undefined' && createPortal(
+              <div
+                className="fixed inset-0 w-screen h-screen z-[9999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+                onClick={() => setShowAddOfferModal(false)}
+              >
+                <div
+                  className="relative w-full max-w-lg rounded-3xl p-6 sm:p-7 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl space-y-5 animate-scale-up overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-zinc-800/80">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shadow-xs">
+                        <Tag className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-black text-slate-900 dark:text-white">
+                          {editingOffer ? 'Edit Sponsor Offer' : 'Add Sponsorship Offer'}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium">
+                          Configure partner discount benefits for voluntary donors
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddOfferModal(false)}
+                      className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (editingOffer) {
+                        const res = await updateDonorCardOffer(editingOffer.id, offerForm);
+                        if (res.success) {
+                          showToast('Offer updated successfully', 'success');
+                          setShowAddOfferModal(false);
+                          fetchCardData();
+                        } else {
+                          showToast(res.error?.message || 'Update failed', 'error');
+                        }
+                      } else {
+                        const res = await createDonorCardOffer(offerForm);
+                        if (res.success) {
+                          showToast('New offer created!', 'success');
+                          setShowAddOfferModal(false);
+                          fetchCardData();
+                        } else {
+                          showToast(res.error?.message || 'Create failed', 'error');
+                        }
+                      }
+                    }}
+                    className="space-y-4 text-xs"
+                  >
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="font-bold text-slate-700 dark:text-zinc-300">Sponsor / Partner Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={offerForm.sponsor_name}
+                          onChange={(e) => setOfferForm({ ...offerForm, sponsor_name: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                          placeholder="e.g. Popular Diagnostic"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="font-bold text-slate-700 dark:text-zinc-300">Discount Badge Text *</label>
+                        <input
+                          type="text"
+                          required
+                          value={offerForm.discount_text}
+                          onChange={(e) => setOfferForm({ ...offerForm, discount_text: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                          placeholder="e.g. 25% OFF / FREE"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="font-bold text-slate-700 dark:text-zinc-300">Offer Title *</label>
+                      <input
+                        type="text"
+                        required
+                        value={offerForm.title}
+                        onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                        placeholder="e.g. Complete Blood Count & Routine Tests"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="font-bold text-slate-700 dark:text-zinc-300">Details / How to Claim</label>
+                      <textarea
+                        rows={2}
+                        value={offerForm.description}
+                        onChange={(e) => setOfferForm({ ...offerForm, description: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all resize-none placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                        placeholder="Present this donor card at billing reception to claim discount."
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="font-bold text-slate-700 dark:text-zinc-300">Promo Code (Optional)</label>
+                        <input
+                          type="text"
+                          value={offerForm.promo_code}
+                          onChange={(e) => setOfferForm({ ...offerForm, promo_code: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-mono uppercase focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                          placeholder="e.g. DONOR25"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="font-bold text-slate-700 dark:text-zinc-300">Valid Until</label>
+                        <input
+                          type="text"
+                          value={offerForm.valid_until}
+                          onChange={(e) => setOfferForm({ ...offerForm, valid_until: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                          placeholder="e.g. Dec 31, 2026"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 pt-1">
+                      <input
+                        type="checkbox"
+                        id="is_active_check"
+                        checked={offerForm.is_active}
+                        onChange={(e) => setOfferForm({ ...offerForm, is_active: e.target.checked })}
+                        className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+                      />
+                      <label htmlFor="is_active_check" className="font-bold text-slate-700 dark:text-zinc-300 cursor-pointer">
+                        Active & visible to all registered donors
+                      </label>
+                    </div>
+
+                    <div className="flex gap-2.5 pt-4 border-t border-slate-100 dark:border-zinc-800/80">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddOfferModal(false)}
+                        className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold shadow-md shadow-amber-500/25 active:scale-[0.98] transition-all cursor-pointer"
+                      >
+                        {editingOffer ? 'Save Offer' : 'Create Offer'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>,
+              document.body
+            )}
+
           </div>
         )}
       </div>

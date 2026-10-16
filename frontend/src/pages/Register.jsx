@@ -5,6 +5,7 @@ import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save,
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getDonorDonationCount, getAreaLabel, calculateDaysSince } from '../context/AppContext';
 import { dbService } from '../services/db';
 import GoogleAuthButton from '../components/GoogleAuthButton';
+import DonorCardModal from '../components/DonorCardModal';
 import { appStorage as localStorage } from '../services/storage';
 
 export default function Register() {
@@ -42,6 +43,7 @@ export default function Register() {
     }
   }, [errorMsg]);
 
+  const [showDonorCard, setShowDonorCard] = useState(false);
   const [showCertificate, setShowCertificate] = useState(false);
   const [isDownloadingPng, setIsDownloadingPng] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState(null); // 'terms' | 'privacy' | null
@@ -1364,16 +1366,15 @@ export default function Register() {
                       </strong>
                     </div>
                   </div>
-                  {foundDonor.total_donations > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowCertificate(true)}
-                      className="w-full mt-2 py-2 px-3 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/35 border border-red-200/50 dark:border-red-900/30 text-red-650 dark:text-red-400 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                    >
-                      <Award className="w-4 h-4 text-amber-500 shrink-0" />
-                      {language === 'bn' ? 'প্রশংসাপত্র ডাউনলোড করুন' : 'Download Appreciation Certificate'}
-                    </button>
-                  )}
+                  {/* Donor Card & Benefits Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowDonorCard(true)}
+                    className="w-full mt-2.5 py-2.5 px-3 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-600 text-white text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-red-500/20 active:scale-[0.98]"
+                  >
+                    <Award className="w-4 h-4 text-amber-300 shrink-0" />
+                    <span>{language === 'bn' ? 'স্মার্ট ডোনার কার্ড ও অফারসমূহ' : 'View Smart Donor Card & Offers'}</span>
+                  </button>
 
                   {/* Delete Account Button */}
                   <button
@@ -1681,6 +1682,14 @@ export default function Register() {
           </>
         )}
       </div>
+
+      {/* Donor Card Modal Overlay */}
+      {showDonorCard && foundDonor && (
+        <DonorCardModal 
+          donor={foundDonor} 
+          onClose={() => setShowDonorCard(false)} 
+        />
+      )}
 
       {/* Certificate Modal Overlay */}
       {showCertificate && foundDonor && (

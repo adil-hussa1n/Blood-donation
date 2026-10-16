@@ -572,4 +572,86 @@ export const dbService = {
       error: res.error,
     };
   },
+
+  // ==========================================
+  // DONOR CARD & SPONSORSHIP OFFERS
+  // ==========================================
+  async getDonorCardConfig(): Promise<{ success: boolean; data: any; error: any }> {
+    const res = await apiRequest('/donor-card/config');
+    return {
+      success: !!res.success,
+      data: res.data || {
+        card_title: 'Official Voluntary Blood Donor Card',
+        card_subtitle: 'Sylhet Emergency Blood Network • Darun Donors',
+        front_notes: 'This card certifies that the bearer is a verified voluntary blood donor dedicated to saving human lives.',
+        back_terms: '1. This card is non-transferable and strictly voluntary.\n2. Valid across partner health clinics, blood transfusion centers, and community sponsors.\n3. Present this card or QR code to redeem partner benefits and donor discounts.\n4. Always verify medical eligibility before transfusion.',
+        emergency_hotline: '+880 1700-000000',
+        authorized_signatory_title: 'Medical & Registry Director',
+        badge_accent_color: '#dc2626',
+        card_theme: 'crimson_dark',
+        badge_text: 'Life Saver',
+        issue_org: '',
+        website_url: 'donors.daruntech.com',
+        valid_years: 3,
+        show_qr: 1
+      },
+      error: res.error
+    };
+  },
+
+  async updateDonorCardConfig(config: any): Promise<{ success: boolean; data: any; error: any }> {
+    const res = await apiRequest('/donor-card/config', {
+      method: 'PUT',
+      body: JSON.stringify(config)
+    });
+    return {
+      success: !!res.success,
+      data: res.data,
+      error: res.error
+    };
+  },
+
+  async getDonorCardOffers(): Promise<{ success: boolean; data: any[]; error: any }> {
+    const res = await apiRequest('/donor-card/offers');
+    return {
+      success: !!res.success,
+      data: res.data || [],
+      error: res.error
+    };
+  },
+
+  async createDonorCardOffer(offer: any): Promise<{ success: boolean; data: any; error: any }> {
+    const res = await apiRequest('/donor-card/offers', {
+      method: 'POST',
+      body: JSON.stringify(offer)
+    });
+    return {
+      success: !!res.success,
+      data: res.data,
+      error: res.error
+    };
+  },
+
+  async updateDonorCardOffer(id: string, offer: any): Promise<{ success: boolean; data: any; error: any }> {
+    const res = await apiRequest(`/donor-card/offers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(offer)
+    });
+    return {
+      success: !!res.success,
+      data: res.data,
+      error: res.error
+    };
+  },
+
+  async deleteDonorCardOffer(id: string): Promise<{ success: boolean; error: any }> {
+    const res = await apiRequest(`/donor-card/offers/${id}`, {
+      method: 'DELETE'
+    });
+    return {
+      success: !!res.success,
+      error: res.error
+    };
+  }
 };
+

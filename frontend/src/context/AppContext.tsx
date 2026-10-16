@@ -85,6 +85,12 @@ interface AppContextType {
   getSupportRequests: () => Promise<{ data?: any[]; error?: any }>;
   getDeletedDonors: () => Promise<{ success: boolean; data: any[]; error?: any }>;
   getDeletedEmergencies: () => Promise<{ success: boolean; data: any[]; error?: any }>;
+  getDonorCardConfig: () => Promise<{ success: boolean; data: any; error?: any }>;
+  updateDonorCardConfig: (config: any) => Promise<{ success: boolean; data: any; error?: any }>;
+  getDonorCardOffers: () => Promise<{ success: boolean; data: any[]; error?: any }>;
+  createDonorCardOffer: (offer: any) => Promise<{ success: boolean; data?: any; error?: any }>;
+  updateDonorCardOffer: (id: string, offer: any) => Promise<{ success: boolean; data?: any; error?: any }>;
+  deleteDonorCardOffer: (id: string) => Promise<{ success: boolean; error?: any }>;
   showToast: (message: string, type?: 'success' | 'error' | 'warning') => void;
   checkIfBlocked: (phone: string) => Promise<{ data: boolean; error?: any }>;
   notificationPermission: NotificationPermission;
@@ -2133,6 +2139,32 @@ export const AppProvider = ({ children }) => {
     return await dbService.getDeletedEmergencies(adminUser, adminPass);
   };
 
+  // Donor Card & Offers state and helpers
+  const getDonorCardConfig = async () => {
+    return await dbService.getDonorCardConfig();
+  };
+
+  const updateDonorCardConfig = async (config: any) => {
+    return await dbService.updateDonorCardConfig(config);
+  };
+
+  const getDonorCardOffers = async () => {
+    return await dbService.getDonorCardOffers();
+  };
+
+  const createDonorCardOffer = async (offer: any) => {
+    return await dbService.createDonorCardOffer(offer);
+  };
+
+  const updateDonorCardOffer = async (id: string, offer: any) => {
+    return await dbService.updateDonorCardOffer(id, offer);
+  };
+
+  const deleteDonorCardOffer = async (id: string) => {
+    return await dbService.deleteDonorCardOffer(id);
+  };
+
+
   const checkIfBlocked = async (phone: string) => {
     return await dbService.checkIfBlocked(phone);
   };
@@ -2175,6 +2207,12 @@ export const AppProvider = ({ children }) => {
         getSupportRequests,
         getDeletedDonors,
         getDeletedEmergencies,
+        getDonorCardConfig,
+        updateDonorCardConfig,
+        getDonorCardOffers,
+        createDonorCardOffer,
+        updateDonorCardOffer,
+        deleteDonorCardOffer,
         showToast,
         checkIfBlocked,
         notificationPermission,

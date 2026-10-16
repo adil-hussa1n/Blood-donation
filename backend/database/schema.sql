@@ -98,3 +98,47 @@ CREATE TABLE IF NOT EXISTS rate_limit_logs (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_rate_ip_time (ip_address, created_at)
 ) ENGINE=InnoDB;
+
+-- 8. DONOR CARD CONFIGURATION
+CREATE TABLE IF NOT EXISTS donor_card_config (
+  id VARCHAR(36) PRIMARY KEY,
+  card_title VARCHAR(150) DEFAULT 'Official Voluntary Blood Donor Card',
+  card_subtitle VARCHAR(255) DEFAULT 'Sylhet Emergency Blood Network • Darun Donors',
+  front_notes TEXT NULL,
+  back_terms TEXT NULL,
+  emergency_hotline VARCHAR(50) DEFAULT '+880 1700-000000',
+  authorized_signatory_title VARCHAR(100) DEFAULT 'Medical & Registry Director',
+  badge_accent_color VARCHAR(30) DEFAULT '#dc2626',
+  card_theme VARCHAR(50) DEFAULT 'crimson_dark',
+  badge_text VARCHAR(100) DEFAULT 'Life Saver',
+  issue_org VARCHAR(150) DEFAULT '',
+  website_url VARCHAR(150) DEFAULT 'donors.daruntech.com',
+  valid_years INT DEFAULT 3,
+  show_qr TINYINT(1) DEFAULT 1,
+  front_tag_label VARCHAR(100) DEFAULT 'REGISTERED LIFE SAVER',
+  qr_label VARCHAR(100) DEFAULT 'SCAN TO VERIFY',
+  back_guidelines_title VARCHAR(150) DEFAULT 'Guidelines & Partner Benefits',
+  security_strip_text VARCHAR(255) DEFAULT 'DARUN DONORS DIGITAL SECURITY STRIP • VERIFIED VOLUNTARY REGISTRY',
+  blood_group_label VARCHAR(50) DEFAULT 'GROUP',
+  district_label VARCHAR(100) DEFAULT 'District / Area',
+  donations_label VARCHAR(100) DEFAULT 'Total Donations',
+  valid_thru_label VARCHAR(100) DEFAULT 'Valid Thru',
+  verified_status_text VARCHAR(100) DEFAULT 'Verified Voluntary Donor',
+  footer_sponsor_text VARCHAR(255) DEFAULT 'Partner discounts valid at recognized diagnostic centers and clinics.',
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- 9. DONOR CARD SPONSORSHIP OFFERS
+CREATE TABLE IF NOT EXISTS donor_card_offers (
+  id VARCHAR(36) PRIMARY KEY,
+  sponsor_name VARCHAR(150) NOT NULL,
+  sponsor_logo VARCHAR(500) NULL,
+  title VARCHAR(200) NOT NULL,
+  discount_text VARCHAR(100) NOT NULL,
+  description TEXT NULL,
+  promo_code VARCHAR(50) NULL,
+  valid_until VARCHAR(100) NULL,
+  category VARCHAR(50) DEFAULT 'healthcare',
+  is_active TINYINT(1) DEFAULT 1 NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
