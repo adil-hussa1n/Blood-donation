@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import apiRouter from './routes/api.js';
 import { testDbConnection } from './config/db.js';
@@ -10,6 +12,30 @@ dotenv.config();
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '5000', 10);
+
+// Trust reverse proxies (Dokploy, Nginx, Cloudflare) for accurate client IP detection
+app.set('trust proxy', 1);
+
+// 1. Helmet HTTP Security Headers (HSTS, clickjacking, X-Content-Type-Options, etc.)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: false, // Managed per-frontend or Cloudflare
+  })
+);
+
+// 2. Disable x-powered-by header to prevent fingerprinting
+app.disable('x-powered-by');
+
+// 3. Global DDoS protection rate limiter: Max 200 requests per minute per IP
+const globalLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: 'Too many requests. Please slow down.' } },
+});
+app.use('/api', globalLimiter);
 
 // Middleware
 app.use(
@@ -26,9 +52,12 @@ app.use(
         }
       }
 
-      // Auto-allow vercel.app deployments, localhost, and wildcard fallback
+      // Auto-allow vercel.app deployments, daruntech.com subdomains, localhost, and wildcard fallback
       if (
         origin.endsWith('.vercel.app') ||
+        origin.endsWith('.daruntech.com') ||
+        origin === 'https://donors.daruntech.com' ||
+        origin === 'https://daruntech.com' ||
         origin.includes('localhost') ||
         origin.includes('127.0.0.1') ||
         !allowedFrontend ||

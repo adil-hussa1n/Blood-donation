@@ -68,6 +68,68 @@ export function registrationRateLimiter(maxPerMinute = 5) {
 }
 
 /**
+ * Brute-force protection for login:
+ * Maximum 8 attempts per 10 minutes per IP address
+ */
+export function loginRateLimiter(maxAttempts = 8, windowMinutes = 10) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const ip = getClientIp(req);
+    try {
+      const [rows]: any = await pool.query(
+        `SELECT COUNT(*) as count 
+         FROM rate_limit_logs 
+         WHERE ip_address = ? 
+           AND request_type = 'donor_login_attempt' 
+           AND created_at >= DATE_SUB(NOW(), INTERVAL ? MINUTE)`,
+        [ip, windowMinutes]
+      );
+
+      if (rows && rows[0]?.count >= maxAttempts) {
+        await logRateLimit(ip, 'donor_login_attempt', 'blocked', 'brute_force_block');
+        res.status(429).json({
+          error: { message: `Too many login attempts. For security reasons, please wait ${windowMinutes} minutes before trying again.` },
+        });
+        return;
+      }
+      next();
+    } catch (err) {
+      next();
+    }
+  };
+}
+
+/**
+ * Rate limiter for password reset:
+ * Maximum 5 attempts per 15 minutes per IP address
+ */
+export function resetPasswordRateLimiter(maxAttempts = 5, windowMinutes = 15) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const ip = getClientIp(req);
+    try {
+      const [rows]: any = await pool.query(
+        `SELECT COUNT(*) as count 
+         FROM rate_limit_logs 
+         WHERE ip_address = ? 
+           AND request_type = 'password_reset_attempt' 
+           AND created_at >= DATE_SUB(NOW(), INTERVAL ? MINUTE)`,
+        [ip, windowMinutes]
+      );
+
+      if (rows && rows[0]?.count >= maxAttempts) {
+        await logRateLimit(ip, 'password_reset_attempt', 'blocked', 'reset_rate_limit');
+        res.status(429).json({
+          error: { message: `Too many password reset requests. Please wait ${windowMinutes} minutes.` },
+        });
+        return;
+      }
+      next();
+    } catch (err) {
+      next();
+    }
+  };
+}
+
+/**
  * Rate limiter for Emergency Requests:
  * 1. Per User/Donor: Max 3 urgent posts per 15 minutes, and checks for duplicate active request for same blood group in last 1 hour.
  * 2. Per IP: Max 5 emergency request creations per 15 minutes.

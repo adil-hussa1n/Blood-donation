@@ -37,7 +37,13 @@ import {
   savePushSubscription,
   deletePushSubscription,
 } from '../services/pushNotificationService.js';
-import { honeypotCheck, registrationRateLimiter, emergencyRequestRateLimiter } from '../middleware/rateLimiter.js';
+import { 
+  honeypotCheck, 
+  registrationRateLimiter, 
+  loginRateLimiter, 
+  resetPasswordRateLimiter, 
+  emergencyRequestRateLimiter 
+} from '../middleware/rateLimiter.js';
 import { requireAdmin, requireAdminOrDonor } from '../middleware/auth.js';
 
 const router = Router();
@@ -53,11 +59,11 @@ router.get('/health', (req, res) => {
 router.get('/donors', getDonors);
 router.get('/donors/:phone', getDonorByPhone);
 router.post('/donors/register', honeypotCheck, registrationRateLimiter(5), registerDonor);
-router.post('/donors/login', verifyDonor);
+router.post('/donors/login', loginRateLimiter(8, 10), verifyDonor);
 router.post('/auth/google', googleAuth);
 router.patch('/donors/:id/availability', updateDonorAvailability);
 router.put('/donors/:id', updateDonorProfile);
-router.post('/donors/reset-password', resetDonorPassword);
+router.post('/donors/reset-password', resetPasswordRateLimiter(5, 15), resetDonorPassword);
 router.post('/donors/:id/donations', addDonationEvent);
 router.get('/donors/:id/history', getDonationHistory);
 router.delete('/donors/:id', requireAdminOrDonor, deleteDonor);
