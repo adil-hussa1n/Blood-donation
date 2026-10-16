@@ -1454,7 +1454,11 @@ export const AppProvider = ({ children }) => {
       return false;
     }
 
-    const permission = await requestNotificationPermission();
+    const permission = await requestNotificationPermission({
+      id: currentDonor?.id,
+      blood_group: currentDonor?.blood_group,
+      area: currentDonor?.area,
+    });
     setNotificationPermission(permission);
 
     if (permission === 'granted') {

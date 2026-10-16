@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import pool from '../config/db.js';
 import { getClientIp, logRateLimit } from '../middleware/rateLimiter.js';
 import { verifyToken } from '../middleware/auth.js';
+import { broadcastEmergencyPush } from '../services/pushNotificationService.js';
 
 export async function getEmergencyRequests(req: Request, res: Response): Promise<void> {
   try {
@@ -88,6 +89,16 @@ export async function createEmergencyRequest(req: Request, res: Response): Promi
       status,
       created_at: new Date().toISOString(),
     };
+
+    // Broadcast background Web Push to compatible subscribers (asynchronously)
+    broadcastEmergencyPush({
+      id,
+      blood_group: requestData.blood_group,
+      area: requestData.area,
+      contact,
+      note: requestData.note,
+      donor_id: loggedInDonor.id,
+    }).catch((err) => console.error('Error broadcasting emergency push:', err));
 
     res.status(201).json({ data: newRequest, error: null });
   } catch (error: any) {

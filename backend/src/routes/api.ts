@@ -30,6 +30,11 @@ import {
   submitSupportRequest,
   getSupportRequests,
 } from '../controllers/supportController.js';
+import {
+  getVapidPublicKey,
+  savePushSubscription,
+  deletePushSubscription,
+} from '../services/pushNotificationService.js';
 import { honeypotCheck, registrationRateLimiter, emergencyRequestRateLimiter } from '../middleware/rateLimiter.js';
 import { requireAdmin, requireAdminOrDonor } from '../middleware/auth.js';
 
@@ -74,9 +79,26 @@ router.get('/admin/blocked', requireAdmin, getBlockedPhones);
 router.get('/admin/check-blocked/:phone', checkIfBlocked);
 
 // ==========================================
-// SUPPORT & PROBLEM REPORTS ROUTES
+// PUSH NOTIFICATIONS ROUTES
 // ==========================================
-router.post('/support', submitSupportRequest);
-router.get('/support', requireAdmin, getSupportRequests);
+router.get('/push/vapid-public-key', (req, res) => {
+  res.json({ publicKey: getVapidPublicKey() });
+});
+router.post('/push/subscribe', async (req, res) => {
+  try {
+    await savePushSubscription(req.body);
+    res.status(201).json({ success: true });
+  } catch (err: any) {
+    res.status(400).json({ error: { message: err.message } });
+  }
+});
+router.post('/push/unsubscribe', async (req, res) => {
+  try {
+    await deletePushSubscription(req.body.endpoint);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(400).json({ error: { message: err.message } });
+  }
+});
 
 export default router;

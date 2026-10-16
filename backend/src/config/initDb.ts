@@ -209,6 +209,26 @@ export async function initDatabase() {
       ) ENGINE=InnoDB;
     `);
 
+    // 8. Push Subscriptions (For background Web Push to Android, iPhone PWA & Desktop)
+    await dbConn.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id VARCHAR(36) PRIMARY KEY,
+        endpoint TEXT NOT NULL,
+        p256dh VARCHAR(255) NOT NULL,
+        auth VARCHAR(255) NOT NULL,
+        donor_id VARCHAR(36) NULL,
+        blood_group VARCHAR(10) NULL,
+        area VARCHAR(150) NULL,
+        endpoint_hash VARCHAR(64) NOT NULL UNIQUE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_push_blood (blood_group),
+        INDEX idx_push_area (area),
+        INDEX idx_push_donor (donor_id),
+        INDEX idx_push_endpoint_hash (endpoint_hash)
+      ) ENGINE=InnoDB;
+    `);
+
     console.log('✅ All tables verified/created successfully.');
 
     // Seed default admin if not exists

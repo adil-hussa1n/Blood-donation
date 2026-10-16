@@ -125,10 +125,81 @@ export function getNotificationPermission(): NotificationPermission {
   return 'default';
 }
 
+import { getApiUrl, isDemoMode } from './apiConfig';
+
+/**
+ * Convert URL-safe base64 string to Uint8Array for VAPID applicationServerKey
+ */
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+/**
+ * Subscribe device service worker to background Web Push
+ */
+export async function subscribeToWebPush(donorInfo?: { id?: string; blood_group?: string; area?: string }): Promise<boolean> {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || isDemoMode) {
+    return false;
+  }
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    if (!reg.pushManager) {
+      console.warn('PushManager not supported on this device/browser.');
+      return false;
+    }
+
+    // 1. Fetch VAPID public key from backend
+    const vapidRes = await fetch(getApiUrl('/push/vapid-public-key'));
+    if (!vapidRes.ok) {
+      console.warn('Could not fetch VAPID key from backend.');
+      return false;
+    }
+    const { publicKey } = await vapidRes.json();
+    if (!publicKey) return false;
+
+    // 2. Check existing subscription or create new
+    let subscription = await reg.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey) as any,
+      });
+    }
+
+    // 3. Send subscription to backend database
+    const subJson = subscription.toJSON();
+    await fetch(getApiUrl('/push/subscribe'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        endpoint: subJson.endpoint,
+        keys: subJson.keys,
+        donorId: donorInfo?.id,
+        bloodGroup: donorInfo?.blood_group,
+        area: donorInfo?.area,
+      }),
+    });
+
+    console.log('✅ Successfully subscribed device to background Web Push!');
+    return true;
+  } catch (err) {
+    console.warn('Failed to subscribe to Web Push:', err);
+    return false;
+  }
+}
+
 /**
  * Request notification permission from user with iOS PWA guidance
  */
-export async function requestNotificationPermission(): Promise<NotificationPermission> {
+export async function requestNotificationPermission(donorInfo?: { id?: string; blood_group?: string; area?: string }): Promise<NotificationPermission> {
   // Check if standard Notification API is available
   if (typeof window !== 'undefined' && 'Notification' in window) {
     try {
@@ -143,6 +214,8 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 
       if (permission === 'granted') {
         await registerServiceWorker();
+        // Subscribe to background Web Push
+        await subscribeToWebPush(donorInfo);
       }
       return permission;
     } catch (e) {

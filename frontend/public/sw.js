@@ -14,8 +14,8 @@ self.addEventListener('push', (event) => {
   let data = {
     title: '🚨 জরুরি রক্তের প্রয়োজন! (Urgent Blood Request)',
     body: 'আপনার রক্তের গ্রুপ ও এলাকায় জরুরি রক্তের প্রয়োজন। ক্লিক করে বিস্তারিত দেখুন।',
-    icon: '/logo.png',
-    badge: '/logo.png',
+    icon: '/apple-touch-icon-180x180.png',
+    badge: '/apple-touch-icon-180x180.png',
     data: { url: '/emergency' }
   };
 
@@ -30,8 +30,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || '/logo.png',
-    badge: data.badge || '/logo.png',
+    icon: data.icon || '/apple-touch-icon-180x180.png',
+    badge: data.badge || '/apple-touch-icon-180x180.png',
     vibrate: [250, 100, 250, 100, 250],
     tag: data.tag || 'emergency-blood-request',
     renotify: true,
