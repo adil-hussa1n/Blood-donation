@@ -1209,11 +1209,11 @@ export default function Register() {
             <div className="glass-panel rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 border border-slate-200/50 dark:border-zinc-800/50 text-center space-y-6 shadow-xl animate-scale-up">
                 
                 {/* Official Brand Logo Visual Badge */}
-                <div className="w-20 h-20 mx-auto rounded-3xl bg-white/95 dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-2.5 shadow-xl shadow-red-500/10 flex items-center justify-center">
+                <div className="w-20 h-20 mx-auto flex items-center justify-center">
                   <img
                     src="/logo.png"
                     alt="Darun Donors Logo"
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain drop-shadow-xl"
                   />
                 </div>
 

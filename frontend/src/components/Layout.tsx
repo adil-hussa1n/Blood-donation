@@ -88,11 +88,11 @@ export default function Layout({ children }: LayoutProps) {
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-              <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-white/90 dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-md shadow-red-500/10 p-1 group-hover:scale-105 transition-all duration-300">
+              <div className="relative flex items-center justify-center w-10 h-10 group-hover:scale-105 transition-all duration-300">
                 <img
                   src="/logo.png"
                   alt="Darun Donors Logo"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain drop-shadow-md"
                 />
               </div>
               <div className="flex flex-col text-left">
