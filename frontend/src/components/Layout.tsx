@@ -20,6 +20,8 @@ export default function Layout({ children }: LayoutProps) {
   const [mobileMenuAnimKey, setMobileMenuAnimKey] = useState(0);
   const location = useLocation();
 
+  const headerRef = React.useRef<HTMLElement | null>(null);
+
   const toggleMobileMenu = () => {
     setMobileMenuOpen((prev) => {
       if (!prev) setMobileMenuAnimKey((key) => key + 1);
@@ -30,6 +32,31 @@ export default function Layout({ children }: LayoutProps) {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
+
+  // Dismiss mobile navbar if user taps outside the header or scrolls on mobile
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    const handleScroll = () => {
+      setMobileMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [mobileMenuOpen]);
 
   const navigation: NavigationItem[] = [
     { nameKey: 'searchDonors', name: 'Search Donors', path: '/', icon: Heart },
@@ -55,18 +82,18 @@ export default function Layout({ children }: LayoutProps) {
       )}
 
       {/* Main Header */}
-      <header className="sticky top-0 z-40 w-full glass-panel border-b transition-all duration-300 backdrop-blur-md relative" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <header ref={headerRef} className="sticky top-0 z-40 w-full glass-panel border-b transition-all duration-300 backdrop-blur-md relative" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="max-w-[1380px] mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
 
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 group shrink-0">
-              <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/20 group-hover:scale-105 transition-all duration-300">
-                <svg className="w-6 h-6 animate-pulse" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-                  <path d="M50 12C50 12 22 45 22 65C22 80.46 34.54 93 50 93C65.46 93 78 80.46 78 65C78 45 50 12 50 12Z" fill="#ffffff" />
-                  <path d="M32 65h10l4-18 5 32 4-22 4 8h9" stroke="#ef4444" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-
+            <Link to="/" className="flex items-center gap-2.5 group shrink-0">
+              <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-white/90 dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-md shadow-red-500/10 p-1 group-hover:scale-105 transition-all duration-300">
+                <img
+                  src="/logo.png"
+                  alt="Darun Donors Logo"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div className="flex flex-col text-left">
                 <span className="font-extrabold text-sm md:text-base leading-tight tracking-tight text-slate-900 dark:text-white group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">

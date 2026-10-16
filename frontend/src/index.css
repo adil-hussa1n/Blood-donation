@@ -230,11 +230,15 @@ input[type="date"]::-webkit-date-and-time-value {
   right: 0;
   overflow: hidden;
   pointer-events: none;
+  visibility: hidden;
+  height: 0;
   z-index: 30;
 }
 
 .mobile-nav-shell--open {
   pointer-events: auto;
+  visibility: visible;
+  height: auto;
 }
 
 .mobile-nav-dropdown {

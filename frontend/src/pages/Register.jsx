@@ -908,35 +908,38 @@ export default function Register() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               {/* Full Name */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                  {t('fullName')}
-                </label>
+              <div className="space-y-1.5 flex flex-col justify-start">
+                <div className="flex items-center justify-between min-h-[22px]">
+                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1">
+                    <span>{t('fullName')}</span>
+                    <span className="text-red-500 font-black">*</span>
+                  </label>
+                </div>
                 <input
                   type="text"
                   required
                   placeholder={t('donorNamePlaceholder')}
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/80 focus:border-red-500 dark:text-white transition-all shadow-xs"
                 />
               </div>
 
               {/* Phone Number */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+              <div className="space-y-1.5 flex flex-col justify-start">
+                <div className="flex items-center justify-between min-h-[22px]">
                   <label className="text-xs font-bold text-slate-700 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1">
                     <span>{t('phoneUnique')}</span>
                     <span className="text-red-500 font-black">*</span>
                   </label>
-                  <span className="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded border border-red-200/50 dark:border-red-900/50">
+                  <span className="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-md border border-red-200/50 dark:border-red-900/50">
                     {language === 'bn' ? 'ইউনিক নম্বর আবশ্যক' : 'Unique phone required'}
                   </span>
                 </div>
-                <div className="flex rounded-xl overflow-hidden border-2 border-red-200 dark:border-red-900/40 bg-red-50/20 dark:bg-zinc-950/40 focus-within:ring-2 focus-within:ring-red-500 focus-within:border-red-500 transition-all shadow-sm">
-                  <div className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 dark:bg-zinc-800/80 border-r border-red-200 dark:border-red-900/40 text-slate-700 dark:text-zinc-200 font-bold text-sm select-none">
+                <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 focus-within:ring-2 focus-within:ring-red-500 focus-within:border-red-500 transition-all shadow-xs">
+                  <div className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100/80 dark:bg-zinc-800/80 border-r border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 font-bold text-sm select-none">
                     <span className="text-base leading-none">🇧🇩</span>
                     <span>+88</span>
                   </div>
@@ -959,29 +962,28 @@ export default function Register() {
                     <Phone className="w-3.5 h-3.5 text-red-500 absolute left-3 top-3.5 pointer-events-none" />
                   </div>
                 </div>
-                <span className="text-[10px] text-slate-500 dark:text-zinc-400 block font-medium">
+                <span className="text-[10px] text-slate-400 dark:text-zinc-500 block font-normal">
                   {language === 'bn' 
                     ? '১১ ডিজিটের নম্বর (013, 014, 015, 016, 017, 018, 019)' 
                     : '11 digits starting with 013-019 (e.g. 01711223344)'}
                 </span>
               </div>
 
-
               {/* Blood Group */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+              <div className="space-y-1.5 flex flex-col justify-start">
+                <div className="flex items-center justify-between min-h-[22px]">
                   <label className="text-xs font-bold text-slate-700 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1">
                     <span>{t('bloodGroup')}</span>
                     <span className="text-red-500 font-black">*</span>
                   </label>
-                  <span className="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded border border-red-200/50 dark:border-red-900/50">
-                    {language === 'bn' ? 'সঠিক গ্রুপ দিন' : 'Accurate Match'}
+                  <span className="text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-md border border-red-200/50 dark:border-red-900/50">
+                    {language === 'bn' ? 'সঠিক গ্রুপ' : 'Accurate Match'}
                   </span>
                 </div>
                 <select
                   value={regBloodGroup}
                   onChange={(e) => setRegBloodGroup(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border-2 border-red-200 dark:border-red-900/40 bg-red-50/20 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer font-bold"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer font-bold shadow-xs transition-all"
                 >
                   {BLOOD_GROUPS.map(g => (
                     <option key={g} value={g}>{g}</option>
@@ -990,20 +992,20 @@ export default function Register() {
               </div>
 
               {/* Area */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+              <div className="space-y-1.5 flex flex-col justify-start">
+                <div className="flex items-center justify-between min-h-[22px]">
                   <label className="text-xs font-bold text-slate-700 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1">
                     <span>{t('selectArea')}</span>
                     <span className="text-red-500 font-black">*</span>
                   </label>
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
-                    {language === 'bn' ? 'সিলেট বিভাগের উপজেলা' : 'Sylhet Division'}
+                  <span className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-zinc-700/50">
+                    {language === 'bn' ? 'সিলেট বিভাগ' : 'Sylhet Division'}
                   </span>
                 </div>
                 <select
                   value={regArea}
                   onChange={(e) => setRegArea(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border-2 border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer font-medium"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer font-medium shadow-xs transition-all"
                 >
                   {DISTRICT_AREAS.map((district) => (
                     <optgroup
@@ -1022,31 +1024,33 @@ export default function Register() {
               </div>
 
               {/* Last Donation Date */}
-              <div className="space-y-1.5 font-semibold text-xs">
-                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                  {t('lastDonationOptional')}
-                </label>
+              <div className="space-y-1.5 flex flex-col justify-start">
+                <div className="flex items-center justify-between min-h-[22px]">
+                  <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                    {t('lastDonationOptional')}
+                  </label>
+                </div>
                 <div className="relative">
                   <input
                     type="date"
                     value={regLastDonationDate}
                     max={new Date().toISOString().split('T')[0]}
                     onChange={(e) => setRegLastDonationDate(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer shadow-xs transition-all"
                   />
-                  <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 </div>
               </div>
 
               {/* Date of Birth (Age must be 18+) */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+              <div className="space-y-1.5 flex flex-col justify-start">
+                <div className="flex items-center justify-between min-h-[22px]">
                   <label className="text-xs font-bold text-slate-700 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1">
                     <span>{t('dobLabel')}</span>
                     <span className="text-red-500 font-black">*</span>
                   </label>
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200/50 dark:border-emerald-900/50">
-                    {language === 'bn' ? 'বয়স নূন্যতম ১৮ বছর' : 'Must be 18+ years'}
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/50 dark:border-emerald-900/50">
+                    {language === 'bn' ? 'বয়স ১৮+ বছর' : 'Must be 18+ years'}
                   </span>
                 </div>
                 <div className="relative">
@@ -1060,20 +1064,22 @@ export default function Register() {
                     })()}
                     value={regDob}
                     onChange={(e) => setRegDob(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white cursor-pointer shadow-xs transition-all"
                   />
-                  <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 </div>
-                <span className="text-[10px] text-slate-500 dark:text-zinc-400 block font-medium">
+                <span className="text-[10px] text-slate-400 dark:text-zinc-500 block font-normal">
                   {language === 'bn' ? 'রক্তদানের জন্য আপনার বয়স ১৮ বছর বা তদূর্ধ্ব হতে হবে' : 'Donors must be at least 18 years old'}
                 </span>
               </div>
 
               {/* Total Times Donated */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                  {t('timesDonatedOptional')}
-                </label>
+              <div className="space-y-1.5 flex flex-col justify-start">
+                <div className="flex items-center justify-between min-h-[22px]">
+                  <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                    {t('timesDonatedOptional')}
+                  </label>
+                </div>
                 <div className="relative">
                   <input
                     type="number"
@@ -1084,35 +1090,40 @@ export default function Register() {
                     placeholder={t('timesDonatedPlaceholder')}
                     value={regTotalDonations}
                     onChange={(e) => setRegTotalDonations(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white shadow-xs transition-all"
                   />
-                  <History className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <History className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 </div>
-                <span className="text-[10px] text-slate-400 dark:text-zinc-500 block leading-tight">
+                <span className="text-[10px] text-slate-400 dark:text-zinc-500 block leading-tight font-normal">
                   {t('timesDonatedHelper')}
                 </span>
               </div>
 
-              {/* Availability Toggle */}
-              <div className="space-y-1.5 flex flex-col justify-end pb-1.5">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
+              {/* Availability Toggle Card */}
+              <div className="space-y-1.5 flex flex-col justify-start">
+                <div className="min-h-[22px]" />
+                <label className={`flex items-start gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer select-none shadow-xs ${
+                  regAvailable
+                    ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-500/30'
+                    : 'bg-white/60 dark:bg-zinc-950/40 border-slate-200 dark:border-zinc-800 hover:border-slate-300'
+                }`}>
                   <input
                     type="checkbox"
                     checked={regAvailable}
                     onChange={(e) => setRegAvailable(e.target.checked)}
-                    className="w-5 h-5 rounded-lg border-slate-300 text-red-500 focus:ring-red-500 cursor-pointer"
+                    className="mt-0.5 w-5 h-5 rounded-md border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer shrink-0"
                   />
-                  <div>
-                    <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">
+                  <div className="min-w-0">
+                    <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-zinc-200 block">
                       {t('setAvailable')}
                     </span>
-                    <span className="text-[11px] text-slate-400 dark:text-zinc-500 block">
+                    <span className="text-[11px] text-slate-400 dark:text-zinc-500 block leading-tight mt-0.5">
                       {t('availableDesc')}
                     </span>
                   </div>
                 </label>
+              </div>
             </div>
-          </div>
 
             {/* Honeypot Field */}
             <div className="absolute opacity-0 w-0 h-0 pointer-events-none" aria-hidden="true">
@@ -1197,9 +1208,13 @@ export default function Register() {
             {/* Exclusive Google Authentication Card */}
             <div className="glass-panel rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 border border-slate-200/50 dark:border-zinc-800/50 text-center space-y-6 shadow-xl animate-scale-up">
                 
-                {/* Visual Icon Badge */}
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-red-500 to-rose-600 text-white flex items-center justify-center shadow-lg shadow-red-500/30">
-                  <Droplet className="w-8 h-8 fill-current animate-pulse" />
+                {/* Official Brand Logo Visual Badge */}
+                <div className="w-20 h-20 mx-auto rounded-3xl bg-white/95 dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-2.5 shadow-xl shadow-red-500/10 flex items-center justify-center">
+                  <img
+                    src="/logo.png"
+                    alt="Darun Donors Logo"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
 
                 <div className="space-y-2">

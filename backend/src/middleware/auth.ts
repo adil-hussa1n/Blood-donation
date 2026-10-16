@@ -10,7 +10,7 @@ export interface AuthRequest extends Request {
   donor?: { id: string; phone: string };
 }
 
-export function generateToken(payload: object, expiresIn = '7d'): string {
+export function generateToken(payload: object, expiresIn = '30d'): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: expiresIn as any });
 }
 
