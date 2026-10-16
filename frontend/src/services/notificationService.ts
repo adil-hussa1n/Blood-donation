@@ -83,48 +83,80 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 }
 
 /**
- * Check if the browser supports notifications
+ * Detect if running on an iOS device (iPhone, iPad, iPod)
+ */
+export function isIOS(): boolean {
+  if (typeof window === 'undefined') return false;
+  const ua = window.navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/.test(ua) || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+}
+
+/**
+ * Detect if running as an installed PWA (Home Screen Web App)
+ */
+export function isStandalonePWA(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true ||
+    document.referrer.includes('android-app://')
+  );
+}
+
+/**
+ * Check if the browser supports notifications or is an iOS device that can support it
  */
 export function isNotificationSupported(): boolean {
   if (typeof window === 'undefined') return false;
-  return 'Notification' in window;
+  // Standard support (Chrome, Edge, Firefox, Android, Desktop Safari, iOS PWA 16.4+)
+  if ('Notification' in window) return true;
+  // If on iOS Safari in browser mode, Notification is exposed once added to Home Screen or on Safari 16.4+
+  if (isIOS()) return true;
+  return false;
 }
 
 /**
  * Get current permission status ('granted' | 'denied' | 'default')
  */
 export function getNotificationPermission(): NotificationPermission {
-  if (!isNotificationSupported()) return 'denied';
-  return Notification.permission;
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    return Notification.permission;
+  }
+  return 'default';
 }
 
 /**
- * Request notification permission from user
+ * Request notification permission from user with iOS PWA guidance
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
-  if (!isNotificationSupported()) {
-    return 'denied';
+  // Check if standard Notification API is available
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    try {
+      let permission: NotificationPermission;
+      if (window.Notification?.requestPermission) {
+        permission = await Notification.requestPermission();
+      } else {
+        permission = await new Promise((resolve) => {
+          Notification.requestPermission((res) => resolve(res));
+        });
+      }
+
+      if (permission === 'granted') {
+        await registerServiceWorker();
+      }
+      return permission;
+    } catch (e) {
+      console.warn('Error requesting notification permission:', e);
+      return 'denied';
+    }
   }
 
-  try {
-    // Safari / iOS fallback using promise or callback
-    let permission: NotificationPermission;
-    if (window.Notification?.requestPermission) {
-      permission = await Notification.requestPermission();
-    } else {
-      permission = await new Promise((resolve) => {
-        Notification.requestPermission((res) => resolve(res));
-      });
-    }
-
-    if (permission === 'granted') {
-      await registerServiceWorker();
-    }
-    return permission;
-  } catch (e) {
-    console.warn('Error requesting notification permission:', e);
-    return 'denied';
+  // If on iOS Safari standard browser tab (Apple requires PWA Add to Home Screen for Web Push)
+  if (isIOS() && !isStandalonePWA()) {
+    return 'default';
   }
+
+  return 'denied';
 }
 
 /**
@@ -133,11 +165,11 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 export function isNotificationsEnabledInApp(): boolean {
   if (typeof window === 'undefined') return false;
   const setting = localStorage.getItem('bb_notifications_enabled');
-  // Default to true if permission is granted, otherwise check stored preference
-  if (setting === null) {
-    return getNotificationPermission() === 'granted';
+  if (setting !== null) {
+    return setting === 'true';
   }
-  return setting === 'true' && getNotificationPermission() === 'granted';
+  // Default to true if permission is granted
+  return getNotificationPermission() === 'granted';
 }
 
 /**

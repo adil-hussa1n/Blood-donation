@@ -13,6 +13,8 @@ import {
   sendEmergencyNotification,
   isBloodCompatible,
   isLocationMatched,
+  isIOS,
+  isStandalonePWA,
 } from '../services/notificationService';
 
 import { appStorage } from '../services/storage';
@@ -677,6 +679,7 @@ export const TRANSLATIONS = {
     alertsActiveButton: 'Alerts Active',
     notificationTestSent: 'A test emergency blood alert has been triggered!',
     testAlertButton: 'Send Test Alert',
+    notificationsIosPwaTip: 'On iPhone, tap Safari Share (square with arrow) and select "Add to Home Screen" to receive push notifications.',
   },
   bn: {
     // Navigation
@@ -1117,6 +1120,7 @@ export const TRANSLATIONS = {
     alertsActiveButton: 'নোটিফিকেশন চালু আছে',
     notificationTestSent: 'একটি পরীক্ষামূলক জরুরি রক্তের নোটিফিকেশন পাঠানো হয়েছে!',
     testAlertButton: 'টেস্ট নোটিফিকেশন পাঠান',
+    notificationsIosPwaTip: 'আইফোনে (iPhone) পুশ নোটিফিকেশন পেতে সাফারি ব্রাউজারের শেয়ার আইকন (তীরসহ চারকোণা) চেপে "Add to Home Screen" নির্বাচন করুন।',
   }
 };
 
@@ -1430,6 +1434,14 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const enableNotifications = async (): Promise<boolean> => {
+    // If on iOS and not yet installed to Home Screen, guide the user
+    if (isIOS() && !isStandalonePWA() && typeof window !== 'undefined' && !('Notification' in window)) {
+      setNotificationsEnabledInApp(true);
+      setIsNotificationsEnabled(true);
+      showToast(t('notificationsIosPwaTip'), 'warning');
+      return true;
+    }
+
     if (!isNotificationsSupportedState) {
       showToast(t('notificationsUnsupportedToast'), 'warning');
       return false;
@@ -1448,6 +1460,11 @@ export const AppProvider = ({ children }) => {
       setIsNotificationsEnabled(false);
       showToast(t('notificationsBlockedToast'), 'error');
       return false;
+    } else if (isIOS() && !isStandalonePWA()) {
+      setNotificationsEnabledInApp(true);
+      setIsNotificationsEnabled(true);
+      showToast(t('notificationsIosPwaTip'), 'warning');
+      return true;
     }
     return false;
   };
