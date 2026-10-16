@@ -1,22 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  X, 
-  Download, 
-  Printer, 
-  RotateCw, 
-  Award, 
-  ShieldCheck, 
-  Heart, 
-  Flame, 
-  QrCode, 
-  MapPin, 
-  Calendar, 
-  Phone, 
-  Clock, 
-  Tag, 
-  Building2, 
-  ExternalLink, 
+import {
+  X,
+  Download,
+  Printer,
+  RotateCw,
+  Award,
+  ShieldCheck,
+  Heart,
+  Flame,
+  QrCode,
+  MapPin,
+  Calendar,
+  Phone,
+  Clock,
+  Tag,
+  Building2,
+  ExternalLink,
   CheckCircle2,
   Copy,
   Info
@@ -33,7 +33,7 @@ export default function DonorCardModal({ donor, onClose }) {
 
   // Dynamic config and sponsorship offers fetched from backend/admin
   const [cardConfig, setCardConfig] = useState({
-    card_title: 'Official Voluntary Blood Donor Card',
+    card_title: 'Smart Blood Donor Card',
     card_subtitle: 'Sylhet Emergency Blood Network • Darun Donors',
     front_notes: 'This card certifies that the bearer is a verified voluntary blood donor dedicated to saving human lives in emergency need.',
     back_terms: '1. Non-transferable voluntary donor identity.\n2. Present this card or QR code to claim partner benefits.\n3. Clinical cooldown of 90 days applies between whole blood donations.\n4. Always verify medical eligibility before transfusion.',
@@ -402,9 +402,23 @@ export default function DonorCardModal({ donor, onClose }) {
     }
   };
 
+  const handlePrintCard = () => {
+    document.body.classList.add('donor-card-printing');
+    const cleanup = () => {
+      document.body.classList.remove('donor-card-printing');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    setTimeout(() => {
+      window.print();
+      // Fallback cleanup in case afterprint event does not fire on older browsers
+      setTimeout(cleanup, 1500);
+    }, 50);
+  };
+
   const modalContent = (
-    <div id="donor-card-modal-overlay" className="fixed inset-0 w-screen h-screen z-[9999] flex items-center justify-center p-3 sm:p-5 md:p-6 bg-slate-950/85 backdrop-blur-md animate-fade-in overflow-y-auto print:bg-white print:p-0 print:static print:h-auto print:w-auto print:overflow-visible">
-      
+    <div id="donor-card-modal-overlay" className="fixed inset-0 w-screen h-screen z-[9999] flex items-center justify-center p-3 sm:p-5 md:p-6 bg-slate-950/85 backdrop-blur-md animate-fade-in overflow-y-auto">
+
       {/* Print Specific CSS Styles for PDF & Hardcopy */}
       <style>{`
         @media print {
@@ -412,29 +426,36 @@ export default function DonorCardModal({ donor, onClose }) {
             size: landscape;
             margin: 8mm !important;
           }
-          body, html, #root {
-            background: white !important;
-            color: black !important;
+          body > *:not(#donor-card-modal-overlay),
+          #root,
+          header,
+          footer,
+          nav,
+          main {
+            display: none !important;
+          }
+          body {
+            background: #0f172a !important;
             margin: 0 !important;
             padding: 0 !important;
             overflow: visible !important;
-            width: 100% !important;
-            height: auto !important;
-          }
-          header, footer, nav, aside, .sticky, [role="banner"], button, .print\\:hidden {
-            display: none !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           #donor-card-modal-overlay {
             position: static !important;
-            background: white !important;
+            display: block !important;
+            background: transparent !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
             padding: 0 !important;
             margin: 0 !important;
-            display: block !important;
             width: 100% !important;
             height: auto !important;
             overflow: visible !important;
+          }
+          .donor-card-screen-only {
+            display: none !important;
           }
           .donor-card-print-container {
             display: flex !important;
@@ -447,6 +468,7 @@ export default function DonorCardModal({ donor, onClose }) {
             padding: 4mm 0 !important;
           }
           .donor-card-print-item {
+            display: flex !important;
             width: 155mm !important;
             max-width: 100% !important;
             aspect-ratio: 1.58 / 1 !important;
@@ -460,14 +482,14 @@ export default function DonorCardModal({ donor, onClose }) {
       `}</style>
 
       <div className="relative max-w-2xl w-full my-auto animate-scale-up space-y-4 print:max-w-none print:w-full print:my-0 print:space-y-0">
-        
+
         {/* Top Floating Control Bar */}
-        <div className="flex items-center justify-between bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl shadow-xl print:hidden">
+        <div className="donor-card-screen-only flex items-center justify-between bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl shadow-xl print:hidden">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
             <h3 className="text-xs sm:text-sm font-extrabold text-white flex items-center gap-1.5">
               <Award className="w-4 h-4 text-amber-400" />
-              {language === 'bn' ? 'অফিসিয়াল রক্তদাতা কার্ড' : 'Official Voluntary Donor Card'}
+              {language === 'bn' ? 'স্মার্ট রক্তদাতা কার্ড' : 'Smart Blood Donor Card'}
             </h3>
           </div>
 
@@ -487,11 +509,10 @@ export default function DonorCardModal({ donor, onClose }) {
             <button
               type="button"
               onClick={() => setOffersTab(prev => !prev)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
-                offersTab 
-                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20' 
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${offersTab
+                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
                   : 'bg-slate-800 hover:bg-slate-700 text-amber-400 border-amber-500/40'
-              }`}
+                }`}
               title="View Sponsorship Offers"
             >
               <Tag className="w-3.5 h-3.5" />
@@ -513,12 +534,12 @@ export default function DonorCardModal({ donor, onClose }) {
         {/* ============================================================== */}
         {/* INTERACTIVE DUAL-SIDED 3D CARD DISPLAY                         */}
         {/* ============================================================== */}
-        <div className="perspective-1000 select-none">
+        <div className="donor-card-screen-only perspective-1000 select-none">
           <div className={`transition-all duration-300 transform ${isFlipping ? 'scale-95 opacity-80' : 'scale-100 opacity-100'} print:hidden`}>
-            
+
             {activeSide === 'front' ? (
               /* ======================= FRONT SIDE ======================= */
-              <div 
+              <div
                 className={`card-side-container relative w-full aspect-[1.6/1] rounded-3xl p-5 sm:p-7 shadow-2xl border-2 bg-gradient-to-br ${themeStyle.frontGradient} text-white flex flex-col justify-between overflow-hidden ring-1 ring-white/10`}
                 style={{ borderColor: themeStyle.accent }}
               >
@@ -534,9 +555,9 @@ export default function DonorCardModal({ donor, onClose }) {
                 <div className="flex items-center justify-between relative z-10 gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white p-1.5 shadow-lg border border-white/20 flex items-center justify-center shrink-0">
-                      <img 
-                        src="/logo.png" 
-                        alt="Darun Donors Logo" 
+                      <img
+                        src="/logo.png"
+                        alt="Darun Donors Logo"
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -634,7 +655,7 @@ export default function DonorCardModal({ donor, onClose }) {
               </div>
             ) : (
               /* ======================= BACK SIDE ======================= */
-              <div 
+              <div
                 className={`card-side-container relative w-full aspect-[1.6/1] rounded-3xl p-5 sm:p-7 shadow-2xl border-2 bg-gradient-to-br ${themeStyle.backGradient} text-white flex flex-col justify-between overflow-hidden ring-1 ring-white/10`}
                 style={{ borderColor: themeStyle.accent }}
               >
@@ -649,13 +670,13 @@ export default function DonorCardModal({ donor, onClose }) {
 
                 {/* Middle Content: QR Verification + Terms & Conditions */}
                 <div className={`${(cardConfig.show_magnetic_strip !== 0 && cardConfig.show_magnetic_strip !== false) ? 'mt-12 sm:mt-14' : 'mt-4 sm:mt-6'} flex items-center gap-4 relative z-10 my-auto`}>
-                  
+
                   {/* Verified QR Code Card */}
                   {showQrOnCard && (
                     <div className="w-24 sm:w-28 shrink-0 p-2 rounded-2xl bg-white text-slate-900 shadow-lg flex flex-col items-center justify-center space-y-1">
-                      <img 
-                        src={qrImageSrc} 
-                        alt="Verification QR" 
+                      <img
+                        src={qrImageSrc}
+                        alt="Verification QR"
                         className="w-18 h-18 sm:w-22 sm:h-22 object-contain rounded-lg"
                         loading="lazy"
                       />
@@ -695,8 +716,8 @@ export default function DonorCardModal({ donor, onClose }) {
                     <div className="flex items-center gap-1.5 min-w-0">
                       <Tag className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <span className="text-[9px] sm:text-[10px] font-bold text-amber-300 truncate">
-                        {offers.length > 0 
-                          ? `${offers[0].sponsor_name}: ${offers[0].discount_text} (${offers[0].title})` 
+                        {offers.length > 0
+                          ? `${offers[0].sponsor_name}: ${offers[0].discount_text} (${offers[0].title})`
                           : (cardConfig.footer_sponsor_text || 'Partner discounts valid at recognized diagnostic centers and clinics.')
                         }
                       </span>
@@ -721,7 +742,7 @@ export default function DonorCardModal({ donor, onClose }) {
         {/* ============================================================== */}
         <div className="donor-card-print-container hidden print:flex flex-col items-center gap-8 w-full">
           {/* --- FRONT SIDE FOR PRINT --- */}
-          <div 
+          <div
             className={`donor-card-print-item relative w-full aspect-[1.58/1] rounded-3xl p-6 border-2 bg-gradient-to-br ${themeStyle.frontGradient} text-white flex flex-col justify-between overflow-hidden`}
             style={{ borderColor: themeStyle.accent }}
           >
@@ -828,7 +849,7 @@ export default function DonorCardModal({ donor, onClose }) {
           </div>
 
           {/* --- BACK SIDE FOR PRINT --- */}
-          <div 
+          <div
             className={`donor-card-print-item relative w-full aspect-[1.58/1] rounded-3xl p-6 border-2 bg-gradient-to-br ${themeStyle.backGradient} text-white flex flex-col justify-between overflow-hidden`}
             style={{ borderColor: themeStyle.accent }}
           >
@@ -845,9 +866,9 @@ export default function DonorCardModal({ donor, onClose }) {
             <div className={`${(cardConfig.show_magnetic_strip !== 0 && cardConfig.show_magnetic_strip !== false) ? 'mt-12' : 'mt-4'} flex items-center gap-4 relative z-10 my-auto`}>
               {showQrOnCard && (
                 <div className="w-24 shrink-0 p-2 rounded-2xl bg-white text-slate-900 shadow-md flex flex-col items-center justify-center space-y-1">
-                  <img 
-                    src={qrImageSrc} 
-                    alt="Verification QR" 
+                  <img
+                    src={qrImageSrc}
+                    alt="Verification QR"
                     className="w-20 h-20 object-contain rounded-lg"
                   />
                   <span className="text-[7px] font-mono font-bold tracking-tight text-slate-700">
@@ -885,8 +906,8 @@ export default function DonorCardModal({ donor, onClose }) {
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Tag className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                   <span className="text-[10px] font-bold text-amber-300 truncate">
-                    {offers.length > 0 
-                      ? `${offers[0].sponsor_name}: ${offers[0].discount_text} (${offers[0].title})` 
+                    {offers.length > 0
+                      ? `${offers[0].sponsor_name}: ${offers[0].discount_text} (${offers[0].title})`
                       : (cardConfig.footer_sponsor_text || 'Partner discounts valid at recognized diagnostic centers and clinics in Sylhet.')
                     }
                   </span>
@@ -903,7 +924,7 @@ export default function DonorCardModal({ donor, onClose }) {
         {/* SPONSORSHIP OFFERS DRAWER (INTERACTIVE BENEFIT CARDS)           */}
         {/* ============================================================== */}
         {offersTab && (
-          <div className="glass-panel p-4 rounded-2xl border border-amber-500/30 bg-slate-900/90 space-y-3 animate-fade-in text-left">
+          <div className="donor-card-screen-only glass-panel p-4 rounded-2xl border border-amber-500/30 bg-slate-900/90 space-y-3 animate-fade-in text-left">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
@@ -914,7 +935,7 @@ export default function DonorCardModal({ donor, onClose }) {
                     {language === 'bn' ? 'রক্তদাতাদের জন্য পার্টনার ও স্পন্সরশিপ অফার' : 'Exclusive Donor Sponsorship Offers'}
                   </h4>
                   <p className="text-[10px] text-slate-400">
-                    {language === 'bn' 
+                    {language === 'bn'
                       ? 'এই কার্ড প্রদর্শন করে নিচের পার্টনার প্রতিষ্ঠানগুলো থেকে বিশেষ ছাড় ও সেবা গ্রহণ করুন।'
                       : 'Show this digital donor card at partner locations to redeem verified privileges.'
                     }
@@ -995,7 +1016,7 @@ export default function DonorCardModal({ donor, onClose }) {
         )}
 
         {/* Action Buttons Toolbar (Download PNG & Print/Save PDF) */}
-        <div className="flex flex-wrap gap-2.5 justify-center items-center print:hidden">
+        <div className="donor-card-screen-only flex flex-wrap gap-2.5 justify-center items-center print:hidden">
           <button
             type="button"
             onClick={handleDownloadCardImage}
@@ -1017,7 +1038,7 @@ export default function DonorCardModal({ donor, onClose }) {
 
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={handlePrintCard}
             className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-100 font-extrabold rounded-2xl text-xs sm:text-sm shadow-md border border-slate-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
           >
             <Printer className="w-4 h-4 text-amber-400" />

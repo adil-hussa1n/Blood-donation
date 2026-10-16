@@ -278,7 +278,7 @@ export async function initDatabase() {
     await dbConn.query(`
       CREATE TABLE IF NOT EXISTS donor_card_config (
         id VARCHAR(36) PRIMARY KEY,
-        card_title VARCHAR(150) DEFAULT 'Official Voluntary Blood Donor Card',
+        card_title VARCHAR(150) DEFAULT 'Smart Blood Donor Card',
         card_subtitle VARCHAR(255) DEFAULT 'Sylhet Emergency Blood Network • Darun Donors',
         front_notes TEXT NULL,
         back_terms TEXT NULL,
@@ -371,7 +371,7 @@ export async function initDatabase() {
         INSERT INTO donor_card_config (id, card_title, card_subtitle, front_notes, back_terms, emergency_hotline, authorized_signatory_title, badge_accent_color, card_theme, badge_text, issue_org, website_url, valid_years, show_qr)
         VALUES (
           'default_config',
-          'Official Voluntary Blood Donor Card',
+          'Smart Blood Donor Card',
           'Sylhet Emergency Blood Network • Darun Donors',
           'This card certifies that the bearer is a verified voluntary blood donor dedicated to saving human lives.',
           '1. This card is non-transferable and strictly voluntary.\\n2. Valid across partner health clinics, blood transfusion centers, and community sponsors.\\n3. Present this card or QR code to redeem partner benefits and donor discounts.\\n4. Always verify medical eligibility before transfusion.',
