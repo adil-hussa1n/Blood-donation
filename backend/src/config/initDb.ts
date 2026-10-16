@@ -229,6 +229,51 @@ export async function initDatabase() {
       ) ENGINE=InnoDB;
     `);
 
+    // 9. Deleted Donors Archive (Auditing for Admin Dashboard)
+    await dbConn.query(`
+      CREATE TABLE IF NOT EXISTS deleted_donors (
+        id VARCHAR(36) PRIMARY KEY,
+        original_donor_id VARCHAR(36) NOT NULL,
+        name VARCHAR(150) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        blood_group VARCHAR(10) NOT NULL,
+        area VARCHAR(150) NOT NULL,
+        email VARCHAR(255) NULL,
+        total_donations INT DEFAULT 0 NOT NULL,
+        lifetime_donation_count INT DEFAULT 0 NOT NULL,
+        last_donation_date DATE NULL,
+        registered_at DATETIME NULL,
+        deleted_by VARCHAR(100) NOT NULL,
+        deletion_reason TEXT NULL,
+        deleted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_del_donor_blood (blood_group),
+        INDEX idx_del_donor_phone (phone),
+        INDEX idx_del_donor_time (deleted_at)
+      ) ENGINE=InnoDB;
+    `);
+
+    // 10. Deleted Emergency Requests Archive (Auditing for Admin Dashboard)
+    await dbConn.query(`
+      CREATE TABLE IF NOT EXISTS deleted_emergencies (
+        id VARCHAR(36) PRIMARY KEY,
+        original_request_id VARCHAR(36) NOT NULL,
+        donor_id VARCHAR(36) NULL,
+        requester_name VARCHAR(150) NULL,
+        blood_group VARCHAR(10) NOT NULL,
+        area VARCHAR(150) NOT NULL,
+        contact VARCHAR(20) NOT NULL,
+        note TEXT NULL,
+        original_status VARCHAR(50) NULL,
+        requested_at DATETIME NULL,
+        deleted_by VARCHAR(100) NOT NULL,
+        deletion_reason TEXT NULL,
+        deleted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_del_emg_blood (blood_group),
+        INDEX idx_del_emg_area (area),
+        INDEX idx_del_emg_time (deleted_at)
+      ) ENGINE=InnoDB;
+    `);
+
     console.log('✅ All tables verified/created successfully.');
 
     // Seed default admin if not exists

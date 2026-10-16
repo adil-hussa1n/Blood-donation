@@ -481,6 +481,37 @@ export const dbService = {
   },
 
   // ==========================================
+  // DELETED USERS & DELETED EMERGENCIES AUDITING
+  // ==========================================
+  async getDeletedDonors(adminUsername?: string, adminPassword?: string): Promise<{ success: boolean; data: any[]; error: any }> {
+    if (isDemoMode) {
+      const deleted = JSON.parse(localStore.getItem('bb_deleted_donors') || '[]');
+      return { success: true, data: deleted, error: null };
+    }
+
+    const query = new URLSearchParams();
+    if (adminUsername) query.set('adminUsername', adminUsername);
+    if (adminPassword) query.set('adminPassword', adminPassword);
+
+    const res = await apiRequest<any[]>(`/admin/deleted-donors?${query.toString()}`);
+    return { success: !res.error, data: res.data || [], error: res.error };
+  },
+
+  async getDeletedEmergencies(adminUsername?: string, adminPassword?: string): Promise<{ success: boolean; data: any[]; error: any }> {
+    if (isDemoMode) {
+      const deleted = JSON.parse(localStore.getItem('bb_deleted_emergencies') || '[]');
+      return { success: true, data: deleted, error: null };
+    }
+
+    const query = new URLSearchParams();
+    if (adminUsername) query.set('adminUsername', adminUsername);
+    if (adminPassword) query.set('adminPassword', adminPassword);
+
+    const res = await apiRequest<any[]>(`/admin/deleted-emergencies?${query.toString()}`);
+    return { success: !res.error, data: res.data || [], error: res.error };
+  },
+
+  // ==========================================
   // ADMIN AUTHENTICATION
   // ==========================================
   async verifyAdminCredentials(username: string, password?: string): Promise<{ success: boolean; token?: string; error: any }> {

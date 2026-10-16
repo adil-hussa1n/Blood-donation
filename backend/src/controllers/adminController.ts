@@ -146,3 +146,33 @@ export async function checkIfBlocked(req: Request, res: Response): Promise<void>
     res.status(500).json({ data: false, error: { message: error.message } });
   }
 }
+
+export async function getDeletedDonors(req: Request, res: Response): Promise<void> {
+  try {
+    const [rows]: any = await pool.query(`
+      SELECT id, original_donor_id, name, phone, blood_group, area, email, 
+             total_donations, lifetime_donation_count, last_donation_date, 
+             registered_at, deleted_by, deletion_reason, deleted_at 
+      FROM deleted_donors 
+      ORDER BY deleted_at DESC
+    `);
+    res.json({ success: true, data: rows || [], error: null });
+  } catch (error: any) {
+    res.status(500).json({ success: false, data: [], error: { message: error.message } });
+  }
+}
+
+export async function getDeletedEmergencies(req: Request, res: Response): Promise<void> {
+  try {
+    const [rows]: any = await pool.query(`
+      SELECT id, original_request_id, donor_id, requester_name, blood_group, 
+             area, contact, note, original_status, requested_at, 
+             deleted_by, deletion_reason, deleted_at 
+      FROM deleted_emergencies 
+      ORDER BY deleted_at DESC
+    `);
+    res.json({ success: true, data: rows || [], error: null });
+  } catch (error: any) {
+    res.status(500).json({ success: false, data: [], error: { message: error.message } });
+  }
+}

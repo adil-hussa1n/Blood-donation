@@ -213,6 +213,49 @@ export async function deleteEmergencyRequest(req: Request, res: Response): Promi
       return;
     }
 
+    // Determine deletion agent
+    let deletedBy = 'requester';
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const decoded: any = verifyToken(authHeader.split(' ')[1]);
+      if (decoded && decoded.role === 'admin') {
+        deletedBy = `admin (${decoded.username || 'admin'})`;
+      }
+    } else if (adminUsername) {
+      deletedBy = `admin (${adminUsername})`;
+    }
+
+    // 1. Fetch requester donor name if exists
+    let requesterName = null;
+    if (emergency.donor_id) {
+      const [donorRows]: any = await pool.query('SELECT name FROM donors WHERE id = ?', [emergency.donor_id]);
+      if (donorRows && donorRows.length > 0) {
+        requesterName = donorRows[0].name;
+      }
+    }
+
+    // 2. Archive to deleted_emergencies
+    const archiveId = crypto.randomUUID();
+    await pool.query(
+      `INSERT INTO deleted_emergencies
+        (id, original_request_id, donor_id, requester_name, blood_group, area, contact, note, original_status, requested_at, deleted_by, deletion_reason)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        archiveId,
+        emergency.id,
+        emergency.donor_id || null,
+        requesterName,
+        emergency.blood_group,
+        emergency.area,
+        emergency.contact,
+        emergency.note || null,
+        emergency.status || 'needed',
+        emergency.created_at || null,
+        deletedBy,
+        deletedBy.includes('admin') ? 'Deleted by Administrator' : 'Deleted by Requester',
+      ]
+    );
+
+    // 3. Delete from active emergency_requests
     await pool.query('DELETE FROM emergency_requests WHERE id = ?', [id]);
     res.json({ success: true, error: null });
   } catch (error: any) {

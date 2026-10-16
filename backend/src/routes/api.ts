@@ -25,6 +25,8 @@ import {
   unblockDonorByPhone,
   getBlockedPhones,
   checkIfBlocked,
+  getDeletedDonors,
+  getDeletedEmergencies,
 } from '../controllers/adminController.js';
 import {
   submitSupportRequest,
@@ -77,6 +79,8 @@ router.post('/admin/block', requireAdmin, blockDonorByPhone);
 router.delete('/admin/block/:phone', requireAdmin, unblockDonorByPhone);
 router.get('/admin/blocked', requireAdmin, getBlockedPhones);
 router.get('/admin/check-blocked/:phone', checkIfBlocked);
+router.get('/admin/deleted-donors', requireAdmin, getDeletedDonors);
+router.get('/admin/deleted-emergencies', requireAdmin, getDeletedEmergencies);
 
 // ==========================================
 // PUSH NOTIFICATIONS ROUTES

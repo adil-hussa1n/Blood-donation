@@ -83,6 +83,8 @@ interface AppContextType {
   unblockDonorByPhone: (phone: string) => Promise<{ success: boolean; error?: any }>;
   getBlockedPhones: () => Promise<{ success: boolean; data: any[]; error?: any }>;
   getSupportRequests: () => Promise<{ data?: any[]; error?: any }>;
+  getDeletedDonors: () => Promise<{ success: boolean; data: any[]; error?: any }>;
+  getDeletedEmergencies: () => Promise<{ success: boolean; data: any[]; error?: any }>;
   showToast: (message: string, type?: 'success' | 'error' | 'warning') => void;
   checkIfBlocked: (phone: string) => Promise<{ data: boolean; error?: any }>;
   notificationPermission: NotificationPermission;
@@ -2117,6 +2119,20 @@ export const AppProvider = ({ children }) => {
     return await dbService.getSupportRequests(adminUser, adminPass);
   };
 
+  const getDeletedDonors = async () => {
+    if (!isAdmin) return { success: false, data: [], error: { message: 'Unauthorized' } };
+    const adminUser = adminCredentials?.username || '';
+    const adminPass = adminCredentials?.password || '';
+    return await dbService.getDeletedDonors(adminUser, adminPass);
+  };
+
+  const getDeletedEmergencies = async () => {
+    if (!isAdmin) return { success: false, data: [], error: { message: 'Unauthorized' } };
+    const adminUser = adminCredentials?.username || '';
+    const adminPass = adminCredentials?.password || '';
+    return await dbService.getDeletedEmergencies(adminUser, adminPass);
+  };
+
   const checkIfBlocked = async (phone: string) => {
     return await dbService.checkIfBlocked(phone);
   };
@@ -2157,6 +2173,8 @@ export const AppProvider = ({ children }) => {
         unblockDonorByPhone,
         getBlockedPhones,
         getSupportRequests,
+        getDeletedDonors,
+        getDeletedEmergencies,
         showToast,
         checkIfBlocked,
         notificationPermission,

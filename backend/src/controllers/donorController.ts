@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import pool from '../config/db.js';
 import { getClientIp, logRateLimit } from '../middleware/rateLimiter.js';
-import { generateToken } from '../middleware/auth.js';
+import { generateToken, verifyToken } from '../middleware/auth.js';
 
 // Format donor object to ensure boolean types matching frontend expectations
 function formatDonor(row: any) {
@@ -474,7 +474,43 @@ export async function deleteDonor(req: Request, res: Response): Promise<void> {
       }
     }
 
-    // Delete donor history and record
+    // Determine who deleted the account
+    let deletedBy = 'donor_self';
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const decoded: any = verifyToken(authHeader.split(' ')[1]);
+      if (decoded && decoded.role === 'admin') {
+        deletedBy = `admin (${decoded.username || 'admin'})`;
+      }
+    } else if (!isDonorSelfDelete) {
+      deletedBy = 'admin';
+    }
+
+    // 1. Archive to deleted_donors table
+    const archiveId = crypto.randomUUID();
+    await pool.query(
+      `INSERT INTO deleted_donors 
+        (id, original_donor_id, name, phone, blood_group, area, email, total_donations, lifetime_donation_count, last_donation_date, registered_at, deleted_by, deletion_reason)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        archiveId,
+        donor.id,
+        donor.name,
+        donor.phone,
+        donor.blood_group,
+        donor.area,
+        donor.email || null,
+        donor.total_donations || 0,
+        donor.lifetime_donation_count || donor.total_donations || 0,
+        donor.last_donation_date || null,
+        donor.created_at || null,
+        deletedBy,
+        isDonorSelfDelete ? 'Donor deleted their own account' : 'Deleted by Administrator',
+      ]
+    );
+
+    // 2. Delete push subscriptions, donor history and record
+    await pool.query('DELETE FROM push_subscriptions WHERE donor_id = ?', [id]);
     await pool.query('DELETE FROM donation_history WHERE donor_id = ?', [id]);
     await pool.query('DELETE FROM donors WHERE id = ?', [id]);
     res.json({ success: true, error: null });

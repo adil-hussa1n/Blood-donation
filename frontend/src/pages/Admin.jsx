@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X } from 'lucide-react';
+import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X, UserX, FileX, Clock, Phone, AlertCircle } from 'lucide-react';
 import { useApp, BLOOD_GROUPS, DISTRICT_AREAS, normalizeDonor, getAreaLabel, getDistrictBadge } from '../context/AppContext';
 
 export default function Admin() {
@@ -15,12 +15,14 @@ export default function Admin() {
     unblockDonorByPhone,
     getBlockedPhones,
     getSupportRequests,
+    getDeletedDonors,
+    getDeletedEmergencies,
     showToast,
     language,
     t
   } = useApp();
 
-  // Dashboard view state: 'donors' or 'emergencies' or 'blocked'
+  // Dashboard view state: 'donors' | 'emergencies' | 'blocked' | 'support' | 'deleted_donors' | 'deleted_emergencies'
   const [adminTab, setAdminTab] = useState('donors');
   
   // Blood group filter in Donors view
@@ -71,10 +73,46 @@ export default function Admin() {
     setSupportLoading(false);
   };
 
+  // Deleted Donors State & Fetch
+  const [deletedDonors, setDeletedDonors] = useState([]);
+  const [deletedDonorsLoading, setDeletedDonorsLoading] = useState(false);
+  const [deletedDonorsError, setDeletedDonorsError] = useState(null);
+
+  const fetchDeletedDonors = async () => {
+    setDeletedDonorsLoading(true);
+    setDeletedDonorsError(null);
+    const res = await getDeletedDonors();
+    if (res.success) {
+      setDeletedDonors(res.data || []);
+    } else {
+      setDeletedDonorsError(res.error?.message || "Failed to fetch deleted donors archive.");
+    }
+    setDeletedDonorsLoading(false);
+  };
+
+  // Deleted Emergencies State & Fetch
+  const [deletedEmergencies, setDeletedEmergencies] = useState([]);
+  const [deletedEmergenciesLoading, setDeletedEmergenciesLoading] = useState(false);
+  const [deletedEmergenciesError, setDeletedEmergenciesError] = useState(null);
+
+  const fetchDeletedEmergencies = async () => {
+    setDeletedEmergenciesLoading(true);
+    setDeletedEmergenciesError(null);
+    const res = await getDeletedEmergencies();
+    if (res.success) {
+      setDeletedEmergencies(res.data || []);
+    } else {
+      setDeletedEmergenciesError(res.error?.message || "Failed to fetch deleted emergency requests.");
+    }
+    setDeletedEmergenciesLoading(false);
+  };
+
   useEffect(() => {
     if (isAdmin) {
       fetchBlockedPhones();
       fetchSupportRequests();
+      fetchDeletedDonors();
+      fetchDeletedEmergencies();
     }
   }, [isAdmin]);
 
@@ -240,11 +278,15 @@ export default function Admin() {
         const res = await deleteDonor(confirmDeleteId);
         if (!res.success) {
           showToast(t('errorDeletingDonorPrefix') + res.error, 'error');
+        } else {
+          fetchDeletedDonors();
         }
       } else if (confirmDeleteType === 'emergency') {
         const res = await deleteEmergencyRequest(confirmDeleteId);
         if (!res.success) {
           showToast(t('errorDeletingRequestPrefix') + res.error, 'error');
+        } else {
+          fetchDeletedEmergencies();
         }
       }
     } catch (err) {
@@ -261,6 +303,8 @@ export default function Admin() {
   const safeEmergencies = useMemo(() => emergencyRequests || [], [emergencyRequests]);
   const safeBlockedPhones = useMemo(() => blockedPhones || [], [blockedPhones]);
   const safeSupportRequests = useMemo(() => supportRequests || [], [supportRequests]);
+  const safeDeletedDonors = useMemo(() => deletedDonors || [], [deletedDonors]);
+  const safeDeletedEmergencies = useMemo(() => deletedEmergencies || [], [deletedEmergencies]);
 
   // Filtered Donors list for Admin with search, area, date, and blood group
   const adminFilteredDonors = useMemo(() => {
@@ -587,7 +631,7 @@ export default function Admin() {
       </div>
 
       {/* Stats Quick Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         <button
           onClick={() => setAdminTab('donors')}
           className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
@@ -669,6 +713,48 @@ export default function Admin() {
           </div>
           <div className="p-2 sm:p-3 rounded-xl bg-blue-500/5 dark:bg-blue-500/10 text-blue-500 shrink-0">
             <MessageSquare className="w-4 h-4 sm:w-6 sm:h-6" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('deleted_donors')}
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+            adminTab === 'deleted_donors'
+              ? 'border-purple-500/40 ring-1 ring-purple-500/10 shadow-md'
+              : 'hover:border-slate-300 dark:hover:border-zinc-700'
+          }`}
+        >
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
+              {language === 'bn' ? 'মুছে ফেলা রক্তদাতা' : 'Deleted Donors'}
+            </span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+              {safeDeletedDonors.length}
+            </span>
+          </div>
+          <div className="p-2 sm:p-3 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0">
+            <UserX className="w-4 h-4 sm:w-6 sm:h-6" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('deleted_emergencies')}
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${
+            adminTab === 'deleted_emergencies'
+              ? 'border-amber-500/40 ring-1 ring-amber-500/10 shadow-md'
+              : 'hover:border-slate-300 dark:hover:border-zinc-700'
+          }`}
+        >
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
+              {language === 'bn' ? 'মুছে ফেলা অনুরোধ' : 'Deleted Requests'}
+            </span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+              {safeDeletedEmergencies.length}
+            </span>
+          </div>
+          <div className="p-2 sm:p-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+            <FileX className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </button>
       </div>
@@ -1551,6 +1637,298 @@ export default function Admin() {
 
                       <div className="text-[10px] text-slate-400 dark:text-zinc-500">
                         Received: {new Date(req.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* VIEW: DELETED DONORS ARCHIVE                                   */}
+        {/* ============================================================== */}
+        {adminTab === 'deleted_donors' && (
+          <div className="space-y-4">
+            <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 text-left flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <h3 className="font-extrabold text-slate-950 dark:text-white text-base flex items-center gap-2">
+                  <UserX className="w-5 h-5 text-purple-500" />
+                  {language === 'bn' ? 'মুছে ফেলা রক্তদাতাদের তালিকা (অডিট লগ)' : 'Deleted Donors Archive (Audit Trail)'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                  {language === 'bn' 
+                    ? 'কোন রক্তদাতা অ্যাকাউন্টটি মুছে ফেলেছেন বা অ্যাডমিন মুছে দিয়েছেন তার সম্পূর্ণ বিবরণ।' 
+                    : 'Full audit history of all deleted donor accounts with registration and deletion details.'}
+                </p>
+              </div>
+              <button
+                onClick={fetchDeletedDonors}
+                disabled={deletedDonorsLoading}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-xs font-bold text-slate-700 dark:text-zinc-300 transition-all cursor-pointer"
+              >
+                {deletedDonorsLoading ? 'Loading...' : (language === 'bn' ? 'রিফ্রেশ' : 'Refresh Archive')}
+              </button>
+            </div>
+
+            {deletedDonorsError && (
+              <div className="p-4 mx-5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 rounded-xl text-xs font-semibold">
+                {deletedDonorsError}
+              </div>
+            )}
+
+            {safeDeletedDonors.length === 0 ? (
+              <div className="p-12 text-center text-sm text-slate-500 dark:text-zinc-400 space-y-2">
+                <UserX className="w-8 h-8 mx-auto text-slate-400 opacity-60" />
+                <p className="font-bold">{language === 'bn' ? 'কোনো মুছে ফেলা রক্তদাতার রেকর্ড নেই' : 'No deleted donor records found.'}</p>
+                <p className="text-xs text-slate-400">{language === 'bn' ? 'ভবিষ্যতে কোনো অ্যাকাউন্ট মুছে ফেলা হলে তা এখানে সংরক্ষিত থাকবে।' : 'Whenever an account is removed, its full profile will be archived here.'}</p>
+              </div>
+            ) : (
+              <div className="animate-fade-in">
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-slate-50/50 dark:bg-zinc-900/50">
+                        <th className="p-4">Donor Name</th>
+                        <th className="p-4">Blood Group</th>
+                        <th className="p-4">Contact Phone</th>
+                        <th className="p-4">Location / Area</th>
+                        <th className="p-4">Donation Stats</th>
+                        <th className="p-4">Deleted By</th>
+                        <th className="p-4">Deleted At</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-zinc-850">
+                      {safeDeletedDonors.map((d) => (
+                        <tr key={d.id} className="hover:bg-slate-50/80 dark:hover:bg-zinc-900/40 transition-colors">
+                          <td className="p-4 font-bold text-slate-900 dark:text-white">
+                            <div>{d.name}</div>
+                            {d.email && <div className="text-xs font-normal text-slate-400">{d.email}</div>}
+                          </td>
+                          <td className="p-4">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+                              {d.blood_group}
+                            </span>
+                          </td>
+                          <td className="p-4 font-mono text-xs font-bold text-slate-700 dark:text-zinc-300">
+                            <a href={`tel:${d.phone}`} className="hover:underline flex items-center gap-1.5">
+                              <Phone className="w-3.5 h-3.5 text-slate-400" />
+                              {d.phone}
+                            </a>
+                          </td>
+                          <td className="p-4 text-xs font-medium text-slate-600 dark:text-zinc-400">
+                            {getAreaLabel(d.area, t)}
+                          </td>
+                          <td className="p-4 text-xs">
+                            <span className="font-bold text-slate-800 dark:text-zinc-200">{d.lifetime_donation_count || d.total_donations || 0} times</span>
+                            {d.last_donation_date && (
+                              <div className="text-[11px] text-slate-400">Last: {d.last_donation_date}</div>
+                            )}
+                          </td>
+                          <td className="p-4 text-xs">
+                            <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${
+                              d.deleted_by?.includes('admin')
+                                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                            }`}>
+                              {d.deleted_by || 'Unknown'}
+                            </span>
+                          </td>
+                          <td className="p-4 text-xs font-mono text-slate-500 dark:text-zinc-400">
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-slate-400" />
+                              {d.deleted_at ? new Date(d.deleted_at).toLocaleString() : '—'}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
+                  {safeDeletedDonors.map((d) => (
+                    <div key={d.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors text-left">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="font-extrabold text-slate-900 dark:text-white text-base block">
+                            {d.name}
+                          </span>
+                          <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                            {d.phone} {d.email && `• ${d.email}`}
+                          </span>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+                          {d.blood_group}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-zinc-400 pt-1 border-t border-slate-100 dark:border-zinc-800/40">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-slate-400 block">Area</span>
+                          <span className="font-semibold">{getAreaLabel(d.area, t)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-slate-400 block">Donations</span>
+                          <span className="font-semibold">{d.lifetime_donation_count || d.total_donations || 0} times</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-zinc-800/40 text-[11px]">
+                        <span className="text-slate-500 dark:text-zinc-400">
+                          By: <strong className="text-slate-700 dark:text-zinc-200">{d.deleted_by}</strong>
+                        </span>
+                        <span className="text-slate-400 font-mono">
+                          {d.deleted_at ? new Date(d.deleted_at).toLocaleDateString() : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* VIEW: DELETED EMERGENCY REQUESTS ARCHIVE                       */}
+        {/* ============================================================== */}
+        {adminTab === 'deleted_emergencies' && (
+          <div className="space-y-4">
+            <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 text-left flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <h3 className="font-extrabold text-slate-950 dark:text-white text-base flex items-center gap-2">
+                  <FileX className="w-5 h-5 text-amber-500" />
+                  {language === 'bn' ? 'মুছে ফেলা জরুরি রক্তের অনুরোধ (অডিট লগ)' : 'Deleted Emergency Requests Archive'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                  {language === 'bn' 
+                    ? 'আবেদনকারী বা অ্যাডমিন কর্তৃক মুছে ফেলা জরুরি রক্তের পোস্ট ও বিস্তারিত তথ্যাদি।' 
+                    : 'Full audit history of all emergency blood requests that were removed or completed.'}
+                </p>
+              </div>
+              <button
+                onClick={fetchDeletedEmergencies}
+                disabled={deletedEmergenciesLoading}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-xs font-bold text-slate-700 dark:text-zinc-300 transition-all cursor-pointer"
+              >
+                {deletedEmergenciesLoading ? 'Loading...' : (language === 'bn' ? 'রিফ্রেশ' : 'Refresh Archive')}
+              </button>
+            </div>
+
+            {deletedEmergenciesError && (
+              <div className="p-4 mx-5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 rounded-xl text-xs font-semibold">
+                {deletedEmergenciesError}
+              </div>
+            )}
+
+            {safeDeletedEmergencies.length === 0 ? (
+              <div className="p-12 text-center text-sm text-slate-500 dark:text-zinc-400 space-y-2">
+                <FileX className="w-8 h-8 mx-auto text-slate-400 opacity-60" />
+                <p className="font-bold">{language === 'bn' ? 'কোনো মুছে ফেলা জরুরি অনুরোধের রেকর্ড নেই' : 'No deleted emergency request records found.'}</p>
+                <p className="text-xs text-slate-400">{language === 'bn' ? 'ভবিষ্যতে কোনো জরুরি পোস্ট মুছে ফেলা হলে তা এখানে সংরক্ষিত থাকবে।' : 'Whenever an emergency blood post is removed, it will be safely logged here.'}</p>
+              </div>
+            ) : (
+              <div className="animate-fade-in">
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-slate-50/50 dark:bg-zinc-900/50">
+                        <th className="p-4">Blood Group</th>
+                        <th className="p-4">Hospital / Area</th>
+                        <th className="p-4">Contact Phone</th>
+                        <th className="p-4">Requester Details</th>
+                        <th className="p-4">Note / Reason</th>
+                        <th className="p-4">Deleted By</th>
+                        <th className="p-4">Deleted At</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-zinc-850">
+                      {safeDeletedEmergencies.map((emg) => (
+                        <tr key={emg.id} className="hover:bg-slate-50/80 dark:hover:bg-zinc-900/40 transition-colors">
+                          <td className="p-4">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                              {emg.blood_group}
+                            </span>
+                          </td>
+                          <td className="p-4 text-xs font-bold text-slate-800 dark:text-zinc-200">
+                            {getAreaLabel(emg.area, t)}
+                          </td>
+                          <td className="p-4 font-mono text-xs font-bold text-slate-700 dark:text-zinc-300">
+                            <a href={`tel:${emg.contact}`} className="hover:underline flex items-center gap-1.5">
+                              <Phone className="w-3.5 h-3.5 text-slate-400" />
+                              {emg.contact}
+                            </a>
+                          </td>
+                          <td className="p-4 text-xs text-slate-600 dark:text-zinc-400">
+                            {emg.requester_name ? (
+                              <div>
+                                <span className="font-bold text-slate-800 dark:text-white">{emg.requester_name}</span>
+                                <div className="text-[11px] text-slate-400 font-mono">ID: {emg.donor_id?.slice(0, 8)}...</div>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 italic">Direct Contact Request</span>
+                            )}
+                          </td>
+                          <td className="p-4 text-xs text-slate-600 dark:text-zinc-300 max-w-xs truncate" title={emg.note || ''}>
+                            {emg.note || <span className="text-slate-400 italic">—</span>}
+                          </td>
+                          <td className="p-4 text-xs">
+                            <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${
+                              emg.deleted_by?.includes('admin')
+                                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                            }`}>
+                              {emg.deleted_by || 'requester'}
+                            </span>
+                          </td>
+                          <td className="p-4 text-xs font-mono text-slate-500 dark:text-zinc-400">
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-slate-400" />
+                              {emg.deleted_at ? new Date(emg.deleted_at).toLocaleString() : '—'}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
+                  {safeDeletedEmergencies.map((emg) => (
+                    <div key={emg.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors text-left">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="font-extrabold text-slate-900 dark:text-white text-base block">
+                            {getAreaLabel(emg.area, t)}
+                          </span>
+                          <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                            Contact: {emg.contact} {emg.requester_name && `(${emg.requester_name})`}
+                          </span>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                          {emg.blood_group}
+                        </span>
+                      </div>
+
+                      {emg.note && (
+                        <p className="text-xs text-slate-655 dark:text-zinc-350 bg-slate-50 dark:bg-zinc-900/40 p-2.5 rounded-xl border border-slate-200/20 dark:border-zinc-800/30 leading-normal">
+                          {emg.note}
+                        </p>
+                      )}
+
+                      <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-zinc-800/40 text-[11px]">
+                        <span className="text-slate-500 dark:text-zinc-400">
+                          Deleted By: <strong className="text-slate-700 dark:text-zinc-200">{emg.deleted_by}</strong>
+                        </span>
+                        <span className="text-slate-400 font-mono">
+                          {emg.deleted_at ? new Date(emg.deleted_at).toLocaleDateString() : '—'}
+                        </span>
                       </div>
                     </div>
                   ))}
