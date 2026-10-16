@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock, Download, Printer, ShieldCheck, Check, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getDonorDonationCount, getAreaLabel, calculateDaysSince } from '../context/AppContext';
@@ -9,12 +9,13 @@ import { appStorage as localStorage } from '../services/storage';
 
 export default function Register() {
   const { registerDonor, updateDonorProfile, addDonationHistory, deleteDonor, currentDonor, setCurrentDonor, logoutDonor, language, t } = useApp();
+  const location = useLocation();
   
   // Tab control: 'register' or 'update'
   const [activeTab, setActiveTab] = useState('register');
   
   // Google OAuth state
-  const [googleProfile, setGoogleProfile] = useState(null);
+  const [googleProfile, setGoogleProfile] = useState(() => location.state?.googleProfile || null);
   
   // Loader and messages
   const [formLoading, setFormLoading] = useState(false);
@@ -43,6 +44,7 @@ export default function Register() {
 
   const [showCertificate, setShowCertificate] = useState(false);
   const [isDownloadingPng, setIsDownloadingPng] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState(null); // 'terms' | 'privacy' | null
   const certificateRef = useRef(null);
 
   // High-Resolution Image Certificate Generator (Works without third-party dependencies)
@@ -356,7 +358,7 @@ export default function Register() {
   // ----------------------------------------
   // REGISTER FORM STATE
   // ----------------------------------------
-  const [regName, setRegName] = useState('');
+  const [regName, setRegName] = useState(() => location.state?.googleProfile?.name || '');
   const [regPhone, setRegPhone] = useState('');
   const [regBloodGroup, setRegBloodGroup] = useState('O+');
   const [regArea, setRegArea] = useState('Sylhet City Corporation');
@@ -1140,25 +1142,29 @@ export default function Register() {
                 />
                 <div className="text-xs leading-relaxed text-slate-700 dark:text-zinc-300">
                   <span className="font-semibold">{t('agreeToTermsPrefix')} </span>
-                  <Link
-                    to="/terms"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="font-extrabold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-0.5"
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setLegalModalTab('terms');
+                    }}
+                    className="font-extrabold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-0.5 cursor-pointer"
                   >
                     {t('termsAndConditionsText')}
-                  </Link>{' '}
+                  </button>{' '}
                   <span className="font-semibold">{t('andText')} </span>
-                  <Link
-                    to="/privacy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="font-extrabold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-0.5"
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setLegalModalTab('privacy');
+                    }}
+                    className="font-extrabold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-0.5 cursor-pointer"
                   >
                     {t('privacyPolicyText')}
-                  </Link>
+                  </button>
                   <span className="text-red-500 font-bold ml-1">*</span>
                   <span className="block text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5 font-normal">
                     {language === 'bn'
@@ -2042,6 +2048,198 @@ export default function Register() {
                 ) : (
                   <span>{t('confirmDeleteAccountBtn')}</span>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* In-Place Terms & Privacy Policy Interactive Modal */}
+      {legalModalTab && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/75 backdrop-blur-sm animate-fade-in">
+          <div
+            className="relative w-full max-w-2xl max-h-[88vh] rounded-3xl p-5 sm:p-7 shadow-2xl border border-slate-200/80 dark:border-zinc-800 flex flex-col animate-scale-up"
+            style={{ backgroundColor: 'var(--modal-bg, #ffffff)' }}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-zinc-800 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg">
+                    {legalModalTab === 'terms'
+                      ? (language === 'bn' ? 'ব্যবহারের শর্তাবলী' : 'Terms and Conditions')
+                      : (language === 'bn' ? 'গোপনীয়তা ও তথ্য সুরক্ষা নীতি' : 'Privacy & Data Protection Policy')}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 dark:text-zinc-500">
+                    {language === 'bn' ? 'দারুণ ডোনার্স প্ল্যাটফর্ম' : 'Darun Donors Official Platform'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setLegalModalTab(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Sub-Tabs Switcher */}
+            <div className="flex p-1 bg-slate-100 dark:bg-zinc-900/60 rounded-xl border border-slate-200/50 dark:border-zinc-800/40 my-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setLegalModalTab('terms')}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  legalModalTab === 'terms'
+                    ? 'bg-white dark:bg-zinc-800 text-red-600 dark:text-red-400 shadow-xs'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                }`}
+              >
+                {language === 'bn' ? 'শর্তাবলী (Terms)' : 'Terms of Service'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setLegalModalTab('privacy')}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  legalModalTab === 'privacy'
+                    ? 'bg-white dark:bg-zinc-800 text-red-600 dark:text-red-400 shadow-xs'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                }`}
+              >
+                {language === 'bn' ? 'গোপনীয়তা নীতি (Privacy)' : 'Privacy Policy'}
+              </button>
+            </div>
+
+            {/* Scrollable Document Content */}
+            <div className="overflow-y-auto pr-1 space-y-4 text-xs sm:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed max-h-[50vh]">
+              {legalModalTab === 'terms' ? (
+                <>
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
+                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Heart className="w-3.5 h-3.5 text-red-500" />
+                      {language === 'bn' ? '১. অলাভজনক ও মানবিক সেবা' : '1. Non-Profit & Humanitarian Purpose'}
+                    </h4>
+                    <p className="text-[12px] text-slate-600 dark:text-zinc-400">
+                      {language === 'bn'
+                        ? 'দারুণ ডোনার্স একটি স্বেচ্ছাসেবী, সম্পূর্ণ অলাভজনক ও মানবিক প্ল্যাটফর্ম। রক্ত কেনাবেচা বা কোনো প্রকার আর্থিক লেনদেন কঠোরভাবে নিষিদ্ধ ও বেআইনি।'
+                        : 'Darun Donors operates strictly as a non-profit humanitarian matching portal connecting patients with voluntary donors. The sale or commercial trade of blood is illegal and prohibited.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
+                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      {language === 'bn' ? '২. রক্তদাতার যোগ্যতা ও সঠিক তথ্য' : '2. Donor Eligibility & Truthfulness'}
+                    </h4>
+                    <p className="text-[12px] text-slate-600 dark:text-zinc-400">
+                      {language === 'bn'
+                        ? 'রক্তদাতা হিসেবে নিবন্ধিত হতে হলে বয়স ন্যূনতম ১৮ বছর হতে হবে। নাম, ফোন নম্বর, রক্তের গ্রুপ এবং এলাকার সঠিক ও নির্ভুল তথ্য প্রদান করা আবশ্যক।'
+                        : 'Donors must be at least 18 years old. All profile details including name, phone number, blood group, and location must be genuine and accurate.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
+                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                      {language === 'bn' ? '৩. রক্তের অনুরোধে আচরণবিধি' : '3. Code of Conduct'}
+                    </h4>
+                    <p className="text-[12px] text-slate-600 dark:text-zinc-400">
+                      {language === 'bn'
+                        ? 'ভুয়া অনুরোধ পোস্ট করা, স্প্যামিং বা রক্তদাতাদের অকারণে বিরক্ত করা সম্পূর্ণ নিষিদ্ধ। অপব্যবহারকারী অ্যাকাউন্ট তৎক্ষণাৎ আজীবনের জন্য ব্লক করা হবে।'
+                        : 'Spamming, prank calls, or harassment of voluntary donors results in immediate account blacklisting and ban.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
+                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
+                      {language === 'bn' ? '৪. মেডিকেল ও আইনি দায়মুক্তি' : '4. Medical Screening Disclaimer'}
+                    </h4>
+                    <p className="text-[12px] text-slate-600 dark:text-zinc-400">
+                      {language === 'bn'
+                        ? 'রক্ত নেওয়ার আগে উপযুক্ত ডায়াগনস্টিক ল্যাবরেটরিতে ক্রস-ম্যাচিং ও স্ক্রিনিং টেস্ট (এইচআইভি, হেপাটাইটিস ইত্যাদি) নিশ্চিত করা রোগী ও পরিবারের নিজস্ব দায়িত্ব।'
+                        : 'Receiving patients and hospital caregivers are solely responsible for conducting certified medical screening and cross-matching before transfusion.'}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
+                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Eye className="w-3.5 h-3.5 text-red-500" />
+                      {language === 'bn' ? '১. সংগৃহীত তথ্য' : '1. Collected Information'}
+                    </h4>
+                    <p className="text-[12px] text-slate-600 dark:text-zinc-400">
+                      {language === 'bn'
+                        ? 'জরুরি রক্তদানের সুবিধার্থে আমরা নাম, ফোন নম্বর, রক্তের গ্রুপ, এলাকা এবং গুগল একাউন্ট আইডি সংরক্ষণ করি।'
+                        : 'We store your name, contact phone, blood group, area, and Google ID strictly to coordinate lifesaving donations.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
+                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                      {language === 'bn' ? '২. যোগাযোগ তথ্য সুরক্ষায় লগইন সুরক্ষা' : '2. Contact Information Shield'}
+                    </h4>
+                    <p className="text-[12px] text-slate-600 dark:text-zinc-400">
+                      {language === 'bn'
+                        ? 'কোনো অননুমোদিত বট বা সাধারণ ভিজিটর রক্তদাতার ফোন নম্বর দেখতে পারে না। শুধুমাত্র যাচাইকৃত নিবন্ধিত ব্যবহারকারীরাই জরুরি প্রয়োজনে নম্বর দেখতে পারেন।'
+                        : 'Phone numbers are never publicly broadcast to scrapers or bots. A visitor must be signed in to view verified contact details.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
+                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-blue-500" />
+                      {language === 'bn' ? '৩. কোনো বিজ্ঞাপন বা তথ্য বিক্রি নয়' : '3. Zero Data Sharing & Advertising'}
+                    </h4>
+                    <p className="text-[12px] text-slate-600 dark:text-zinc-400">
+                      {language === 'bn'
+                        ? 'আপনার ব্যক্তিগত বা যোগাযোগের তথ্য কোনো বিজ্ঞাপনদাতা, মার্কেটিং কোম্পানি বা তৃতীয় পক্ষের কাছে কখনই বিক্রি বা শেয়ার করা হয় না।'
+                        : 'We strictly never sell, monetize, rent, or share personal donor data with any third-party marketing or commercial entities.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
+                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Trash2 className="w-3.5 h-3.5 text-purple-500" />
+                      {language === 'bn' ? '৪. অ্যাকাউন্ট মুছে ফেলার অধিকার' : '4. Right to Deletion'}
+                    </h4>
+                    <p className="text-[12px] text-slate-600 dark:text-zinc-400">
+                      {language === 'bn'
+                        ? 'আপনি যেকোনো সময় আপনার ড্যাশবোর্ড থেকে অ্যাকাউন্ট এবং ডাটা স্থায়ীভাবে মুছে ফেলতে পারেন।'
+                        : 'You retain full autonomy to edit your profile or permanently erase your account and logs at any time.'}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Footer with "I Agree" Action */}
+            <div className="pt-4 mt-2 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setLegalModalTab(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white cursor-pointer"
+              >
+                {language === 'bn' ? 'বন্ধ করুন' : 'Close'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setRegAgreeTerms(true);
+                  setLegalModalTab(null);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs shadow-md shadow-red-500/20 active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                <span>{language === 'bn' ? 'সম্মতি দিয়ে গ্রহণ করুন' : 'Accept & Agree'}</span>
               </button>
             </div>
           </div>

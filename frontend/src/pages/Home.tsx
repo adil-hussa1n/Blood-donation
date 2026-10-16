@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Navigation, Leaf, Lock } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
 import QuickStats from '../components/QuickStats';
@@ -9,7 +9,8 @@ import GoogleAuthButton from '../components/GoogleAuthButton';
 import { Donor, EmergencyRequest } from '../types';
 
 export default function Home() {
-  const { donors, emergencyRequests, currentDonor, loading, error, language, t } = useApp();
+  const { donors, emergencyRequests, currentDonor, setCurrentDonor, loading, error, language, t } = useApp();
+  const navigate = useNavigate();
   const [filterOpen, setFilterOpen] = useState(false);
 
   // Active applied filters (used for rendering the list)
@@ -839,8 +840,25 @@ export default function Home() {
             <div className="space-y-3 pt-1">
               <GoogleAuthButton
                 mode="login"
-                onSuccess={() => {
+                onSuccess={(result: any) => {
                   setShowLoginPromptModal(false);
+                  
+                  if (result?.isNewUser && result?.googleProfile) {
+                    // Redirect to registration page with googleProfile prefilled so they complete their profile
+                    navigate('/register', { state: { googleProfile: result.googleProfile } });
+                    return;
+                  }
+
+                  if (result?.donor) {
+                    const normalized = normalizeDonor(result.donor);
+                    try {
+                      localStorage.setItem('bb_donor_session', JSON.stringify({ donor: normalized, googleAuth: true }));
+                    } catch (e) {
+                      console.error('Failed to store donor session:', e);
+                    }
+                    setCurrentDonor(normalized);
+                  }
+
                   if (targetDonorForLogin) {
                     setRevealedContacts(prev => ({ ...prev, [targetDonorForLogin.id]: true }));
                     setTargetDonorForLogin(null);
