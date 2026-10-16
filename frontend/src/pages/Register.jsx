@@ -2057,10 +2057,13 @@ export default function Register() {
 
       {/* In-Place Terms & Privacy Policy Interactive Modal */}
       {legalModalTab && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/75 backdrop-blur-sm animate-fade-in">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/80 dark:bg-black/80 backdrop-blur-md animate-fade-in"
+          onClick={() => setLegalModalTab(null)}
+        >
           <div
-            className="relative w-full max-w-2xl max-h-[88vh] rounded-3xl p-5 sm:p-7 shadow-2xl border border-slate-200/80 dark:border-zinc-800 flex flex-col animate-scale-up"
-            style={{ backgroundColor: 'var(--modal-bg, #ffffff)' }}
+            className="relative w-full max-w-2xl max-h-[88vh] rounded-3xl p-5 sm:p-7 shadow-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col animate-scale-up z-10"
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-zinc-800 shrink-0">
