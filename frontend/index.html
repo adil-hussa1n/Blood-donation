@@ -1,533 +1,572 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5" />
 
-    <!-- Primary Meta -->
-    <title>Darun Donors - Blood Donation Platform</title>
-    <meta name="title" content="Darun Donors - Blood Donation Platform" />
-    <meta name="description" content="Darun Donors connects blood donors and emergency seekers in Sylhet. Find verified blood donors, check cooldown status, and save lives." />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5" />
 
-    <!-- Open Graph / Facebook / WhatsApp / LinkedIn / Telegram -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://blood.daruntech.com/" />
-    <meta property="og:title" content="Darun Donors - Blood Donation Platform" />
-    <meta property="og:description" content="Find voluntary blood donors, post emergency blood requests, and save lives across Sylhet Division." />
-    <meta property="og:image" content="/og-image.jpg" />
-    <meta property="og:image:secure_url" content="/og-image.jpg" />
-    <meta property="og:image:type" content="image/jpeg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Darun Donors Official Banner" />
-    <meta property="og:site_name" content="Darun Donors" />
+  <!-- Primary Meta -->
+  <title>Darun Donors - Blood Donation Platform</title>
+  <meta name="title" content="Darun Donors - Blood Donation Platform" />
+  <meta name="description"
+    content="Darun Donors connects blood donors and emergency seekers in Sylhet. Find verified blood donors, check cooldown status, and save lives." />
 
-    <!-- Twitter / X Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://blood.daruntech.com/" />
-    <meta name="twitter:title" content="Darun Donors - Blood Donation Platform" />
-    <meta name="twitter:description" content="Find voluntary blood donors, post emergency blood requests, and save lives across Sylhet Division." />
-    <meta name="twitter:image" content="/og-image.jpg" />
-    <meta name="twitter:image:alt" content="Darun Donors Official Banner" />
+  <!-- Open Graph / Facebook / WhatsApp / LinkedIn / Telegram -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://donors.daruntech.com/" />
+  <meta property="og:title" content="Darun Donors - Blood Donation Platform" />
+  <meta property="og:description"
+    content="Find voluntary blood donors, post emergency blood requests, and save lives across Sylhet Division." />
+  <meta property="og:image" content="/og-image.jpg" />
+  <meta property="og:image:secure_url" content="/og-image.jpg" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Darun Donors Official Banner" />
+  <meta property="og:site_name" content="Darun Donors" />
 
-    <!-- Mobile Browser Theme (Matches Header Bar on iOS Safari & Android Chrome) -->
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
-    <meta name="color-scheme" content="dark light" />
+  <!-- Twitter / X Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://donors.daruntech.com/" />
+  <meta name="twitter:title" content="Darun Donors - Blood Donation Platform" />
+  <meta name="twitter:description"
+    content="Find voluntary blood donors, post emergency blood requests, and save lives across Sylhet Division." />
+  <meta name="twitter:image" content="/og-image.jpg" />
+  <meta name="twitter:image:alt" content="Darun Donors Official Banner" />
 
-    <!-- Apple / Safari iOS Home Screen Web App -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Darun Donors" />
-    <meta name="format-detection" content="telephone=yes" />
+  <!-- Mobile Browser Theme (Matches Header Bar on iOS Safari & Android Chrome) -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
+  <meta name="color-scheme" content="dark light" />
 
-    <!-- Favicon & Brand Icons -->
-    <link rel="icon" type="image/png" href="/logo.png" />
-    <link rel="apple-touch-icon" href="/logo.png" />
+  <!-- Apple / Safari iOS Home Screen Web App -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Darun Donors" />
+  <meta name="format-detection" content="telephone=yes" />
 
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json" />
+  <!-- Favicon & Brand Icons -->
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/logo.png" />
 
-    <!-- Google Identity Services (GIS) for Google Sign-In & Registration -->
-    <link rel="preconnect" href="https://accounts.google.com" />
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json" />
 
-    <!-- Preconnect: establish early connections to critical origins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+  <!-- Google Identity Services (GIS) for Google Sign-In & Registration -->
+  <link rel="preconnect" href="https://accounts.google.com" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-    <!-- Google Fonts: preload asynchronously so first paint is not blocked on mobile networks -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" />
-    </noscript>
-    
-    <!-- Theme check initialization to prevent flashes on reload -->
-    <script>
-      (function() {
-        var theme = 'light';
-        try {
-          theme = localStorage.getItem('theme') || 'light';
-        } catch (e) {}
-        var isDark = theme === 'dark';
-        var bg = isDark ? '#09090b' : '#f8fafc';
-        if (isDark) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-        try {
-          // Set as CSS custom property so preloader CSS uses it at first paint
-          document.documentElement.style.setProperty('--pl-bg', bg);
-          document.documentElement.style.backgroundColor = bg;
-          document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
-        } catch (e) {}
-      })();
-    </script>
+  <!-- Preconnect: establish early connections to critical origins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
 
-    <style>
-      html {
-        min-height: 100%;
-        min-height: 100dvh;
-        background-color: #f8fafc;
-        /* --pl-bg is set by inline JS before first paint */
-        --pl-bg: #f8fafc;
+  <!-- Google Fonts: preload asynchronously so first paint is not blocked on mobile networks -->
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" />
+  </noscript>
+
+  <!-- Theme check initialization to prevent flashes on reload -->
+  <script>
+    (function () {
+      var theme = 'light';
+      try {
+        theme = localStorage.getItem('theme') || 'light';
+      } catch (e) { }
+      var isDark = theme === 'dark';
+      var bg = isDark ? '#09090b' : '#f8fafc';
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
       }
+      try {
+        // Set as CSS custom property so preloader CSS uses it at first paint
+        document.documentElement.style.setProperty('--pl-bg', bg);
+        document.documentElement.style.backgroundColor = bg;
+        document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+      } catch (e) { }
+    })();
+  </script>
 
-      html.dark {
-        background-color: #09090b;
-        --pl-bg: #09090b;
-      }
+  <style>
+    html {
+      min-height: 100%;
+      min-height: 100dvh;
+      background-color: #f8fafc;
+      /* --pl-bg is set by inline JS before first paint */
+      --pl-bg: #f8fafc;
+    }
 
-      body {
-        margin: 0;
-        min-height: 100%;
-        min-height: 100dvh;
-        background-color: inherit;
-      }
+    html.dark {
+      background-color: #09090b;
+      --pl-bg: #09090b;
+    }
 
-      /* Lock scroll AND overflow on html+body so no gap shows through */
-      html.preloader-html,
-      body.preloader-active {
-        height: 100% !important;
-        height: 100dvh !important;
-        overflow: hidden !important;
-        touch-action: none;
-        padding: 0 !important;
-        margin: 0 !important;
-        overscroll-behavior: none;
-      }
+    body {
+      margin: 0;
+      min-height: 100%;
+      min-height: 100dvh;
+      background-color: inherit;
+    }
 
-      @keyframes preloader-enter {
-        from {
-          opacity: 0;
-          transform: translate3d(0, 14px, 0) scale(0.97);
-        }
-        to {
-          opacity: 1;
-          transform: translate3d(0, 0, 0) scale(1);
-        }
-      }
+    /* Lock scroll AND overflow on html+body so no gap shows through */
+    html.preloader-html,
+    body.preloader-active {
+      height: 100% !important;
+      height: 100dvh !important;
+      overflow: hidden !important;
+      touch-action: none;
+      padding: 0 !important;
+      margin: 0 !important;
+      overscroll-behavior: none;
+    }
 
-      @keyframes preloader-heartbeat {
-        0%, 100% { transform: scale(1); }
-        16% { transform: scale(1.07); }
-        32% { transform: scale(1); }
-        48% { transform: scale(1.04); }
-        64% { transform: scale(1); }
-      }
-
-      @keyframes preloader-ripple {
-        0% {
-          opacity: 0.55;
-          transform: scale(0.88);
-        }
-        100% {
-          opacity: 0;
-          transform: scale(1.75);
-        }
-      }
-
-      @keyframes preloader-bar {
-        0% { transform: translate3d(-110%, 0, 0); }
-        100% { transform: translate3d(280%, 0, 0); }
-      }
-
-      @keyframes preloader-shimmer {
-        0%, 100% { background-position: 0% center; }
-        50% { background-position: 100% center; }
-      }
-
-      .static-preloader {
-        position: fixed;
-        /* Bleed 100px beyond all edges to cover Safari status/navigation bar safe areas and elastic scrolling */
-        top: -100px;
-        left: -100px;
-        right: -100px;
-        bottom: -100px;
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        font-family: system-ui, -apple-system, sans-serif;
-        /* Use the CSS custom property set synchronously by the theme script */
-        background: var(--pl-bg, #fafafa);
-        color: #18181b;
-        opacity: 1;
-        visibility: visible;
-        transition: opacity 0.45s ease, visibility 0.45s ease;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-
-      .static-preloader__backdrop {
-        position: absolute;
-        inset: 0;
-        background: var(--pl-bg, #fafafa);
-        z-index: 0;
-        pointer-events: none;
-      }
-
-      .static-preloader::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        z-index: 1;
-        background:
-          radial-gradient(ellipse 90% 55% at 50% -15%, rgba(239, 68, 68, 0.14), transparent 70%),
-          radial-gradient(ellipse 55% 45% at 100% 100%, rgba(244, 63, 94, 0.09), transparent 65%),
-          radial-gradient(ellipse 45% 40% at 0% 85%, rgba(239, 68, 68, 0.06), transparent 60%);
-      }
-
-      .static-preloader--hide {
+    @keyframes preloader-enter {
+      from {
         opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
+        transform: translate3d(0, 14px, 0) scale(0.97);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+    }
+
+    @keyframes preloader-heartbeat {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      16% {
+        transform: scale(1.07);
+      }
+
+      32% {
+        transform: scale(1);
+      }
+
+      48% {
+        transform: scale(1.04);
+      }
+
+      64% {
+        transform: scale(1);
+      }
+    }
+
+    @keyframes preloader-ripple {
+      0% {
+        opacity: 0.55;
+        transform: scale(0.88);
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(1.75);
+      }
+    }
+
+    @keyframes preloader-bar {
+      0% {
+        transform: translate3d(-110%, 0, 0);
+      }
+
+      100% {
+        transform: translate3d(280%, 0, 0);
+      }
+    }
+
+    @keyframes preloader-shimmer {
+
+      0%,
+      100% {
+        background-position: 0% center;
+      }
+
+      50% {
+        background-position: 100% center;
+      }
+    }
+
+    .static-preloader {
+      position: fixed;
+      /* Bleed 100px beyond all edges to cover Safari status/navigation bar safe areas and elastic scrolling */
+      top: -100px;
+      left: -100px;
+      right: -100px;
+      bottom: -100px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      /* Use the CSS custom property set synchronously by the theme script */
+      background: var(--pl-bg, #fafafa);
+      color: #18181b;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .static-preloader__backdrop {
+      position: absolute;
+      inset: 0;
+      background: var(--pl-bg, #fafafa);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .static-preloader::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse 90% 55% at 50% -15%, rgba(239, 68, 68, 0.14), transparent 70%),
+        radial-gradient(ellipse 55% 45% at 100% 100%, rgba(244, 63, 94, 0.09), transparent 65%),
+        radial-gradient(ellipse 45% 40% at 0% 85%, rgba(239, 68, 68, 0.06), transparent 60%);
+    }
+
+    .static-preloader--hide {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .static-preloader--hide .static-preloader__inner {
+      opacity: 0;
+      transform: translate3d(0, -8px, 0) scale(0.98);
+    }
+
+    .static-preloader__inner {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 384px;
+      padding:
+        max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+      text-align: center;
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      animation: preloader-enter 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .static-preloader__logo-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 88px;
+      height: 88px;
+      margin-bottom: 22px;
+    }
+
+    .static-preloader__logo-wrap::before,
+    .static-preloader__logo-wrap::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      border: 2px solid rgba(239, 68, 68, 0.32);
+      animation: preloader-ripple 2.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+      will-change: transform, opacity;
+    }
+
+    .static-preloader__logo-wrap::after {
+      animation-delay: 1.1s;
+    }
+
+    .static-preloader__logo {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 78px;
+      height: 78px;
+      animation: preloader-heartbeat 1.9s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    .static-preloader__logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 12px 24px rgba(239, 68, 68, 0.4));
+    }
+
+    .static-preloader__copy {
+      animation: preloader-enter 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+    }
+
+    .static-preloader__title {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin: 0 0 6px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .static-preloader__brand {
+      background: linear-gradient(90deg, #ef4444, #f43f5e, #fb7185, #ef4444);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: preloader-shimmer 4s ease-in-out infinite;
+    }
+
+    .static-title-blood {
+      font-weight: 800;
+      color: #18181b;
+    }
+
+    .static-preloader__tagline {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(239, 68, 68, 0.85);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      margin: 0 0 16px 0;
+    }
+
+    .static-preloader__sponsor {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 16px 6px 8px;
+      border-radius: 9999px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(243, 232, 255, 0.85));
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      box-shadow: 0 4px 14px -2px rgba(147, 51, 234, 0.12), 0 1px 3px rgba(0, 0, 0, 0.05);
+      text-decoration: none;
+      margin-top: 10px;
+      transition: all 0.25s ease-out;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .static-preloader__sponsor-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7e22ce, #9333ea);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(126, 34, 206, 0.25);
+      flex-shrink: 0;
+      padding: 3px;
+    }
+
+    .static-preloader__sponsor-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    .static-preloader__sponsor-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      line-height: 1.25;
+    }
+
+    .static-preloader__sponsor-sub {
+      font-size: 8.5px;
+      font-weight: 800;
+      color: #9333ea;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .static-preloader__sponsor-sub::after {
+      content: "•";
+      font-size: 8px;
+      opacity: 0.6;
+    }
+
+    .static-preloader__sponsor-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #10b981;
+      display: inline-block;
+    }
+
+    .static-preloader__sponsor-text {
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      background: linear-gradient(90deg, #581c87, #7e22ce, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .dark .static-preloader__sponsor {
+      background: linear-gradient(135deg, rgba(24, 24, 27, 0.85), rgba(59, 7, 100, 0.35));
+      border-color: rgba(168, 85, 247, 0.35);
+      box-shadow: 0 4px 16px -2px rgba(168, 85, 247, 0.2);
+    }
+
+    .dark .static-preloader__sponsor-sub {
+      color: #d8b4fe;
+    }
+
+    .dark .static-preloader__sponsor-text {
+      background: linear-gradient(90deg, #f5f3ff, #e9d5ff, #d8b4fe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .static-preloader__bar {
+      position: fixed;
+      z-index: 2;
+      bottom: max(36px, calc(env(safe-area-inset-bottom) + 20px));
+      left: 50%;
+      width: min(148px, 42vw);
+      height: 3px;
+      border-radius: 999px;
+      background: rgba(239, 68, 68, 0.14);
+      overflow: hidden;
+      transform: translate3d(-50%, 0, 0);
+    }
+
+    .static-preloader__bar-fill {
+      display: block;
+      width: 42%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, transparent, #ef4444, #f43f5e, transparent);
+      animation: preloader-bar 1.15s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    .dark .static-preloader {
+      color: #fafafa;
+    }
+
+    .dark .static-preloader__backdrop {
+      background: var(--pl-bg, #09090b);
+    }
+
+    .dark .static-preloader::before {
+      background:
+        radial-gradient(ellipse 90% 55% at 50% -15%, rgba(239, 68, 68, 0.2), transparent 70%),
+        radial-gradient(ellipse 55% 45% at 100% 100%, rgba(244, 63, 94, 0.12), transparent 65%),
+        radial-gradient(ellipse 45% 40% at 0% 85%, rgba(239, 68, 68, 0.08), transparent 60%);
+    }
+
+    .dark .static-preloader__logo-wrap::before,
+    .dark .static-preloader__logo-wrap::after {
+      border-color: rgba(248, 113, 113, 0.35);
+    }
+
+    .dark .static-title-blood {
+      color: #fafafa;
+    }
+
+    .dark .static-preloader__bar {
+      background: rgba(248, 113, 113, 0.18);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .static-preloader,
+      .static-preloader__inner {
+        transition: none;
+      }
+
+      .static-preloader__inner,
+      .static-preloader__copy,
+      .static-preloader__logo,
+      .static-preloader__logo-wrap::before,
+      .static-preloader__logo-wrap::after,
+      .static-preloader__brand,
+      .static-preloader__bar-fill {
+        animation: none !important;
       }
 
       .static-preloader--hide .static-preloader__inner {
-        opacity: 0;
-        transform: translate3d(0, -8px, 0) scale(0.98);
+        transform: none;
       }
+    }
+  </style>
+</head>
 
-      .static-preloader__inner {
-        position: relative;
-        z-index: 2;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        max-width: 384px;
-        padding:
-          max(24px, env(safe-area-inset-top))
-          max(24px, env(safe-area-inset-right))
-          max(24px, env(safe-area-inset-bottom))
-          max(24px, env(safe-area-inset-left));
-        text-align: center;
-        transition: opacity 0.45s ease, transform 0.45s ease;
-        animation: preloader-enter 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-      }
+<body class="preloader-active">
+  <script>
+    window.__PRELOADER_START__ = (window.performance && window.performance.now) ? window.performance.now() : Date.now();
+    // Lock html scroll and apply bg inline before preloader paints
+    try {
+      document.documentElement.classList.add('preloader-html');
+    } catch (e) { }
+  </script>
 
-      .static-preloader__logo-wrap {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 88px;
-        height: 88px;
-        margin-bottom: 22px;
-      }
-
-      .static-preloader__logo-wrap::before,
-      .static-preloader__logo-wrap::after {
-        content: "";
-        position: absolute;
-        inset: 6px;
-        border-radius: 50%;
-        border: 2px solid rgba(239, 68, 68, 0.32);
-        animation: preloader-ripple 2.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-        will-change: transform, opacity;
-      }
-
-      .static-preloader__logo-wrap::after {
-        animation-delay: 1.1s;
-      }
-
-      .static-preloader__logo {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 78px;
-        height: 78px;
-        animation: preloader-heartbeat 1.9s ease-in-out infinite;
-        will-change: transform;
-      }
-
-      .static-preloader__logo img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        filter: drop-shadow(0 12px 24px rgba(239, 68, 68, 0.4));
-      }
-
-      .static-preloader__copy {
-        animation: preloader-enter 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
-      }
-
-      .static-preloader__title {
-        font-size: 26px;
-        font-weight: 900;
-        letter-spacing: -0.02em;
-        margin: 0 0 6px 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        justify-content: center;
-      }
-
-      .static-preloader__brand {
-        background: linear-gradient(90deg, #ef4444, #f43f5e, #fb7185, #ef4444);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        animation: preloader-shimmer 4s ease-in-out infinite;
-      }
-
-      .static-title-blood {
-        font-weight: 800;
-        color: #18181b;
-      }
-
-      .static-preloader__tagline {
-        font-size: 11px;
-        font-weight: 700;
-        color: rgba(239, 68, 68, 0.85);
-        text-transform: uppercase;
-        letter-spacing: 0.18em;
-        margin: 0 0 16px 0;
-      }
-
-      .static-preloader__sponsor {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        padding: 6px 16px 6px 8px;
-        border-radius: 9999px;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(243, 232, 255, 0.85));
-        border: 1px solid rgba(168, 85, 247, 0.35);
-        box-shadow: 0 4px 14px -2px rgba(147, 51, 234, 0.12), 0 1px 3px rgba(0, 0, 0, 0.05);
-        text-decoration: none;
-        margin-top: 10px;
-        transition: all 0.25s ease-out;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-      }
-
-      .static-preloader__sponsor-icon {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #7e22ce, #9333ea);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 8px rgba(126, 34, 206, 0.25);
-        flex-shrink: 0;
-        padding: 3px;
-      }
-
-      .static-preloader__sponsor-icon img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        filter: brightness(0) invert(1);
-      }
-
-      .static-preloader__sponsor-info {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        text-align: left;
-        line-height: 1.25;
-      }
-
-      .static-preloader__sponsor-sub {
-        font-size: 8.5px;
-        font-weight: 800;
-        color: #9333ea;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .static-preloader__sponsor-sub::after {
-        content: "•";
-        font-size: 8px;
-        opacity: 0.6;
-      }
-
-      .static-preloader__sponsor-dot {
-        width: 4px;
-        height: 4px;
-        border-radius: 50%;
-        background: #10b981;
-        display: inline-block;
-      }
-
-      .static-preloader__sponsor-text {
-        font-size: 11.5px;
-        font-weight: 800;
-        letter-spacing: -0.01em;
-        background: linear-gradient(90deg, #581c87, #7e22ce, #a855f7);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-
-      .dark .static-preloader__sponsor {
-        background: linear-gradient(135deg, rgba(24, 24, 27, 0.85), rgba(59, 7, 100, 0.35));
-        border-color: rgba(168, 85, 247, 0.35);
-        box-shadow: 0 4px 16px -2px rgba(168, 85, 247, 0.2);
-      }
-
-      .dark .static-preloader__sponsor-sub {
-        color: #d8b4fe;
-      }
-
-      .dark .static-preloader__sponsor-text {
-        background: linear-gradient(90deg, #f5f3ff, #e9d5ff, #d8b4fe);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-
-      .static-preloader__bar {
-        position: fixed;
-        z-index: 2;
-        bottom: max(36px, calc(env(safe-area-inset-bottom) + 20px));
-        left: 50%;
-        width: min(148px, 42vw);
-        height: 3px;
-        border-radius: 999px;
-        background: rgba(239, 68, 68, 0.14);
-        overflow: hidden;
-        transform: translate3d(-50%, 0, 0);
-      }
-
-      .static-preloader__bar-fill {
-        display: block;
-        width: 42%;
-        height: 100%;
-        border-radius: inherit;
-        background: linear-gradient(90deg, transparent, #ef4444, #f43f5e, transparent);
-        animation: preloader-bar 1.15s ease-in-out infinite;
-        will-change: transform;
-      }
-
-      .dark .static-preloader {
-        color: #fafafa;
-      }
-
-      .dark .static-preloader__backdrop {
-        background: var(--pl-bg, #09090b);
-      }
-
-      .dark .static-preloader::before {
-        background:
-          radial-gradient(ellipse 90% 55% at 50% -15%, rgba(239, 68, 68, 0.2), transparent 70%),
-          radial-gradient(ellipse 55% 45% at 100% 100%, rgba(244, 63, 94, 0.12), transparent 65%),
-          radial-gradient(ellipse 45% 40% at 0% 85%, rgba(239, 68, 68, 0.08), transparent 60%);
-      }
-
-      .dark .static-preloader__logo-wrap::before,
-      .dark .static-preloader__logo-wrap::after {
-        border-color: rgba(248, 113, 113, 0.35);
-      }
-
-      .dark .static-title-blood {
-        color: #fafafa;
-      }
-
-      .dark .static-preloader__bar {
-        background: rgba(248, 113, 113, 0.18);
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .static-preloader,
-        .static-preloader__inner {
-          transition: none;
-        }
-
-        .static-preloader__inner,
-        .static-preloader__copy,
-        .static-preloader__logo,
-        .static-preloader__logo-wrap::before,
-        .static-preloader__logo-wrap::after,
-        .static-preloader__brand,
-        .static-preloader__bar-fill {
-          animation: none !important;
-        }
-
-        .static-preloader--hide .static-preloader__inner {
-          transform: none;
-        }
-      }
-    </style>
-  </head>
-  <body class="preloader-active">
-    <script>
-      window.__PRELOADER_START__ = (window.performance && window.performance.now) ? window.performance.now() : Date.now();
-      // Lock html scroll and apply bg inline before preloader paints
-      try {
-        document.documentElement.classList.add('preloader-html');
-      } catch (e) {}
-    </script>
-
-    <!-- Lightweight static shell shown while the JS bundle downloads -->
-    <div id="static-preloader" class="static-preloader" role="status" aria-live="polite" aria-label="Loading Darun Donors">
-      <div class="static-preloader__backdrop" aria-hidden="true"></div>
-      <div class="static-preloader__inner">
-        <div class="static-preloader__logo-wrap">
-          <div class="static-preloader__logo">
-            <img src="/logo.png" alt="Darun Donors" />
-          </div>
-        </div>
-
-        <div class="static-preloader__copy">
-          <h1 class="static-preloader__title">
-            <span class="static-preloader__brand">Darun</span>
-            <span class="static-title-blood">Donors</span>
-          </h1>
-          <p class="static-preloader__tagline">Emergency Blood Donation Network</p>
-          <a href="https://daruntech.com" target="_blank" rel="noopener noreferrer" class="static-preloader__sponsor" title="Designed & Developed by Darun tech Private Limited">
-            <span class="static-preloader__sponsor-icon">
-              <img src="/daruntech-icon.png" alt="Darun Tech Logo" />
-            </span>
-            <div class="static-preloader__sponsor-info">
-              <span class="static-preloader__sponsor-sub">
-                Designed & Developed <span class="static-preloader__sponsor-dot"></span>
-              </span>
-              <span class="static-preloader__sponsor-text">Darun tech Private Limited</span>
-            </div>
-          </a>
+  <!-- Lightweight static shell shown while the JS bundle downloads -->
+  <div id="static-preloader" class="static-preloader" role="status" aria-live="polite"
+    aria-label="Loading Darun Donors">
+    <div class="static-preloader__backdrop" aria-hidden="true"></div>
+    <div class="static-preloader__inner">
+      <div class="static-preloader__logo-wrap">
+        <div class="static-preloader__logo">
+          <img src="/logo.png" alt="Darun Donors" />
         </div>
       </div>
 
-      <div class="static-preloader__bar" aria-hidden="true">
-        <span class="static-preloader__bar-fill"></span>
+      <div class="static-preloader__copy">
+        <h1 class="static-preloader__title">
+          <span class="static-preloader__brand">Darun</span>
+          <span class="static-title-blood">Donors</span>
+        </h1>
+        <p class="static-preloader__tagline">Emergency Blood Donation Network</p>
+        <a href="https://daruntech.com" target="_blank" rel="noopener noreferrer" class="static-preloader__sponsor"
+          title="Designed & Developed by Darun tech Private Limited">
+          <span class="static-preloader__sponsor-icon">
+            <img src="/daruntech-icon.png" alt="Darun Tech Logo" />
+          </span>
+          <div class="static-preloader__sponsor-info">
+            <span class="static-preloader__sponsor-sub">
+              Designed & Developed <span class="static-preloader__sponsor-dot"></span>
+            </span>
+            <span class="static-preloader__sponsor-text">Darun tech Private Limited</span>
+          </div>
+        </a>
       </div>
     </div>
 
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+    <div class="static-preloader__bar" aria-hidden="true">
+      <span class="static-preloader__bar-fill"></span>
+    </div>
+  </div>
+
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

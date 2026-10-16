@@ -1,13 +1,26 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Flame, AlertTriangle, CheckCircle2, Phone, MapPin, ClipboardList, MessageCircle, Calendar, Trash2, Key, X, Clock, Eye, EyeOff, ChevronLeft, ChevronRight, ShieldCheck, Check, LayoutGrid, LayoutList, Navigation, Search, PlusCircle } from 'lucide-react';
+import { Flame, AlertTriangle, CheckCircle2, Phone, MapPin, ClipboardList, MessageCircle, Calendar, Trash2, Key, X, Clock, Eye, EyeOff, ChevronLeft, ChevronRight, ShieldCheck, Check, LayoutGrid, LayoutList, Navigation, Search, PlusCircle, BellRing, Bell } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, getAreaLabel } from '../context/AppContext';
 import TimelineTrack from '../components/TimelineTrack';
 import EmergencyForm from '../components/EmergencyForm';
 import { EmergencyRequest } from '../types';
 
 export default function Emergency() {
-  const { emergencyRequests, deleteEmergencyRequest, updateEmergencyRequestStatus, loading, isAdmin, currentDonor, language, t } = useApp();
+  const {
+    emergencyRequests,
+    deleteEmergencyRequest,
+    updateEmergencyRequestStatus,
+    loading,
+    isAdmin,
+    currentDonor,
+    language,
+    t,
+    isNotificationsEnabled,
+    toggleNotifications,
+    testNotification,
+    isNotificationsSupported,
+  } = useApp();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [feedBloodFilter, setFeedBloodFilter] = useState('');
@@ -621,22 +634,60 @@ export default function Emergency() {
             )}
           </button>
 
-          {/* Mobile Filter Toggle */}
-          <div className="flex md:hidden">
-            <button
-              type="button"
-              onClick={() => setFilterOpen(prev => !prev)}
-              className="w-full flex items-center justify-between px-4 py-2.5 glass-panel rounded-2xl border border-slate-200/50 dark:border-zinc-800/50 text-xs font-bold text-slate-700 dark:text-zinc-300 cursor-pointer shadow-xs"
-            >
-              <span className="flex items-center gap-2">
-                <Search className="w-4 h-4 text-red-500" />
-                {t('filterDonorsTitle')}
-                {(feedBloodFilter || feedAreaFilter) && (
-                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+          <div className="flex items-center gap-2">
+            {/* Browser Notification Alert Toggle */}
+            {isNotificationsSupported && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={toggleNotifications}
+                  className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer shadow-xs ${
+                    isNotificationsEnabled
+                      ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20'
+                      : 'bg-white dark:bg-zinc-900 border-slate-200/80 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:border-rose-400 hover:text-rose-500'
+                  }`}
+                  title={isNotificationsEnabled ? (t('alertsActiveButton') || 'Alerts Active') : (t('enableAlertsButton') || 'Enable Browser Alerts')}
+                >
+                  {isNotificationsEnabled ? (
+                    <BellRing className="w-4 h-4 text-rose-500 animate-pulse" />
+                  ) : (
+                    <Bell className="w-4 h-4 text-slate-500" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {isNotificationsEnabled ? (t('alertsActiveButton') || 'Alerts Active') : (t('enableAlertsButton') || 'Enable Alerts')}
+                  </span>
+                </button>
+
+                {isNotificationsEnabled && (
+                  <button
+                    type="button"
+                    onClick={testNotification}
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 transition-colors border border-slate-200/60 dark:border-zinc-700/60 cursor-pointer shadow-xs"
+                    title={t('testAlertButton') || 'Send Test Notification'}
+                  >
+                    <span>{t('testAlertButton') || 'Test'}</span>
+                  </button>
                 )}
-              </span>
-              <span className={`text-slate-400 text-xs transition-transform duration-200 ${filterOpen ? 'rotate-180' : ''}`}>▼</span>
-            </button>
+              </div>
+            )}
+
+            {/* Mobile Filter Toggle */}
+            <div className="flex md:hidden">
+              <button
+                type="button"
+                onClick={() => setFilterOpen(prev => !prev)}
+                className="flex items-center justify-between gap-2 px-4 py-2.5 glass-panel rounded-2xl border border-slate-200/50 dark:border-zinc-800/50 text-xs font-bold text-slate-700 dark:text-zinc-300 cursor-pointer shadow-xs"
+              >
+                <span className="flex items-center gap-2">
+                  <Search className="w-4 h-4 text-red-500" />
+                  {t('filterDonorsTitle')}
+                  {(feedBloodFilter || feedAreaFilter) && (
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  )}
+                </span>
+                <span className={`text-slate-400 text-xs transition-transform duration-200 ${filterOpen ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+            </div>
           </div>
         </div>
 

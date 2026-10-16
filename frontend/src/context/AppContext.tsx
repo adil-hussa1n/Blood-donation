@@ -3,6 +3,17 @@ import { flushSync } from 'react-dom';
 import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { dbService } from '../services/db';
 import { isDemoMode } from '../services/apiConfig';
+import {
+  registerServiceWorker,
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
+  isNotificationsEnabledInApp,
+  setNotificationsEnabledInApp,
+  sendEmergencyNotification,
+  isBloodCompatible,
+  isLocationMatched,
+} from '../services/notificationService';
 
 import { appStorage } from '../services/storage';
 
@@ -72,6 +83,12 @@ interface AppContextType {
   getSupportRequests: () => Promise<{ data?: any[]; error?: any }>;
   showToast: (message: string, type?: 'success' | 'error' | 'warning') => void;
   checkIfBlocked: (phone: string) => Promise<{ data: boolean; error?: any }>;
+  notificationPermission: NotificationPermission;
+  isNotificationsSupported: boolean;
+  isNotificationsEnabled: boolean;
+  enableNotifications: () => Promise<boolean>;
+  toggleNotifications: () => Promise<void>;
+  testNotification: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -648,6 +665,18 @@ export const TRANSLATIONS = {
     andText: 'and',
     privacyPolicyText: 'Privacy Policy',
     mustAgreeTermsError: 'You must agree to the Terms & Conditions and Privacy Policy to register.',
+
+    // Browser Emergency Notifications
+    notificationsEnabledToast: 'Emergency blood alerts enabled! You will be notified instantly when a matching emergency request is posted.',
+    notificationsDisabledToast: 'Emergency notifications disabled.',
+    notificationsBlockedToast: 'Notifications are blocked in your browser settings. Please click the lock icon in your address bar to enable notifications.',
+    notificationsUnsupportedToast: 'Browser notifications are not supported on this device or browser.',
+    enableNotificationsTitle: 'Live Emergency Alerts',
+    enableNotificationsDesc: 'Get instant browser notifications on Android, iOS, or Windows whenever an emergency blood request matches your blood group and location.',
+    enableAlertsButton: 'Enable Emergency Alerts',
+    alertsActiveButton: 'Alerts Active',
+    notificationTestSent: 'A test emergency blood alert has been triggered!',
+    testAlertButton: 'Send Test Alert',
   },
   bn: {
     // Navigation
@@ -1076,6 +1105,18 @@ export const TRANSLATIONS = {
     andText: 'ও',
     privacyPolicyText: 'গোপনীয়তা নীতি',
     mustAgreeTermsError: 'নিবন্ধন সম্পন্ন করতে শর্তাবলী ও গোপনীয়তা নীতিতে সম্মতি জানানো আবশ্যক।',
+
+    // Browser Emergency Notifications
+    notificationsEnabledToast: 'জরুরি রক্তের নোটিফিকেশন চালু হয়েছে! আপনার রক্তের গ্রুপ ও এলাকার কোনো অনুরোধ এলে সাথে সাথে ব্রাউজারে নোটিফিকেশন পাবেন।',
+    notificationsDisabledToast: 'জরুরি রক্তের নোটিফিকেশন বন্ধ করা হয়েছে।',
+    notificationsBlockedToast: 'আপনার ব্রাউজার সেটিংসে নোটিফিকেশন ব্লক করা আছে। দয়া করে অ্যাড্রেস বারের লক আইকনে ক্লিক করে নোটিফিকেশন অনুমোদন করুন।',
+    notificationsUnsupportedToast: 'আপনার ডিভাইস বা ব্রাউজারে পুশ নোটিফিকেশন সমর্থিত নয়।',
+    enableNotificationsTitle: 'লাইভ জরুরি রক্তের নোটিফিকেশন',
+    enableNotificationsDesc: 'অ্যান্ড্রয়েড, আইওএস (iOS) বা উইন্ডোজ যে কোনো ডিভাইসে আপনার রক্তের গ্রুপ এবং এলাকার সাথে মিলে এমন কোনো জরুরি রক্তের পোস্ট এলে সাথে সাথে ব্রাউজার নোটিফিকেশন পান।',
+    enableAlertsButton: 'নোটিফিকেশন চালু করুন',
+    alertsActiveButton: 'নোটিফিকেশন চালু আছে',
+    notificationTestSent: 'একটি পরীক্ষামূলক জরুরি রক্তের নোটিফিকেশন পাঠানো হয়েছে!',
+    testAlertButton: 'টেস্ট নোটিফিকেশন পাঠান',
   }
 };
 
@@ -1359,8 +1400,142 @@ export const AppProvider = ({ children }) => {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Browser Notification State & Handlers
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() => {
+    return getNotificationPermission();
+  });
+  const [isNotificationsSupportedState] = useState<boolean>(() => {
+    return isNotificationSupported();
+  });
+  const [isNotificationsEnabled, setIsNotificationsEnabled] = useState<boolean>(() => {
+    return isNotificationsEnabledInApp();
+  });
+
+  // Track seen emergency request IDs to avoid duplicate alerts
+  const seenEmergencyIdsRef = useRef<Set<string>>(new Set());
+
+  // Register service worker on mount if supported
+  useEffect(() => {
+    registerServiceWorker();
+
+    const handlePrefChanged = () => {
+      setIsNotificationsEnabled(isNotificationsEnabledInApp());
+      setNotificationPermission(getNotificationPermission());
+    };
+
+    window.addEventListener('bb_notification_pref_changed', handlePrefChanged);
+    return () => {
+      window.removeEventListener('bb_notification_pref_changed', handlePrefChanged);
+    };
+  }, []);
+
+  const enableNotifications = async (): Promise<boolean> => {
+    if (!isNotificationsSupportedState) {
+      showToast(t('notificationsUnsupportedToast'), 'warning');
+      return false;
+    }
+
+    const permission = await requestNotificationPermission();
+    setNotificationPermission(permission);
+
+    if (permission === 'granted') {
+      setNotificationsEnabledInApp(true);
+      setIsNotificationsEnabled(true);
+      showToast(t('notificationsEnabledToast'), 'success');
+      return true;
+    } else if (permission === 'denied') {
+      setNotificationsEnabledInApp(false);
+      setIsNotificationsEnabled(false);
+      showToast(t('notificationsBlockedToast'), 'error');
+      return false;
+    }
+    return false;
+  };
+
+  const toggleNotifications = async () => {
+    if (isNotificationsEnabled) {
+      setNotificationsEnabledInApp(false);
+      setIsNotificationsEnabled(false);
+      showToast(t('notificationsDisabledToast'), 'warning');
+    } else {
+      await enableNotifications();
+    }
+  };
+
+  const testNotification = async () => {
+    if (notificationPermission !== 'granted') {
+      const granted = await enableNotifications();
+      if (!granted) return;
+    }
+
+    await sendEmergencyNotification({
+      id: `test-${Date.now()}`,
+      blood_group: currentDonor?.blood_group || 'O+',
+      area: currentDonor?.area || 'Sylhet City Corporation',
+      contact: currentDonor?.phone || '01700000000',
+      note: language === 'bn' ? 'এটি একটি পরীক্ষামূলক জরুরি রক্তের নোটিফিকেশন।' : 'This is a test urgent blood alert notification.'
+    }, { language });
+
+    showToast(t('notificationTestSent'), 'success');
+  };
+
+  // Helper: Evaluates emergency requests against current donor's profile & triggers browser notification
+  const notifyMatchingDonors = (newRequests: any[]) => {
+    // Only notify if notifications are enabled and permission is granted
+    if (!isNotificationsEnabledInApp() || getNotificationPermission() !== 'granted') {
+      return;
+    }
+
+    // Get current donor profile
+    let activeDonor = currentDonor;
+    if (!activeDonor) {
+      try {
+        const cached = localStorage.getItem('bb_donor_session');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          activeDonor = parsed?.donor || null;
+        }
+      } catch (e) { }
+    }
+
+    // If no donor is logged in, or donor is unavailable, we still can alert if they opted in
+    const donorBloodGroup = activeDonor?.blood_group;
+    const donorArea = activeDonor?.area;
+    const isDonorAvailable = activeDonor ? Boolean(activeDonor.is_available) : true;
+
+    // Check recent requests (created in the last 15 minutes)
+    for (const req of newRequests) {
+      if (!req || !req.id || seenEmergencyIdsRef.current.has(req.id)) continue;
+      seenEmergencyIdsRef.current.add(req.id);
+
+      // Do not notify the requester of their own post
+      if (activeDonor?.id && (req.donor_id === activeDonor.id || req.contact === activeDonor.phone)) {
+        continue;
+      }
+
+      // Check if status is still 'needed'
+      if (req.status && req.status !== 'needed') continue;
+
+      // Filter by blood compatibility and location:
+      // If donor has profile: must be compatible blood group and matched area
+      // If guest has enabled notifications: notify for local requests
+      const bloodMatched = !donorBloodGroup || isBloodCompatible(donorBloodGroup, req.blood_group);
+      const locationMatched = !donorArea || isLocationMatched(donorArea, req.area);
+
+      if (bloodMatched && locationMatched && isDonorAvailable) {
+        sendEmergencyNotification(req, { language });
+      }
+    }
+  };
+
   // Fetch data
+  const isRefreshingRef = useRef(false);
+
   const refreshData = async (silent = false) => {
+    // If already in flight, avoid duplicate overlapping fetches unless requested
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
+
     if (!silent) setLoading(true);
     setError(null);
 
@@ -1391,12 +1566,12 @@ export const AppProvider = ({ children }) => {
     }
 
     try {
-      const timeout = (ms) => new Promise(resolve => setTimeout(() => resolve(null), ms));
+      const timeout = (ms: number) => new Promise(resolve => setTimeout(() => resolve(null), ms));
 
-      // Fetch Donors with a 3.5s timeout, load immediately when resolved
+      // Fetch Donors with a 4s timeout, load immediately when resolved
       const donorsFetch = Promise.race([
         dbService.getDonors(),
-        timeout(3500)
+        timeout(4000)
       ]).then((res: any) => {
         if (res) {
           if (res.error) throw new Error(res.error.message);
@@ -1412,10 +1587,10 @@ export const AppProvider = ({ children }) => {
         }
       });
 
-      // Fetch Emergencies with a 3.5s timeout, load immediately when resolved
+      // Fetch Emergencies with a 4s timeout, load immediately when resolved
       const emergenciesFetch = Promise.race([
         dbService.getEmergencyRequests(),
-        timeout(3500)
+        timeout(4000)
       ]).then(async (res: any) => {
         if (res) {
           if (res.error) throw new Error(res.error.message);
@@ -1438,19 +1613,26 @@ export const AppProvider = ({ children }) => {
           if (!isDemoMode && data.length > 0) {
             localStorage.setItem('bb_emergencies_cache', JSON.stringify(data));
           }
+
+          // Trigger cross-platform notifications to compatible donors for new urgent requests
+          notifyMatchingDonors(data);
         } else {
           console.warn("Emergencies database fetch timed out. Using offline cache.");
           const cachedRequests = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
-          if (cachedRequests) setEmergencyRequests(JSON.parse(cachedRequests));
+          if (cachedRequests) {
+            const parsed = JSON.parse(cachedRequests);
+            setEmergencyRequests(parsed);
+            notifyMatchingDonors(parsed);
+          }
         }
       });
 
       // Execute all in parallel
       await Promise.all([donorsFetch, emergenciesFetch]);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching data:", err);
-      setError(err.message || "Something went wrong while loading data.");
+      setError(err?.message || "Something went wrong while loading data.");
 
       // Load offline cache on throw error
       try {
@@ -1460,19 +1642,64 @@ export const AppProvider = ({ children }) => {
         if (cachedRequests) setEmergencyRequests(JSON.parse(cachedRequests));
       } catch (e) { }
     } finally {
+      isRefreshingRef.current = false;
       setLoading(false);
     }
   };
 
-  // Load data after the first app shell renders. Cached content appears immediately;
-  // first-time visitors see page skeletons instead of a full-screen blocking loader.
+  // Instant data loading:
+  // 1. Instantly loads cached content on initial mount
+  // 2. Polls every 8 seconds in the background (silent mode) for live emergency requests & donor updates
+  // 3. Immediately syncs when user switches tabs or focuses the window
+  // 4. Cross-tab sync via storage / custom events
   useEffect(() => {
     const hasCachedData = donors.length > 0 || emergencyRequests.length > 0;
-    const refreshTimer = window.setTimeout(() => {
-      refreshData(hasCachedData);
-    }, 0);
+    
+    // Initial fetch (silent if cache already rendered)
+    refreshData(hasCachedData);
 
-    return () => window.clearTimeout(refreshTimer);
+    // Live background polling (every 8 seconds, silent mode without loading flicker)
+    const pollInterval = window.setInterval(() => {
+      // Only poll if tab is currently visible to conserve battery & network
+      if (document.visibilityState === 'visible') {
+        refreshData(true);
+      }
+    }, 8000);
+
+    // Instant re-fetch when returning to the tab or app window
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshData(true);
+      }
+    };
+
+    const handleFocus = () => {
+      refreshData(true);
+    };
+
+    // Cross-tab synchronization: if another tab updates donors or emergencies, instantly re-sync
+    const handleCrossTabSync = (e: StorageEvent) => {
+      if (e.key === 'bb_emergencies_cache' || e.key === 'bb_emergency_requests' || e.key === 'bb_donors_cache') {
+        refreshData(true);
+      }
+    };
+
+    const handleCustomSync = () => {
+      refreshData(true);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleCrossTabSync);
+    window.addEventListener('bb_data_updated', handleCustomSync);
+
+    return () => {
+      window.clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleCrossTabSync);
+      window.removeEventListener('bb_data_updated', handleCustomSync);
+    };
   }, []);
 
   const lastClickCoords = useRef({ x: 0, y: 0 });
@@ -1643,67 +1870,92 @@ export const AppProvider = ({ children }) => {
     return await dbService.getBlockedPhones(adminUser, adminPass);
   };
 
-  const registerDonor = async (donorData, honeypot) => {
+  const registerDonor = async (donorData: any, honeypot?: string) => {
     setError(null);
     const { data, error } = await dbService.registerDonor(donorData, honeypot);
     if (error) {
       setError(error.message);
       return { success: false, error };
     }
+    if (data) {
+      setDonors(prev => [normalizeDonor(data), ...prev.filter(d => d.id !== data.id && d.phone !== data.phone)]);
+    }
+    window.dispatchEvent(new Event('bb_data_updated'));
     await refreshData(true);
     return { success: true, data };
   };
 
-  const updateDonorAvailability = async (id, isAvailable, password) => {
+  const updateDonorAvailability = async (id: string, isAvailable: boolean, password?: string) => {
     setError(null);
+    // Instant optimistic state update
+    setDonors(prev => prev.map(d => d.id === id ? { ...d, is_available: isAvailable } : d));
+    if (currentDonor?.id === id) {
+      setCurrentDonor({ ...currentDonor, is_available: isAvailable });
+    }
+
     const { data, error } = await dbService.updateDonorAvailability(id, isAvailable, password);
     if (error) {
       setError(error.message);
+      // Revert if error
+      await refreshData(true);
       return { success: false, error };
     }
-    setDonors(prev => prev.map(d => d.id === id ? { ...d, is_available: isAvailable } : d));
+    window.dispatchEvent(new Event('bb_data_updated'));
     return { success: true, data };
   };
 
-  const updateDonorProfile = async (id, profileData, password) => {
+  const updateDonorProfile = async (id: string, profileData: any, password?: string) => {
     setError(null);
+    // Optimistic state update
+    setDonors(prev => prev.map(d => d.id === id ? normalizeDonor({ ...d, ...profileData }) : d));
+    if (currentDonor?.id === id) {
+      setCurrentDonor({ ...currentDonor, ...profileData });
+    }
+
     const { data, error } = await dbService.updateDonorProfile(id, profileData, password);
     if (error) {
       setError(error.message);
+      await refreshData(true);
       return { success: false, error };
     }
+    window.dispatchEvent(new Event('bb_data_updated'));
     await refreshData(true);
     return { success: true, data };
   };
 
-  const addDonationHistory = async (donorId, donationDate, password) => {
+  const addDonationHistory = async (donorId: string, donationDate: string, password?: string) => {
     setError(null);
     const { data, error } = await dbService.addDonationEvent(donorId, donationDate, password);
     if (error) {
       setError(error.message);
       return { success: false, error };
     }
+    window.dispatchEvent(new Event('bb_data_updated'));
     await refreshData(true);
     return { success: true, data };
   };
 
-  const deleteDonor = async (id, options?: { password?: string; isDonorSelfDelete?: boolean }) => {
+  const deleteDonor = async (id: string, options?: { password?: string; isDonorSelfDelete?: boolean }) => {
     if (!isAdmin && !options?.isDonorSelfDelete) {
       setError("Unauthorized access");
       return { success: false, error: "Unauthorized" };
     }
     setError(null);
+    // Optimistic removal
+    setDonors(prev => prev.filter(d => d.id !== id));
+    if (options?.isDonorSelfDelete) {
+      logoutDonor();
+    }
+
     const adminUser = adminCredentials?.username || '';
     const adminPass = adminCredentials?.password || '';
     const { success, error } = await dbService.deleteDonor(id, adminUser, adminPass, options);
     if (error) {
       setError(error.message);
+      await refreshData(true);
       return { success: false, error };
     }
-    setDonors(prev => prev.filter(d => d.id !== id));
-    if (options?.isDonorSelfDelete) {
-      logoutDonor();
-    }
+    window.dispatchEvent(new Event('bb_data_updated'));
     await refreshData(true);
     return { success: true };
   };
@@ -1732,6 +1984,13 @@ export const AppProvider = ({ children }) => {
       setError(error.message);
       return { success: false, error };
     }
+
+    // Instantly append to local emergency requests state
+    if (data) {
+      setEmergencyRequests(prev => [data, ...prev.filter(r => r.id !== data.id)]);
+    }
+
+    window.dispatchEvent(new Event('bb_data_updated'));
     await refreshData(true);
     return { success: true, data };
   };
@@ -1742,6 +2001,9 @@ export const AppProvider = ({ children }) => {
     options?: { donorId?: string; donorPhone?: string }
   ) => {
     setError(null);
+    // Optimistically remove from state immediately
+    setEmergencyRequests(prev => prev.filter(r => r.id !== id));
+
     const adminUser = adminCredentials?.username || '';
     const adminPass = adminCredentials?.password || '';
     const donorId = options?.donorId || currentDonor?.id;
@@ -1756,9 +2018,10 @@ export const AppProvider = ({ children }) => {
     );
     if (error) {
       setError(error.message);
+      await refreshData(true);
       return { success: false, error };
     }
-    setEmergencyRequests(prev => prev.filter(r => r.id !== id));
+    window.dispatchEvent(new Event('bb_data_updated'));
     return { success: true };
   };
 
@@ -1769,6 +2032,9 @@ export const AppProvider = ({ children }) => {
     options?: { donorId?: string; donorPhone?: string }
   ) => {
     setError(null);
+    // Optimistic status update
+    setEmergencyRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+
     const adminUser = adminCredentials?.username || '';
     const adminPass = adminCredentials?.password || '';
     const donorId = options?.donorId || currentDonor?.id;
@@ -1784,9 +2050,10 @@ export const AppProvider = ({ children }) => {
     );
     if (error) {
       setError(error.message);
+      await refreshData(true);
       return { success: false, error };
     }
-    setEmergencyRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+    window.dispatchEvent(new Event('bb_data_updated'));
     return { success: true, data };
   };
 
@@ -1841,7 +2108,13 @@ export const AppProvider = ({ children }) => {
         getBlockedPhones,
         getSupportRequests,
         showToast,
-        checkIfBlocked
+        checkIfBlocked,
+        notificationPermission,
+        isNotificationsSupported: isNotificationsSupportedState,
+        isNotificationsEnabled,
+        enableNotifications,
+        toggleNotifications,
+        testNotification
       }}
     >
       {children}

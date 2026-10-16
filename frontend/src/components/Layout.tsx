@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, ExternalLink, LucideIcon, ChevronRight, LogOut, User } from 'lucide-react';
+import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, ExternalLink, LucideIcon, ChevronRight, LogOut, User, Bell, BellOff, BellRing } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface NavigationItem {
@@ -15,7 +16,21 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { theme, toggleTheme, isAdmin, logoutAdmin, currentDonor, logoutDonor, isDemoMode, language, setLanguage, t } = useApp();
+  const {
+    theme,
+    toggleTheme,
+    isAdmin,
+    logoutAdmin,
+    currentDonor,
+    logoutDonor,
+    isDemoMode,
+    language,
+    setLanguage,
+    t,
+    isNotificationsEnabled,
+    toggleNotifications,
+    isNotificationsSupported,
+  } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMenuAnimKey, setMobileMenuAnimKey] = useState(0);
   const location = useLocation();
@@ -143,21 +158,50 @@ export default function Layout({ children }: LayoutProps) {
               {/* Language Selector */}
               <button
                 onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}
-                className="flex items-center gap-1.5 px-2.5 py-2 lg:gap-1 lg:px-2 lg:py-1.5 xl:gap-1.5 xl:px-3 xl:py-2 rounded-xl text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-all duration-200 border border-slate-200/50 dark:border-zinc-800/50 shadow-sm text-xs font-bold cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 h-9 sm:h-10 lg:h-9 xl:h-9.5 rounded-xl text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-all duration-200 border border-slate-200/50 dark:border-zinc-800/50 shadow-xs text-xs font-bold cursor-pointer shrink-0"
                 title={language === 'en' ? 'Switch to Bangla' : 'ইংরেজিতে পরিবর্তন করুন'}
               >
-                <Languages className="w-4 h-4 lg:w-3.5 lg:h-3.5 text-red-500 animate-pulse" />
-                <span className="text-xs lg:text-[10px] tracking-tight">{language === 'en' ? 'EN' : 'বাং'}</span>
+                <Languages className="w-4 h-4 sm:w-4.5 sm:h-4.5 lg:w-3.5 lg:h-3.5 text-red-500 animate-pulse" />
+                <span className="text-xs lg:text-[11px] tracking-tight">{language === 'en' ? 'EN' : 'বাং'}</span>
               </button>
 
+              {/* Emergency Alert Notification Bell (Desktop only; in mobile devices it appears in the dropdown menu) */}
+              {isNotificationsSupported && (
+                <button
+                  onClick={toggleNotifications}
+                  className={`hidden lg:flex relative w-9 h-9 xl:w-9.5 xl:h-9.5 items-center justify-center rounded-xl transition-all duration-200 border shadow-xs cursor-pointer group active:scale-95 ${
+                    isNotificationsEnabled
+                      ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20'
+                      : 'text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 border-slate-200/50 dark:border-zinc-800/50'
+                  }`}
+                  aria-label="Toggle Emergency Alerts"
+                  title={isNotificationsEnabled ? (t('alertsActiveButton') || 'Emergency Alerts Active') : (t('enableAlertsButton') || 'Enable Emergency Blood Alerts')}
+                >
+                  {isNotificationsEnabled ? (
+                    <span className="relative flex items-center justify-center">
+                      <BellRing className="w-4 h-4 xl:w-4 xl:h-4 text-rose-500" />
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500" />
+                    </span>
+                  ) : (
+                    <Bell className="w-4 h-4 xl:w-4 xl:h-4 group-hover:scale-110 transition-transform" />
+                  )}
+                </button>
+              )}
+
+              {/* Theme Toggle (Dark Mode / Light Mode Switch) */}
               <button
                 onClick={(e) => toggleTheme(e)}
-                className="relative p-2.5 lg:p-2 xl:p-2.5 rounded-xl text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-all duration-200 border border-slate-200/50 dark:border-zinc-800/50 shadow-sm cursor-pointer group active:scale-95"
+                className="w-9 h-9 sm:w-10 sm:h-10 lg:w-9 lg:h-9 xl:w-9.5 xl:h-9.5 rounded-xl flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 transition-all duration-200 border border-slate-200/50 dark:border-zinc-800/50 shadow-xs cursor-pointer group active:scale-95 shrink-0"
                 aria-label="Toggle Theme"
                 title={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'}
               >
-                <span className="inline-block transition-transform duration-300 group-hover:rotate-12">
-                  {theme === 'dark' ? <Sun className="w-4 h-4 lg:w-3.5 lg:h-3.5 text-amber-400" /> : <Moon className="w-4 h-4 lg:w-3.5 lg:h-3.5" />}
+                <span className="inline-flex items-center justify-center transition-transform duration-300 group-hover:rotate-12">
+                  {theme === 'dark' ? (
+                    <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 lg:w-4 lg:h-4 text-amber-400" />
+                  ) : (
+                    <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 lg:w-4 lg:h-4" />
+                  )}
                 </span>
               </button>
 
@@ -320,10 +364,54 @@ export default function Layout({ children }: LayoutProps) {
                   {t('logoutAdmin')}
                 </button>
               )}
+
+              {/* Notification toggle in mobile menu */}
+              {isNotificationsSupported && (
+                <button
+                  onClick={() => {
+                    toggleNotifications();
+                    setMobileMenuOpen(false);
+                  }}
+                  style={{ animationDelay: mobileMenuOpen ? `${100 + (navigation.length + 2) * 45}ms` : '0ms' }}
+                  tabIndex={mobileMenuOpen ? 0 : -1}
+                  className={`mobile-nav-item w-full text-left flex items-center justify-between px-4 py-3 rounded-xl text-base font-medium transition-colors duration-200 cursor-pointer ${
+                    isNotificationsEnabled
+                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                      : 'text-slate-600 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-zinc-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {isNotificationsEnabled ? (
+                      <BellRing className="w-5 h-5 text-rose-500 animate-bounce" />
+                    ) : (
+                      <BellOff className="w-5 h-5" />
+                    )}
+                    <span>{isNotificationsEnabled ? (t('alertsActiveButton') || 'Alerts Active') : (t('enableAlertsButton') || 'Enable Alerts')}</span>
+                  </div>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isNotificationsEnabled ? 'bg-rose-500 text-white' : 'bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400'}`}>
+                    {isNotificationsEnabled ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         </div>
       </header>
+
+      {/* Full Screen Blurred Backdrop for Mobile Navigation (Rendered in Portal to escape header backdrop-filter bug) */}
+      {typeof document !== 'undefined' && createPortal(
+        <div
+          className={`lg:hidden fixed inset-0 z-35 transition-all duration-300 ${
+            mobileMenuOpen 
+              ? 'opacity-100 pointer-events-auto backdrop-blur-md bg-slate-900/40 dark:bg-black/60' 
+              : 'opacity-0 pointer-events-none'
+          }`}
+          style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))' }}
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />,
+        document.body
+      )}
 
       {/* Main Body */}
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8 animate-fade-in">
