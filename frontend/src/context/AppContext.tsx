@@ -1415,8 +1415,15 @@ export const AppProvider = ({ children }) => {
     return isNotificationsEnabledInApp();
   });
 
-  // Track seen emergency request IDs to avoid duplicate alerts
-  const seenEmergencyIdsRef = useRef<Set<string>>(new Set());
+  // Track seen emergency request IDs in localStorage to avoid duplicate alerts across sessions/app launches
+  const seenEmergencyIdsRef = useRef<Set<string>>((() => {
+    try {
+      const stored = localStorage.getItem('bb_seen_emergency_notifications');
+      return stored ? new Set(JSON.parse(stored)) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  })());
 
   // Register service worker on mount if supported
   useEffect(() => {
@@ -1520,10 +1527,16 @@ export const AppProvider = ({ children }) => {
     const donorArea = activeDonor?.area;
     const isDonorAvailable = activeDonor ? Boolean(activeDonor.is_available) : true;
 
-    // Check recent requests (created in the last 15 minutes)
+    // Check recent requests (created in the last 60 minutes) to avoid alerting on hours-old requests
+    let hasNewSeen = false;
+    const now = Date.now();
+
     for (const req of newRequests) {
       if (!req || !req.id || seenEmergencyIdsRef.current.has(req.id)) continue;
+      
+      // Mark as seen immediately so it won't trigger again
       seenEmergencyIdsRef.current.add(req.id);
+      hasNewSeen = true;
 
       // Do not notify the requester of their own post
       if (activeDonor?.id && (req.donor_id === activeDonor.id || req.contact === activeDonor.phone)) {
@@ -1532,6 +1545,15 @@ export const AppProvider = ({ children }) => {
 
       // Check if status is still 'needed'
       if (req.status && req.status !== 'needed') continue;
+
+      // Only notify for requests created within the last 60 minutes
+      if (req.created_at) {
+        const reqTime = new Date(req.created_at).getTime();
+        const diffMinutes = (now - reqTime) / (1000 * 60);
+        if (diffMinutes > 60) {
+          continue; // Old request, skip sound/notification
+        }
+      }
 
       // Filter by blood compatibility and location:
       // If donor has profile: must be compatible blood group and matched area
@@ -1542,6 +1564,13 @@ export const AppProvider = ({ children }) => {
       if (bloodMatched && locationMatched && isDonorAvailable) {
         sendEmergencyNotification(req, { language });
       }
+    }
+
+    if (hasNewSeen) {
+      try {
+        const arr = Array.from(seenEmergencyIdsRef.current).slice(-200); // keep last 200 IDs
+        localStorage.setItem('bb_seen_emergency_notifications', JSON.stringify(arr));
+      } catch { }
     }
   };
 
