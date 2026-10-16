@@ -2144,12 +2144,12 @@ export default function Register() {
                   <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
                     <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                       <Heart className="w-3.5 h-3.5 text-red-500" />
-                      {language === 'bn' ? '১. অলাভজনক ও মানবিক সেবা' : '1. Non-Profit & Humanitarian Purpose'}
+                      {language === 'bn' ? '১. অলাভজনক, মানবিক ও স্বেচ্ছাসেবী উদ্দেশ্য' : '1. Non-Profit & Humanitarian Mandate'}
                     </h4>
                     <p className="text-[12px] text-slate-600 dark:text-zinc-400">
                       {language === 'bn'
-                        ? 'দারুণ ডোনার্স একটি স্বেচ্ছাসেবী, সম্পূর্ণ অলাভজনক ও মানবিক প্ল্যাটফর্ম। রক্ত কেনাবেচা বা কোনো প্রকার আর্থিক লেনদেন কঠোরভাবে নিষিদ্ধ ও বেআইনি।'
-                        : 'Darun Donors operates strictly as a non-profit humanitarian matching portal connecting patients with voluntary donors. The sale or commercial trade of blood is illegal and prohibited.'}
+                        ? 'দারুণ ডোনার্স একটি স্বেচ্ছাসেবী, সম্পূর্ণ অলাভজনক ও মানবিক প্ল্যাটফর্ম। রক্ত কেনাবেচা বা কোনো প্রকার আর্থিক লেনদেন কঠোরভাবে নিষিদ্ধ ও দণ্ডনীয় অপরাধ।'
+                        : 'Darun Donors operates strictly as an autonomous humanitarian network. The commercial sale, solicitation, or brokerage of blood is strictly illegal and prohibited.'}
                     </p>
                   </div>
 
@@ -2160,32 +2160,44 @@ export default function Register() {
                     </h4>
                     <p className="text-[12px] text-slate-600 dark:text-zinc-400">
                       {language === 'bn'
-                        ? 'রক্তদাতা হিসেবে নিবন্ধিত হতে হলে বয়স ন্যূনতম ১৮ বছর হতে হবে। নাম, ফোন নম্বর, রক্তের গ্রুপ এবং এলাকার সঠিক ও নির্ভুল তথ্য প্রদান করা আবশ্যক।'
-                        : 'Donors must be at least 18 years old. All profile details including name, phone number, blood group, and location must be genuine and accurate.'}
+                        ? 'রক্তদাতা হিসেবে নিবন্ধিত হতে হলে বয়স ন্যূনতম ১৮ বছর হতে হবে। নাম, ফোন নম্বর, রক্তের গ্রুপ এবং এলাকার সঠিক ও নির্ভুল তথ্য প্রদান করা আবশ্যক এবং ন্যূনতম ৯০ দিনের বিরতিকাল মেনে চলতে হবে।'
+                        : 'Donors must be at least 18 years old and in sound health. Profile details including name, phone number, blood group, and location must be genuine, respecting standard 90-day cooldown periods.'}
                     </p>
                   </div>
 
                   <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
                     <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                      {language === 'bn' ? '৩. রক্তের অনুরোধে আচরণবিধি' : '3. Code of Conduct'}
+                      {language === 'bn' ? '৩. রক্তের অনুরোধে আচরণবিধি ও অপব্যবহার রোধ' : '3. Code of Conduct & Anti-Abuse'}
                     </h4>
                     <p className="text-[12px] text-slate-600 dark:text-zinc-400">
                       {language === 'bn'
                         ? 'ভুয়া অনুরোধ পোস্ট করা, স্প্যামিং বা রক্তদাতাদের অকারণে বিরক্ত করা সম্পূর্ণ নিষিদ্ধ। অপব্যবহারকারী অ্যাকাউন্ট তৎক্ষণাৎ আজীবনের জন্য ব্লক করা হবে।'
-                        : 'Spamming, prank calls, or harassment of voluntary donors results in immediate account blacklisting and ban.'}
+                        : 'Spamming, prank calls, harassment of voluntary donors, or automated scraping results in immediate account termination and permanent blacklisting.'}
                     </p>
                   </div>
 
                   <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
                     <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                       <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
-                      {language === 'bn' ? '৪. মেডিকেল ও আইনি দায়মুক্তি' : '4. Medical Screening Disclaimer'}
+                      {language === 'bn' ? '৪. মেডিকেল স্ক্রিনিং ও দায়মুক্তি' : '4. Medical Screening & Disclaimer'}
                     </h4>
                     <p className="text-[12px] text-slate-600 dark:text-zinc-400">
                       {language === 'bn'
-                        ? 'রক্ত নেওয়ার আগে উপযুক্ত ডায়াগনস্টিক ল্যাবরেটরিতে ক্রস-ম্যাচিং ও স্ক্রিনিং টেস্ট (এইচআইভি, হেপাটাইটিস ইত্যাদি) নিশ্চিত করা রোগী ও পরিবারের নিজস্ব দায়িত্ব।'
-                        : 'Receiving patients and hospital caregivers are solely responsible for conducting certified medical screening and cross-matching before transfusion.'}
+                        ? 'রক্ত গ্রহণের পূর্বে উপযুক্ত ডায়াগনস্টিক ল্যাবরেটরিতে ক্রস-ম্যাচিং ও স্ক্রিনিং টেস্ট (HIV, Hepatitis ইত্যাদি) নিশ্চিত করা রোগী, অভিভাবক ও সংশ্লিষ্ট হাসপাতালের দায়িত্ব।'
+                        : 'Receiving patients and hospitals are solely responsible for laboratory cross-matching and mandatory viral screenings prior to transfusion.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
+                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-indigo-500" />
+                      {language === 'bn' ? '৫. স্বয়ংক্রিয় নিরাপত্তা ও রেট লিমিটিং' : '5. Automated Security & Rate Limiting'}
+                    </h4>
+                    <p className="text-[12px] text-slate-600 dark:text-zinc-400">
+                      {language === 'bn'
+                        ? 'ডোনারদের নিরাপত্তা রক্ষায় এবং ডাটা স্ক্র্যাপিং রোধে সিস্টেমে স্বয়ংক্রিয় রেট লিমিটিং ও নিরাপত্তা ফিল্টার সক্রিয় থাকে।'
+                        : 'Automated request throttling, rate limiting, and bot protection safeguard donor information against unauthorized mass access.'}
                     </p>
                   </div>
                 </>
@@ -2194,48 +2206,60 @@ export default function Register() {
                   <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
                     <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                       <Eye className="w-3.5 h-3.5 text-red-500" />
-                      {language === 'bn' ? '১. সংগৃহীত তথ্য' : '1. Collected Information'}
+                      {language === 'bn' ? '১. সংগৃহীত তথ্য ও পুশ নোটিফিকেশন' : '1. Collected Information & Push Alerts'}
                     </h4>
                     <p className="text-[12px] text-slate-600 dark:text-zinc-400">
                       {language === 'bn'
-                        ? 'জরুরি রক্তদানের সুবিধার্থে আমরা নাম, ফোন নম্বর, রক্তের গ্রুপ, এলাকা এবং গুগল একাউন্ট আইডি সংরক্ষণ করি।'
-                        : 'We store your name, contact phone, blood group, area, and Google ID strictly to coordinate lifesaving donations.'}
+                        ? 'জরুরি রক্তদানের সুবিধার্থে আমরা নাম, ফোন নম্বর, রক্তের গ্রুপ, এলাকা এবং জরুরি অ্যালার্টের জন্য ক্রিপ্টোগ্রাফিক পুশ টোকেন সংরক্ষণ করি।'
+                        : 'We store your name, contact phone, blood group, area, and encrypted push tokens strictly to dispatch lifesaving alerts.'}
                     </p>
                   </div>
 
                   <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
                     <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                      {language === 'bn' ? '২. যোগাযোগ তথ্য সুরক্ষায় লগইন সুরক্ষা' : '2. Contact Information Shield'}
+                      {language === 'bn' ? '২. যোগাযোগ তথ্য সুরক্ষায় লগইন শিল্ড' : '2. Contact Privacy Shield'}
                     </h4>
                     <p className="text-[12px] text-slate-600 dark:text-zinc-400">
                       {language === 'bn'
-                        ? 'কোনো অননুমোদিত বট বা সাধারণ ভিজিটর রক্তদাতার ফোন নম্বর দেখতে পারে না। শুধুমাত্র যাচাইকৃত নিবন্ধিত ব্যবহারকারীরাই জরুরি প্রয়োজনে নম্বর দেখতে পারেন।'
-                        : 'Phone numbers are never publicly broadcast to scrapers or bots. A visitor must be signed in to view verified contact details.'}
+                        ? 'কোনো অননুমোদিত বট বা সাধারণ ভিজিটর রক্তদাতার ফোন নম্বর দেখতে পারে না। শুধুমাত্র সাইন-ইন করা ব্যবহারকারীরাই জরুরি প্রয়োজনে নম্বর দেখতে পারেন।'
+                        : 'Donor phone numbers are protected behind mandatory authentication to prevent harvesting by commercial telemarketers and bots.'}
                     </p>
                   </div>
 
                   <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
                     <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5 text-blue-500" />
-                      {language === 'bn' ? '৩. কোনো বিজ্ঞাপন বা তথ্য বিক্রি নয়' : '3. Zero Data Sharing & Advertising'}
+                      {language === 'bn' ? '৩. তথ্য বিক্রয় বা বাণিজ্যিক ব্যবহার নয়' : '3. Zero Data Commercialization'}
                     </h4>
                     <p className="text-[12px] text-slate-600 dark:text-zinc-400">
                       {language === 'bn'
-                        ? 'আপনার ব্যক্তিগত বা যোগাযোগের তথ্য কোনো বিজ্ঞাপনদাতা, মার্কেটিং কোম্পানি বা তৃতীয় পক্ষের কাছে কখনই বিক্রি বা শেয়ার করা হয় না।'
-                        : 'We strictly never sell, monetize, rent, or share personal donor data with any third-party marketing or commercial entities.'}
+                        ? 'আপনার ব্যক্তিগত বা যোগাযোগের তথ্য কোনো বিজ্ঞাপনদাতা বা তৃতীয় পক্ষের কাছে কখনই বিক্রি বা লিজ দেওয়া হয় না।'
+                        : 'We never sell, monetize, rent, or trade personal donor directories with third-party marketing entities.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
+                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-500" />
+                      {language === 'bn' ? '৪. কুকিজ ও অ্যানালিটিক্স' : '4. Cookies & Digital Analytics'}
+                    </h4>
+                    <p className="text-[12px] text-slate-600 dark:text-zinc-400">
+                      {language === 'bn'
+                        ? 'সার্ভার পরিচালন ব্যয় এবং কার্যক্ষমতা পর্যবেক্ষণে গুগল অ্যাডসেন্স ও মেটা পিক্সেলের মত বিশ্বস্ত অ্যানালিটিক্স ও কুকিজ ব্যবহৃত হতে পারে।'
+                        : 'Certified third-party services like Google AdSense or Meta Pixel may use cookies to maintain analytics and help support infrastructure costs.'}
                     </p>
                   </div>
 
                   <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50">
                     <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                       <Trash2 className="w-3.5 h-3.5 text-purple-500" />
-                      {language === 'bn' ? '৪. অ্যাকাউন্ট মুছে ফেলার অধিকার' : '4. Right to Deletion'}
+                      {language === 'bn' ? '৫. অ্যাকাউন্ট মুছে ফেলার অধিকার' : '5. Right to Erasure'}
                     </h4>
                     <p className="text-[12px] text-slate-600 dark:text-zinc-400">
                       {language === 'bn'
-                        ? 'আপনি যেকোনো সময় আপনার ড্যাশবোর্ড থেকে অ্যাকাউন্ট এবং ডাটা স্থায়ীভাবে মুছে ফেলতে পারেন।'
-                        : 'You retain full autonomy to edit your profile or permanently erase your account and logs at any time.'}
+                        ? 'আপনি যেকোনো সময় ড্যাশবোর্ড থেকে প্রাপ্যতা পরিবর্তন করতে পারেন অথবা একাউন্ট স্থায়ীভাবে মুছে ফেলতে পারেন।'
+                        : 'You retain full autonomy to update availability or permanently delete your account and personal profile data at any time.'}
                     </p>
                   </div>
                 </>
