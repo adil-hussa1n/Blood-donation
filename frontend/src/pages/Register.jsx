@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock, Download, Printer, ShieldCheck, Check, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock, Download, Printer, ShieldCheck, Check, Eye, EyeOff, Trash2, Heart, Lock } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getDonorDonationCount, getAreaLabel, calculateDaysSince } from '../context/AppContext';
 import { dbService } from '../services/db';
 import GoogleAuthButton from '../components/GoogleAuthButton';
@@ -1132,16 +1132,19 @@ export default function Register() {
                 ? 'bg-red-50/50 dark:bg-red-950/20 border-red-500/40 shadow-xs'
                 : 'bg-slate-50/80 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700'
             }`}>
-              <label className="flex items-start gap-3 cursor-pointer select-none">
+              <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
+                  id="reg_agree_terms_cb"
                   required
                   checked={regAgreeTerms}
                   onChange={(e) => setRegAgreeTerms(e.target.checked)}
                   className="mt-0.5 w-5 h-5 rounded-md border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer shrink-0"
                 />
-                <div className="text-xs leading-relaxed text-slate-700 dark:text-zinc-300">
-                  <span className="font-semibold">{t('agreeToTermsPrefix')} </span>
+                <div className="text-xs leading-relaxed text-slate-700 dark:text-zinc-300 select-none">
+                  <label htmlFor="reg_agree_terms_cb" className="font-semibold cursor-pointer">
+                    {t('agreeToTermsPrefix')}{' '}
+                  </label>
                   <button
                     type="button"
                     onClick={(e) => {
@@ -1149,7 +1152,7 @@ export default function Register() {
                       e.stopPropagation();
                       setLegalModalTab('terms');
                     }}
-                    className="font-extrabold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-0.5 cursor-pointer"
+                    className="font-extrabold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-0.5 cursor-pointer underline-offset-2"
                   >
                     {t('termsAndConditionsText')}
                   </button>{' '}
@@ -1161,18 +1164,18 @@ export default function Register() {
                       e.stopPropagation();
                       setLegalModalTab('privacy');
                     }}
-                    className="font-extrabold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-0.5 cursor-pointer"
+                    className="font-extrabold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-0.5 cursor-pointer underline-offset-2"
                   >
                     {t('privacyPolicyText')}
                   </button>
                   <span className="text-red-500 font-bold ml-1">*</span>
-                  <span className="block text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5 font-normal">
+                  <label htmlFor="reg_agree_terms_cb" className="block text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5 font-normal cursor-pointer">
                     {language === 'bn'
                       ? 'নিবন্ধন সম্পন্ন ও রক্তদাতা প্রোফাইল চালু করতে এই বক্সে টিক দিয়ে সম্মতি জানান।'
                       : 'Toggle this checkbox to confirm your agreement before creating your donor profile.'}
-                  </span>
+                  </label>
                 </div>
-              </label>
+              </div>
             </div>
 
             <button

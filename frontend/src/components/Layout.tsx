@@ -33,7 +33,12 @@ export default function Layout({ children }: LayoutProps) {
 
   const navigation: NavigationItem[] = [
     { nameKey: 'searchDonors', name: 'Search Donors', path: '/', icon: Heart },
-    { nameKey: 'registerUpdate', name: 'Register / Update', path: '/register', icon: UserPlus },
+    {
+      nameKey: currentDonor ? 'donorProfileNav' : 'registerUpdate',
+      name: currentDonor ? 'Profile' : 'Sign In / Sign Up',
+      path: '/register',
+      icon: currentDonor ? User : UserPlus,
+    },
     { nameKey: 'emergencyRequests', name: 'Emergency Requests', path: '/emergency', icon: Flame },
   ];
 

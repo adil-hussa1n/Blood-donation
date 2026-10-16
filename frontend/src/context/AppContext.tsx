@@ -212,10 +212,10 @@ export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
 export const TRANSLATIONS = {
   en: {
-    // Navigation
     dobLabel: 'Date of Birth',
     searchDonors: 'Search Donors',
-    registerUpdate: 'Register / Update',
+    registerUpdate: 'Sign In / Sign Up',
+    donorProfileNav: 'Profile',
     emergencyRequests: 'Emergency Requests',
     adminDashboard: 'Admin Dashboard',
     logoutAdmin: 'Logout Admin',
@@ -653,7 +653,8 @@ export const TRANSLATIONS = {
     // Navigation
     dobLabel: 'জন্ম তারিখ',
     searchDonors: 'রক্তদাতা খুঁজুন',
-    registerUpdate: 'নিবন্ধন / আপডেট',
+    registerUpdate: 'সাইন ইন / সাইন আপ',
+    donorProfileNav: 'প্রোফাইল',
     emergencyRequests: 'জরুরি রক্তের অনুরোধ',
     adminDashboard: 'অ্যাডমিন ড্যাশবোর্ড',
     logoutAdmin: 'লগআউট অ্যাডমিন',
