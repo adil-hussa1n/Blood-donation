@@ -101,7 +101,7 @@ export default function Home() {
     setAppliedSearchQuery('');
   };
 
-  // Filtered Donors List (computed using applied filters)
+  // Filtered Donors List (computed using applied filters, prioritized by availability)
   const filteredDonors = useMemo(() => {
     return (donors || [])
       .map(normalizeDonor)
@@ -113,6 +113,38 @@ export default function Home() {
           donor.phone.includes(appliedSearchQuery)
           : true;
         return matchBlood && matchArea && matchSearch;
+      })
+      .sort((a: Donor, b: Donor) => {
+        // Compute active availability (both toggle status and 90-day cooldown)
+        const daysA = calculateDaysSince(a.last_donation_date);
+        const isAvailableA = Boolean(a.is_available) && daysA >= 90;
+
+        const daysB = calculateDaysSince(b.last_donation_date);
+        const isAvailableB = Boolean(b.is_available) && daysB >= 90;
+
+        // 1. Available donors come first
+        if (isAvailableA && !isAvailableB) return -1;
+        if (!isAvailableA && isAvailableB) return 1;
+
+        // 2. Cooldown donors come before completely unavailable donors
+        const inCooldownA = Boolean(a.is_available) && daysA < 90;
+        const inCooldownB = Boolean(b.is_available) && daysB < 90;
+        if (inCooldownA && !inCooldownB) return -1;
+        if (!inCooldownA && inCooldownB) return 1;
+
+        // If both donors are in cooldown, show the one with LESS days remaining first (e.g. 18 days left before 33 days left)
+        if (inCooldownA && inCooldownB) {
+          const daysLeftA = Math.max(0, 90 - daysA);
+          const daysLeftB = Math.max(0, 90 - daysB);
+          if (daysLeftA !== daysLeftB) {
+            return daysLeftA - daysLeftB;
+          }
+        }
+
+        // 3. Fallback: most recently registered or active first
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return timeB - timeA;
       });
   }, [donors, appliedBloodGroup, appliedArea, appliedSearchQuery]);
 
