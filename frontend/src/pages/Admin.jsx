@@ -8,6 +8,7 @@ export default function Admin() {
     donors,
     emergencyRequests,
     isAdmin,
+    isMaintenanceMode,
     loginAdminWithGoogle,
     logoutAdmin,
     deleteDonor,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, ExternalLink, LucideIcon, ChevronRight, LogOut, User, Bell, BellOff, BellRing } from 'lucide-react';
+import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, ExternalLink, LucideIcon, ChevronRight, LogOut, User, Bell, BellOff, BellRing, Wrench, AlertOctagon, RotateCw } from 'lucide-react';
 import { useApp, isDefaultLetterAvatar } from '../context/AppContext';
 
 interface NavigationItem {
@@ -24,6 +24,8 @@ export default function Layout({ children }: LayoutProps) {
     currentDonor,
     logoutDonor,
     isDemoMode,
+    isMaintenanceMode,
+    refreshData,
     language,
     setLanguage,
     t,
@@ -88,8 +90,24 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen flex flex-col transition-colors duration-300">
+      {/* Top Banner for Maintenance Mode (when Database loses connection or is unreachable) */}
+      {isMaintenanceMode && (
+        <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white text-xs sm:text-sm py-2.5 px-4 text-center font-medium shadow-md flex items-center justify-center gap-2 relative z-50 animate-pulse">
+          <Wrench className="w-4 h-4 shrink-0" />
+          <span className="font-bold">{t('maintenanceSubtitle')}:</span>
+          <span>{t('maintenanceNoticeBanner')}</span>
+          <button
+            onClick={() => refreshData(false)}
+            className="ml-2 inline-flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-2.5 py-1 rounded-lg backdrop-blur-xs transition-all cursor-pointer"
+          >
+            <RotateCw className="w-3 h-3" />
+            <span>{t('maintenanceRetryButton')}</span>
+          </button>
+        </div>
+      )}
+
       {/* Top Banner for Demo Mode */}
-      {isDemoMode && (
+      {isDemoMode && !isMaintenanceMode && (
         <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-1.5 backdrop-blur-sm">
           <Database className="w-3.5 h-3.5" />
           <span>Demo Mode Enabled: Data is saved locally in your browser. Start backend server to connect to MySQL.</span>

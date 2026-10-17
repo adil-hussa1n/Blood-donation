@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
-import { dbService } from '../services/db';
+import { dbService, isDatabaseOrConnectionError } from '../services/db';
 import { isDemoMode } from '../services/apiConfig';
 import {
   registerServiceWorker,
@@ -54,6 +54,7 @@ interface AppContextType {
   emergencyRequests: any[];
   loading: boolean;
   error: string | null;
+  isMaintenanceMode: boolean;
   theme: 'light' | 'dark' | string;
   isAdmin: boolean;
   isDemoMode: boolean;
@@ -605,6 +606,12 @@ export const TRANSLATIONS = {
     postedDateHeader: 'Posted Date',
     errorDeletingDonorPrefix: 'Error deleting donor: ',
     errorDeletingRequestPrefix: 'Error deleting emergency request: ',
+    // Maintenance Mode
+    maintenanceTitle: 'System Under Scheduled Maintenance',
+    maintenanceSubtitle: 'Database Connection Temporarily Unavailable',
+    maintenanceMessage: 'Our core database servers are currently undergoing routine maintenance or upgrades to ensure optimal performance and security. Live searches and registrations are temporarily paused. We will be back online shortly.',
+    maintenanceRetryButton: 'Check Connection Again',
+    maintenanceNoticeBanner: 'Database connection issue detected: The platform is currently operating in read-only maintenance mode.',
     // Sylhet City & Key Areas
     area_sylhetcitycorporation: 'Sylhet City Corporation',
     // Sylhet Upazilas
@@ -1047,6 +1054,12 @@ export const TRANSLATIONS = {
     postedDateHeader: 'পোস্টের তারিখ',
     errorDeletingDonorPrefix: 'রক্তদাতা মুছতে ত্রুটি: ',
     errorDeletingRequestPrefix: 'জরুরি অনুরোধ মুছতে ত্রুটি: ',
+    // Maintenance Mode
+    maintenanceTitle: 'সিস্টেমে সাময়িক রক্ষণাবেক্ষণ চলছে',
+    maintenanceSubtitle: 'ডাটাবেস সংযোগ সাময়িকভাবে বিচ্ছিন্ন',
+    maintenanceMessage: 'আমাদের ডাটাবেস সার্ভারে নিয়মিত রক্ষণাবেক্ষণ এবং সিস্টেম আপগ্রেডের কাজ চলছে। রক্তদাতা অনুসন্ধান ও রেজিস্ট্রেশন সাময়িকভাবে স্থগিত রাখা হয়েছে। শীঘ্রই পুনরায় স্বাভাবিক কার্যক্রম শুরু হবে।',
+    maintenanceRetryButton: 'পুনরায় সংযোগ পরীক্ষা করুন',
+    maintenanceNoticeBanner: 'ডাটাবেস সংযোগে সমস্যা সনাক্ত হয়েছে: প্ল্যাটফর্মটি বর্তমানে রিড-অনলি রক্ষণাবেক্ষণ মোডে চলছে।',
     // সিলেট সিটি ও গুরুত্বপূর্ণ এলাকা
     area_sylhetcitycorporation: 'সিলেট সিটি কর্পোরেশন',
     // সিলেট উপজেলা
@@ -1305,7 +1318,8 @@ export const AppProvider = ({ children }) => {
     }
   });
 
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState<boolean>(false);
 
   // Set default theme to light for a faster, less jarring first paint on mobile.
   const [theme, setTheme] = useState(() => {
@@ -1751,11 +1765,22 @@ export const AppProvider = ({ children }) => {
       // Execute all in parallel
       await Promise.all([donorsFetch, emergenciesFetch]);
 
-    } catch (err: any) {
-      console.error("Error fetching data:", err);
-      setError(err?.message || "Something went wrong while loading data.");
+      // If we succeeded reaching server, reset maintenance mode
+      setIsMaintenanceMode(false);
 
-      // Load offline cache on throw error
+    } catch (err: any) {
+      console.warn("Data fetch warning:", err?.message);
+      const isConnectionIssue = isDatabaseOrConnectionError(err?.message);
+
+      if (isConnectionIssue) {
+        setIsMaintenanceMode(true);
+        // Do NOT populate generic raw error string so individual fields don't display raw red errors
+        setError(null);
+      } else {
+        setError(err?.message || "Something went wrong while loading data.");
+      }
+
+      // Load offline cache on throw error so user can still browse previously cached records
       try {
         const cachedDonors = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
         const cachedRequests = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
@@ -2288,6 +2313,7 @@ export const AppProvider = ({ children }) => {
         emergencyRequests,
         loading,
         error,
+        isMaintenanceMode,
         theme,
         currentDonor,
         setCurrentDonor,

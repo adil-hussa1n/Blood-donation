@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { testDbConnection } from '../config/db.js';
 import {
   getDonors,
   getDonorByPhone,
@@ -57,9 +58,24 @@ import { requireAdmin, requireAdminOrDonor } from '../middleware/auth.js';
 
 const router = Router();
 
-// Health Check
-router.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health Check & Database Status
+router.get('/health', async (req, res) => {
+  const dbConnected = await testDbConnection();
+  if (!dbConnected) {
+    res.status(503).json({
+      status: 'maintenance',
+      database: 'disconnected',
+      message: 'System database is undergoing scheduled maintenance or temporarily unavailable.',
+      timestamp: new Date().toISOString()
+    });
+    return;
+  }
+
+  res.json({
+    status: 'ok',
+    database: 'connected',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // ==========================================

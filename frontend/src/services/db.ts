@@ -13,11 +13,32 @@ const generateUUID = (): string => {
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export function isDatabaseOrConnectionError(errMsg?: string | null): boolean {
+  if (!errMsg) return false;
+  const msg = String(errMsg).toLowerCase();
+  return (
+    msg.includes('cannot reach the backend') ||
+    msg.includes('econnrefused') ||
+    msg.includes('network error') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('networkrequestfailed') ||
+    msg.includes('database is undergoing scheduled maintenance') ||
+    msg.includes('system is currently undergoing maintenance') ||
+    msg.includes('connect etimedout') ||
+    msg.includes('econnreset') ||
+    msg.includes('protocol_connection_lost') ||
+    msg.includes('er_con_count_error') ||
+    msg.includes('too many connections') ||
+    msg.includes('database error') ||
+    msg.includes('service unavailable')
+  );
+}
+
 // Generic HTTP request helper
 async function apiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {}
-): Promise<{ data: T | null; error: { message: string } | null; success?: boolean }> {
+): Promise<{ data: T | null; error: { message: string } | null; success?: boolean; isMaintenance?: boolean }> {
   try {
     const url = getApiUrl(endpoint);
     const headers: Record<string, string> = {
@@ -39,9 +60,18 @@ async function apiRequest<T = any>(
 
     const json = await response.json().catch(() => null);
 
+    if (response.status === 503 || json?.status === 'maintenance') {
+      return {
+        data: null,
+        error: { message: json?.message || 'Database connection is temporarily unavailable. System is in maintenance mode.' },
+        success: false,
+        isMaintenance: true
+      };
+    }
+
     if (!response.ok) {
       const errorMsg = json?.error?.message || json?.message || `HTTP ${response.status}: Request failed.`;
-      return { data: null, error: { message: errorMsg }, success: false };
+      return { data: null, error: { message: errorMsg }, success: false, isMaintenance: isDatabaseOrConnectionError(errorMsg) };
     }
 
     return {
@@ -50,10 +80,12 @@ async function apiRequest<T = any>(
       success: json?.success !== undefined ? json.success : true,
     };
   } catch (err: any) {
+    const errorMsg = err?.message || 'Network error: Cannot reach the backend API server.';
     return {
       data: null,
-      error: { message: err?.message || 'Network error: Cannot reach the backend API server.' },
+      error: { message: errorMsg },
       success: false,
+      isMaintenance: isDatabaseOrConnectionError(errorMsg),
     };
   }
 }
@@ -691,6 +723,18 @@ export const dbService = {
       data: res.data || [],
       error: res.error
     };
+  },
+
+  async checkHealth(): Promise<{ isMaintenance: boolean; message?: string }> {
+    if (isDemoMode) return { isMaintenance: false };
+    const res = await apiRequest('/health');
+    if (res.isMaintenance || res.error) {
+      return {
+        isMaintenance: true,
+        message: res.error?.message || 'Database connection is temporarily unavailable.'
+      };
+    }
+    return { isMaintenance: false };
   }
 };
 

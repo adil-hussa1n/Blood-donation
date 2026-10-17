@@ -13,6 +13,7 @@ export default function Emergency() {
     updateEmergencyRequestStatus,
     loading,
     isAdmin,
+    isMaintenanceMode,
     currentDonor,
     language,
     t,
@@ -592,7 +593,7 @@ export default function Emergency() {
         </div>
       )}
 
-      {errorMsg && (
+      {errorMsg && !isMaintenanceMode && (
         <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950/50 text-rose-800 dark:text-rose-400 p-4 rounded-2xl text-sm flex items-center justify-between gap-3 animate-fade-in max-w-7xl mx-auto shadow-sm">
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 shrink-0 text-rose-500" />

@@ -9,7 +9,7 @@ import GoogleAuthButton from '../components/GoogleAuthButton';
 import { Donor, EmergencyRequest } from '../types';
 
 export default function Home() {
-  const { donors, emergencyRequests, currentDonor, setCurrentDonor, loading, error, language, t } = useApp();
+  const { donors, emergencyRequests, currentDonor, setCurrentDonor, loading, error, isMaintenanceMode, language, t } = useApp();
   const navigate = useNavigate();
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -572,8 +572,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Error Message */}
-            {error && (
+            {/* Error Message (suppressed during maintenance mode to avoid showing raw errors in fields) */}
+            {error && !isMaintenanceMode && (
               <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950 text-rose-700 dark:text-rose-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 shrink-0" />
                 <span>{error}</span>
