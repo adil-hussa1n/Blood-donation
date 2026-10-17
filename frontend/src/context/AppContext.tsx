@@ -1319,7 +1319,13 @@ export const AppProvider = ({ children }) => {
   });
 
   const [error, setError] = useState<string | null>(null);
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState<boolean>(false);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('maintenance') === '1' || params.get('test_maintenance') === 'true';
+    }
+    return false;
+  });
 
   // Set default theme to light for a faster, less jarring first paint on mobile.
   const [theme, setTheme] = useState(() => {
