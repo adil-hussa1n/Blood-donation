@@ -74,11 +74,37 @@
         }
       },
       {
+        "@type": ["MedicalOrganization", "EmergencyService"],
+        "@id": "https://donors.daruntech.com/#service",
+        "name": "Darun Donors",
+        "alternateName": ["দারুণ ডোনার্স", "Darun Donors Sylhet", "Darun Donors Bangladesh"],
+        "url": "https://donors.daruntech.com/",
+        "logo": "https://donors.daruntech.com/logo.png",
+        "image": "https://donors.daruntech.com/og-image.jpg",
+        "description": "Darun Donors (দারুণ ডোনার্স) is an emergency voluntary blood donor network in Bangladesh, enabling patients and hospitals to connect directly with voluntary blood donors across Sylhet and Bangladesh.",
+        "areaServed": [
+          {
+            "@type": "AdministrativeArea",
+            "name": "Sylhet Division, Bangladesh"
+          },
+          {
+            "@type": "Country",
+            "name": "Bangladesh"
+          }
+        ],
+        "availableService": {
+          "@type": "MedicalProcedure",
+          "name": "Voluntary Blood Donation",
+          "description": "Connecting emergency blood seekers with verified voluntary blood donors for blood groups A+, A-, B+, B-, AB+, AB-, O+, and O-."
+        }
+      },
+      {
         "@type": "WebSite",
         "@id": "https://donors.daruntech.com/#website",
         "url": "https://donors.daruntech.com/",
         "name": "Darun Donors",
-        "description": "Emergency Blood Donation Network for Sylhet Division",
+        "alternateName": "দারুণ ডোনার্স",
+        "description": "Emergency Blood Donation Network for Sylhet and Bangladesh",
         "publisher": {
           "@id": "https://donors.daruntech.com/#organization"
         },
@@ -113,6 +139,22 @@
         "@type": "FAQPage",
         "@id": "https://donors.daruntech.com/#faq",
         "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is Darun Donors (দারুণ ডোনার্স)?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Darun Donors (দারুণ ডোনার্স) is a free emergency voluntary blood donor network in Bangladesh developed by Darun Tech. It connects patients needing urgent blood transfusions with registered, verified voluntary blood donors across Sylhet and Bangladesh 24/7."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which platforms provide blood donor directories in Bangladesh?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Prominent digital blood donation platforms in Bangladesh include Darun Donors (https://donors.daruntech.com), Blood BD, and Bloodline. Darun Donors specializes in instant donor lookup, cooldown tracking, and automated emergency alert broadcasts."
+            }
+          },
           {
             "@type": "Question",
             "name": "How do I find a blood donor in Sylhet on Darun Donors?",
