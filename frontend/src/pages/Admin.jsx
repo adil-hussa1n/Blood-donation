@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X, UserX, FileX, Clock, Phone, AlertCircle, CreditCard, Tag, Plus, Edit3, Edit2, Edit, Save, Activity, History, UserCheck, RefreshCw } from 'lucide-react';
+import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X, UserX, FileX, Clock, Phone, AlertCircle, CreditCard, Tag, Plus, Edit3, Edit2, Edit, Save, Activity, History, UserCheck, RefreshCw, LayoutList, LayoutGrid } from 'lucide-react';
 import { useApp, BLOOD_GROUPS, DISTRICT_AREAS, normalizeDonor, getAreaLabel, getDistrictBadge, isDefaultLetterAvatar } from '../context/AppContext';
 
 export default function Admin() {
@@ -630,8 +630,30 @@ export default function Admin() {
     const startIndex = (emergencyPage - 1) * itemsPerPage;
     return adminFilteredEmergencies.slice(startIndex, startIndex + itemsPerPage);
   }, [adminFilteredEmergencies, emergencyPage]);
+  // Admin View Mode Switcher ('table' | 'grid')
+  const [adminViewMode, setAdminViewMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('darun_admin_view_mode');
+      return saved === 'grid' ? 'grid' : 'table';
+    } catch {
+      return 'table';
+    }
+  });
 
-  // ==============================================================
+  const handleAdminViewModeChange = (mode) => {
+    setAdminViewMode(mode);
+    try {
+      localStorage.setItem('darun_admin_view_mode', mode);
+    } catch {}
+  };
+
+  // Pagination for Activity Logs
+  const [activityPage, setActivityPage] = useState(1);
+  const activityItemsPerPage = 10;
+
+  useEffect(() => {
+    setActivityPage(1);
+  }, [activitySearchQuery, activityTypeFilter, activityLogs.length]);
   // RENDER: LOGIN FORM
   // ==============================================================
   if (!isAdmin) {
@@ -1379,11 +1401,41 @@ export default function Admin() {
         {adminTab === 'donors' && (
           <div className="space-y-4">
 
-            {/* Header with categories */}
+            {/* Header with categories & View Switcher */}
             <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 space-y-4 text-left">
-              <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
-                {t('donorRecordsHeader')}
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
+                  {t('donorRecordsHeader')}
+                </h3>
+
+                {/* Table / Grid Switcher */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 shadow-xs self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => handleAdminViewModeChange('table')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${adminViewMode === 'table'
+                      ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+                      }`}
+                    title={language === 'bn' ? 'টেবিল ভিউ' : 'Table View'}
+                  >
+                    <LayoutList className="w-3.5 h-3.5" />
+                    <span>{language === 'bn' ? 'টেবিল' : 'Table'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAdminViewModeChange('grid')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${adminViewMode === 'grid'
+                      ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+                      }`}
+                    title={language === 'bn' ? 'গ্রিড ভিউ' : 'Grid View'}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span>{language === 'bn' ? 'গ্রিড' : 'Grid'}</span>
+                  </button>
+                </div>
+              </div>
 
               {/* Category selector */}
               <div className="flex flex-wrap gap-2 items-center animate-fade-in">
@@ -1425,24 +1477,101 @@ export default function Admin() {
             ) : (
               <>
                 <div className="animate-fade-in">
-                  {/* Desktop Table View */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left text-sm border-collapse table-fixed">
-                      <thead>
-                        <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
-                          <th className="p-4 w-[22%]">{t('nameHeader')}</th>
-                          <th className="p-4 w-[12%]">{t('bloodGroupHeader')}</th>
-                          <th className="p-4 w-[18%]">{t('phoneHeader')}</th>
-                          <th className="p-4 w-[22%]">{t('areaHeader')}</th>
-                          <th className="p-4 w-[14%]">{t('donationsHeader')}</th>
-                          <th className="p-4 w-[12%] text-center">{t('actionsHeader')}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                  {adminViewMode === 'table' ? (
+                    <>
+                      {/* Desktop Table View */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left text-sm border-collapse table-fixed">
+                          <thead>
+                            <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                              <th className="p-4 w-[22%]">{t('nameHeader')}</th>
+                              <th className="p-4 w-[12%]">{t('bloodGroupHeader')}</th>
+                              <th className="p-4 w-[18%]">{t('phoneHeader')}</th>
+                              <th className="p-4 w-[22%]">{t('areaHeader')}</th>
+                              <th className="p-4 w-[14%]">{t('donationsHeader')}</th>
+                              <th className="p-4 w-[12%] text-center">{t('actionsHeader')}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                            {paginatedDonors.map((donor) => (
+                              <tr key={donor.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                                <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={donor.name}>
+                                  <div className="flex items-center gap-2.5">
+                                    {donor.avatar_url && !isDefaultLetterAvatar(donor.avatar_url) ? (
+                                      <div className="relative shrink-0">
+                                        <img
+                                          src={donor.avatar_url}
+                                          alt={donor.name}
+                                          referrerPolicy="no-referrer"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                            const fallback = e.currentTarget.nextElementSibling;
+                                            if (fallback) fallback.style.display = 'flex';
+                                          }}
+                                          className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
+                                        />
+                                        <div className="w-8 h-8 rounded-full bg-red-650 text-white font-black text-xs items-center justify-center border border-red-500/30 hidden">
+                                          {donor.blood_group}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600 to-rose-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs border border-red-400/40 shrink-0">
+                                        {donor.blood_group}
+                                      </div>
+                                    )}
+                                    <span className="truncate">{donor.name}</span>
+                                  </div>
+                                </td>
+                                <td className="p-4">
+                                  <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-2 py-0.5 rounded-md text-xs">
+                                    {donor.blood_group}
+                                  </span>
+                                </td>
+                                <td className="p-4 truncate overflow-hidden">{donor.phone}</td>
+                                <td className="p-4 truncate overflow-hidden" title={getAreaLabel(donor.area, t)}>
+                                  <span className="flex items-center gap-1.5">
+                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border shrink-0 ${getDistrictBadge(donor.area, language).color.bg} ${getDistrictBadge(donor.area, language).color.text} ${getDistrictBadge(donor.area, language).color.border}`}>
+                                      {getDistrictBadge(donor.area, language).label}
+                                    </span>
+                                    <span className="truncate">{getAreaLabel(donor.area, t)}</span>
+                                  </span>
+                                </td>
+                                <td className="p-4 font-semibold">
+                                  <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 font-black text-sm border border-red-500/15 mr-2">
+                                    {normalizeDonor(donor).total_donations}
+                                  </span>
+                                  {t('timesUnit', { count: normalizeDonor(donor).total_donations })}
+                                </td>
+                                <td className="p-4 text-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <button
+                                      onClick={() => openEditDonorModal(donor)}
+                                      className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 dark:hover:bg-amber-500/15 p-2 rounded-xl transition-all cursor-pointer"
+                                      title="Edit donor details"
+                                    >
+                                      <Edit3 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => startDeleteConfirm(donor.id, 'donor')}
+                                      className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all cursor-pointer"
+                                      title="Delete fake/spam donor"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile Stack Card View */}
+                      <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
                         {paginatedDonors.map((donor) => (
-                          <tr key={donor.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
-                            <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={donor.name}>
-                              <div className="flex items-center gap-2.5">
+                          <div key={donor.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-2.5 text-left">
                                 {donor.avatar_url && !isDefaultLetterAvatar(donor.avatar_url) ? (
                                   <div className="relative shrink-0">
                                     <img
@@ -1454,135 +1583,153 @@ export default function Admin() {
                                         const fallback = e.currentTarget.nextElementSibling;
                                         if (fallback) fallback.style.display = 'flex';
                                       }}
-                                      className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
+                                      className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
                                     />
-                                    <div className="w-8 h-8 rounded-full bg-red-650 text-white font-black text-xs items-center justify-center border border-red-500/30 hidden">
+                                    <div className="w-10 h-10 rounded-full bg-red-650 text-white font-black text-xs items-center justify-center border border-red-500/30 hidden">
                                       {donor.blood_group}
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600 to-rose-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs border border-red-400/40 shrink-0">
+                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-rose-600 text-white font-black text-xs flex items-center justify-center border border-red-400/40 shadow-xs shrink-0">
                                     {donor.blood_group}
                                   </div>
                                 )}
-                                <span className="truncate">{donor.name}</span>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-2 py-0.5 rounded-md text-xs">
-                                {donor.blood_group}
-                              </span>
-                            </td>
-                            <td className="p-4 truncate overflow-hidden">{donor.phone}</td>
-                            <td className="p-4 truncate overflow-hidden" title={getAreaLabel(donor.area, t)}>
-                              <span className="flex items-center gap-1.5">
-                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border shrink-0 ${getDistrictBadge(donor.area, language).color.bg} ${getDistrictBadge(donor.area, language).color.text} ${getDistrictBadge(donor.area, language).color.border}`}>
-                                  {getDistrictBadge(donor.area, language).label}
-                                </span>
-                                <span className="truncate">{getAreaLabel(donor.area, t)}</span>
-                              </span>
-                            </td>
-                            <td className="p-4 font-semibold">
-                              <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 font-black text-sm border border-red-500/15 mr-2">
-                                {normalizeDonor(donor).total_donations}
-                              </span>
-                              {t('timesUnit', { count: normalizeDonor(donor).total_donations })}
-                            </td>
-                            <td className="p-4 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <button
-                                  onClick={() => openEditDonorModal(donor)}
-                                  className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 dark:hover:bg-amber-500/15 p-2 rounded-xl transition-all cursor-pointer"
-                                  title="Edit donor details"
-                                >
-                                  <Edit3 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => startDeleteConfirm(donor.id, 'donor')}
-                                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all cursor-pointer"
-                                  title="Delete fake/spam donor"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Mobile Stack Card View */}
-                  <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
-                    {paginatedDonors.map((donor) => (
-                      <div key={donor.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-2.5 text-left">
-                            {donor.avatar_url && !isDefaultLetterAvatar(donor.avatar_url) ? (
-                              <div className="relative shrink-0">
-                                <img
-                                  src={donor.avatar_url}
-                                  alt={donor.name}
-                                  referrerPolicy="no-referrer"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    const fallback = e.currentTarget.nextElementSibling;
-                                    if (fallback) fallback.style.display = 'flex';
-                                  }}
-                                  className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
-                                />
-                                <div className="w-10 h-10 rounded-full bg-red-650 text-white font-black text-xs items-center justify-center border border-red-500/30 hidden">
-                                  {donor.blood_group}
+                                <div className="space-y-0.5">
+                                  <span className="font-extrabold text-slate-900 dark:text-white text-base block">
+                                    {donor.name}
+                                  </span>
+                                  <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                                    {donor.phone}
+                                  </span>
                                 </div>
                               </div>
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-rose-600 text-white font-black text-xs flex items-center justify-center border border-red-400/40 shadow-xs shrink-0">
+                              <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-3 py-1 rounded-lg text-xs">
                                 {donor.blood_group}
-                              </div>
-                            )}
-                            <div className="space-y-0.5">
-                              <span className="font-extrabold text-slate-900 dark:text-white text-base block">
-                                {donor.name}
-                              </span>
-                              <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
-                                {donor.phone}
                               </span>
                             </div>
+
+                            <div className="flex items-center justify-between text-xs text-slate-650 dark:text-zinc-300 pt-1">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
+                                <span className="font-medium">{getAreaLabel(donor.area, t)}</span>
+                              </span>
+                              <span className="font-bold bg-slate-100 dark:bg-zinc-800/60 px-2 py-0.5 rounded-md text-[11px]">
+                                {t('timesUnit', { count: normalizeDonor(donor).total_donations })}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-1">
+                              <button
+                                onClick={() => openEditDonorModal(donor)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                Edit Details
+                              </button>
+                              <button
+                                onClick={() => startDeleteConfirm(donor.id, 'donor')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                {t('deleteDonorAction')}
+                              </button>
+                            </div>
                           </div>
-                          <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-3 py-1 rounded-lg text-xs">
-                            {donor.blood_group}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs text-slate-650 dark:text-zinc-300 pt-1">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5 text-red-500/60 shrink-0" />
-                            <span className="font-medium">{getAreaLabel(donor.area, t)}</span>
-                          </span>
-                          <span className="font-bold bg-slate-100 dark:bg-zinc-800/60 px-2 py-0.5 rounded-md text-[11px]">
-                            {t('timesUnit', { count: normalizeDonor(donor).total_donations })}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-1">
-                          <button
-                            onClick={() => openEditDonorModal(donor)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            Edit Details
-                          </button>
-                          <button
-                            onClick={() => startDeleteConfirm(donor.id, 'donor')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            {t('deleteDonorAction')}
-                          </button>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </>
+                  ) : (
+                    /* GRID VIEW FOR DONORS */
+                    <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-fade-in">
+                      {paginatedDonors.map((donor) => {
+                        const distBadge = getDistrictBadge(donor.area, language);
+                        return (
+                          <div
+                            key={donor.id}
+                            className="glass-panel p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between text-left space-y-3"
+                          >
+                            <div className="flex items-start justify-between gap-2.5">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                {donor.avatar_url && !isDefaultLetterAvatar(donor.avatar_url) ? (
+                                  <div className="relative shrink-0">
+                                    <img
+                                      src={donor.avatar_url}
+                                      alt={donor.name}
+                                      referrerPolicy="no-referrer"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        const fallback = e.currentTarget.nextElementSibling;
+                                        if (fallback) fallback.style.display = 'flex';
+                                      }}
+                                      className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
+                                    />
+                                    <div className="w-10 h-10 rounded-full bg-red-650 text-white font-black text-xs items-center justify-center border border-red-500/30 hidden">
+                                      {donor.blood_group}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-rose-600 text-white font-black text-xs flex items-center justify-center shadow-xs border border-red-400/40 shrink-0">
+                                    {donor.blood_group}
+                                  </div>
+                                )}
+                                <div className="min-w-0">
+                                  <h4 className="font-extrabold text-slate-900 dark:text-white text-sm truncate" title={donor.name}>
+                                    {donor.name}
+                                  </h4>
+                                  <p className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
+                                    {donor.phone}
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="bg-red-500 text-white font-black px-2.5 py-0.5 rounded-lg text-xs shrink-0 shadow-xs">
+                                {donor.blood_group}
+                              </span>
+                            </div>
+
+                            <div className="space-y-1.5 text-xs text-slate-600 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-zinc-800/60">
+                              <div className="flex items-center gap-1.5 truncate" title={getAreaLabel(donor.area, t)}>
+                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border shrink-0 ${distBadge.color.bg} ${distBadge.color.text} ${distBadge.color.border}`}>
+                                  {distBadge.label}
+                                </span>
+                                <span className="truncate font-medium">{getAreaLabel(donor.area, t)}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/50 dark:border-zinc-700/50">
+                                <span className="font-medium text-slate-500">Donations:</span>
+                                <span className="font-extrabold text-slate-900 dark:text-white">
+                                  {normalizeDonor(donor).total_donations} times
+                                </span>
+                              </div>
+                              {donor.last_donation_date && (
+                                <div className="flex items-center justify-between text-[11px]">
+                                  <span className="font-medium text-slate-500">Last donated:</span>
+                                  <span className="font-semibold text-slate-700 dark:text-zinc-300">
+                                    {String(donor.last_donation_date).substring(0, 10)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100 dark:border-zinc-800/80">
+                              <button
+                                onClick={() => openEditDonorModal(donor)}
+                                className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                onClick={() => startDeleteConfirm(donor.id, 'donor')}
+                                className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 {/* Pagination Controls */}
                 {totalDonorPages > 1 && (
@@ -1617,10 +1764,38 @@ export default function Admin() {
 
         {adminTab === 'emergencies' && (
           <div className="space-y-4">
-            <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 flex items-center justify-between">
+            <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
                 {t('activeEmergencyRecordsHeader')}
               </h3>
+
+              {/* Table / Grid Switcher */}
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 shadow-xs self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => handleAdminViewModeChange('table')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${adminViewMode === 'table'
+                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+                    }`}
+                  title={language === 'bn' ? 'টেবিল ভিউ' : 'Table View'}
+                >
+                  <LayoutList className="w-3.5 h-3.5" />
+                  <span>{language === 'bn' ? 'টেবিল' : 'Table'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAdminViewModeChange('grid')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${adminViewMode === 'grid'
+                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+                    }`}
+                  title={language === 'bn' ? 'গ্রিড ভিউ' : 'Grid View'}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>{language === 'bn' ? 'গ্রিড' : 'Grid'}</span>
+                </button>
+              </div>
             </div>
 
             {safeEmergencies.length === 0 ? (
@@ -1630,112 +1805,180 @@ export default function Admin() {
             ) : (
               <>
                 <div className="animate-fade-in">
-                  {/* Desktop Table View */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left text-sm border-collapse table-fixed">
-                      <thead>
-                        <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
-                          <th className="p-4 w-[12%]">{t('bloodNeededHeader')}</th>
-                          <th className="p-4 w-[22%]">{t('hospitalAreaHeader')}</th>
-                          <th className="p-4 w-[16%]">{t('contactPhoneHeader')}</th>
-                          <th className="p-4 w-[24%]">{t('noteDetailsHeader')}</th>
-                          <th className="p-4 w-[14%]">{t('postedDateHeader')}</th>
-                          <th className="p-4 w-[12%] text-center">{t('actionsHeader')}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                  {adminViewMode === 'table' ? (
+                    <>
+                      {/* Desktop Table View */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left text-sm border-collapse table-fixed">
+                          <thead>
+                            <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                              <th className="p-4 w-[12%]">{t('bloodNeededHeader')}</th>
+                              <th className="p-4 w-[22%]">{t('hospitalAreaHeader')}</th>
+                              <th className="p-4 w-[16%]">{t('contactPhoneHeader')}</th>
+                              <th className="p-4 w-[24%]">{t('noteDetailsHeader')}</th>
+                              <th className="p-4 w-[14%]">{t('postedDateHeader')}</th>
+                              <th className="p-4 w-[12%] text-center">{t('actionsHeader')}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                            {paginatedEmergencies.map((req) => (
+                              <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                                <td className="p-4">
+                                  <span className="bg-red-500 text-white font-extrabold px-2.5 py-0.5 rounded-lg text-xs">
+                                    {req.blood_group}
+                                  </span>
+                                </td>
+                                <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={getAreaLabel(req.area, t)}>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border shrink-0 ${getDistrictBadge(req.area, language).color.bg} ${getDistrictBadge(req.area, language).color.text} ${getDistrictBadge(req.area, language).color.border}`}>
+                                      {getDistrictBadge(req.area, language).label}
+                                    </span>
+                                    <span className="truncate">{getAreaLabel(req.area, t)}</span>
+                                  </div>
+                                </td>
+                                <td className="p-4 truncate overflow-hidden">{req.contact}</td>
+                                <td className="p-4 truncate overflow-hidden" title={req.note}>
+                                  {req.note || t('noDescription')}
+                                </td>
+                                <td className="p-4 text-xs text-slate-400 dark:text-zinc-500">
+                                  {new Date(req.created_at).toLocaleString()}
+                                </td>
+                                <td className="p-4 text-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <button
+                                      onClick={() => openEditEmergencyModal(req)}
+                                      className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 dark:hover:bg-amber-500/15 p-2 rounded-xl transition-all cursor-pointer"
+                                      title="Edit emergency request details"
+                                    >
+                                      <Edit3 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => startDeleteConfirm(req.id, 'emergency')}
+                                      className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all cursor-pointer"
+                                      title="Delete emergency request"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile Stack Card View */}
+                      <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
                         {paginatedEmergencies.map((req) => (
-                          <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
-                            <td className="p-4">
-                              <span className="bg-red-500 text-white font-extrabold px-2.5 py-0.5 rounded-lg text-xs">
+                          <div key={req.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
+                            <div className="flex justify-between items-start">
+                              <div className="text-left space-y-1">
+                                <span className="font-extrabold text-slate-900 dark:text-white text-base block">
+                                  {getAreaLabel(req.area, t)}
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                                  {req.contact}
+                                </span>
+                              </div>
+                              <span className="bg-red-500 text-white font-black px-3 py-1 rounded-lg text-xs">
                                 {req.blood_group}
                               </span>
-                            </td>
-                            <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={getAreaLabel(req.area, t)}>
-                              <div className="flex items-center gap-1.5">
-                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border shrink-0 ${getDistrictBadge(req.area, language).color.bg} ${getDistrictBadge(req.area, language).color.text} ${getDistrictBadge(req.area, language).color.border}`}>
-                                  {getDistrictBadge(req.area, language).label}
-                                </span>
-                                <span className="truncate">{getAreaLabel(req.area, t)}</span>
-                              </div>
-                            </td>
-                            <td className="p-4 truncate overflow-hidden">{req.contact}</td>
-                            <td className="p-4 truncate overflow-hidden" title={req.note}>
-                              {req.note || t('noDescription')}
-                            </td>
-                            <td className="p-4 text-xs text-slate-400 dark:text-zinc-500">
-                              {new Date(req.created_at).toLocaleString()}
-                            </td>
-                            <td className="p-4 text-center">
-                              <div className="flex items-center justify-center gap-1">
+                            </div>
+
+                            {req.note && (
+                              <p className="text-xs text-slate-650 dark:text-zinc-355 bg-slate-50 dark:bg-zinc-900/40 p-2.5 rounded-xl border border-slate-200/20 dark:border-zinc-800/30 text-left leading-normal">
+                                {req.note}
+                              </p>
+                            )}
+
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-zinc-500 pt-1">
+                              <span>{new Date(req.created_at).toLocaleString()}</span>
+                              <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => openEditEmergencyModal(req)}
-                                  className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 dark:hover:bg-amber-500/15 p-2 rounded-xl transition-all cursor-pointer"
-                                  title="Edit emergency request details"
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
                                 >
-                                  <Edit3 className="w-4 h-4" />
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  Edit
                                 </button>
                                 <button
                                   onClick={() => startDeleteConfirm(req.id, 'emergency')}
-                                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all cursor-pointer"
-                                  title="Delete emergency request"
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  {t('deleteRequest')}
                                 </button>
                               </div>
-                            </td>
-                          </tr>
+                            </div>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Mobile Stack Card View */}
-                  <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
-                    {paginatedEmergencies.map((req) => (
-                      <div key={req.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
-                        <div className="flex justify-between items-start">
-                          <div className="text-left space-y-1">
-                            <span className="font-extrabold text-slate-900 dark:text-white text-base block">
-                              {getAreaLabel(req.area, t)}
-                            </span>
-                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
-                              {req.contact}
-                            </span>
-                          </div>
-                          <span className="bg-red-500 text-white font-black px-3 py-1 rounded-lg text-xs">
-                            {req.blood_group}
-                          </span>
-                        </div>
-
-                        {req.note && (
-                          <p className="text-xs text-slate-650 dark:text-zinc-355 bg-slate-50 dark:bg-zinc-900/40 p-2.5 rounded-xl border border-slate-200/20 dark:border-zinc-800/30 text-left leading-normal">
-                            {req.note}
-                          </p>
-                        )}
-
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-zinc-500 pt-1">
-                          <span>{new Date(req.created_at).toLocaleString()}</span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => openEditEmergencyModal(req)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => startDeleteConfirm(req.id, 'emergency')}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              {t('deleteRequest')}
-                            </button>
-                          </div>
-                        </div>
                       </div>
-                    ))}
-                  </div>
+                    </>
+                  ) : (
+                    /* GRID VIEW FOR EMERGENCIES */
+                    <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-fade-in">
+                      {paginatedEmergencies.map((req) => {
+                        const distBadge = getDistrictBadge(req.area, language);
+                        return (
+                          <div
+                            key={req.id}
+                            className="glass-panel p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between text-left space-y-3"
+                          >
+                            <div className="flex items-start justify-between gap-2.5">
+                              <div className="space-y-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border shrink-0 ${distBadge.color.bg} ${distBadge.color.text} ${distBadge.color.border}`}>
+                                    {distBadge.label}
+                                  </span>
+                                  <h4 className="font-extrabold text-slate-900 dark:text-white text-sm truncate" title={getAreaLabel(req.area, t)}>
+                                    {getAreaLabel(req.area, t)}
+                                  </h4>
+                                </div>
+                                <p className="text-xs font-mono font-bold text-slate-600 dark:text-zinc-400">
+                                  {req.contact}
+                                </p>
+                              </div>
+                              <span className="bg-red-600 text-white font-black px-2.5 py-1 rounded-xl text-xs shrink-0 shadow-xs">
+                                {req.blood_group}
+                              </span>
+                            </div>
+
+                            {req.note ? (
+                              <p className="text-xs text-slate-650 dark:text-zinc-350 bg-slate-50 dark:bg-zinc-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-zinc-800/60 leading-relaxed line-clamp-3">
+                                {req.note}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-slate-400 italic bg-slate-50 dark:bg-zinc-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-zinc-800/60">
+                                {t('noDescription')}
+                              </p>
+                            )}
+
+                            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/80 space-y-2.5">
+                              <span className="text-[11px] text-slate-400 dark:text-zinc-500 block">
+                                {new Date(req.created_at).toLocaleString()}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => openEditEmergencyModal(req)}
+                                  className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  onClick={() => startDeleteConfirm(req.id, 'emergency')}
+                                  className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 {/* Pagination Controls */}
                 {totalEmergencyPages > 1 && (
@@ -3049,8 +3292,36 @@ export default function Admin() {
                 </div>
               </div>
 
-              {/* Refresh & Filters */}
+              {/* Refresh, View Switcher & Filters */}
               <div className="flex flex-wrap items-center gap-2">
+                {/* Table / Grid Switcher */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => handleAdminViewModeChange('table')}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${adminViewMode === 'table'
+                      ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+                      }`}
+                    title={language === 'bn' ? 'টেবিল ভিউ' : 'Table View'}
+                  >
+                    <LayoutList className="w-3.5 h-3.5" />
+                    <span>{language === 'bn' ? 'টেবিল' : 'Table'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAdminViewModeChange('grid')}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${adminViewMode === 'grid'
+                      ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+                      }`}
+                    title={language === 'bn' ? 'গ্রিড ভিউ' : 'Grid View'}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span>{language === 'bn' ? 'গ্রিড' : 'Grid'}</span>
+                  </button>
+                </div>
+
                 <div className="relative">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
@@ -3058,7 +3329,7 @@ export default function Admin() {
                     value={activitySearchQuery}
                     onChange={(e) => setActivitySearchQuery(e.target.value)}
                     placeholder={language === 'bn' ? 'নাম, ফোন বা ইমেইল খুঁজুন...' : 'Search name, phone, email...'}
-                    className="pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/70 dark:bg-zinc-800/70 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-44 sm:w-56"
+                    className="pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/70 dark:bg-zinc-800/70 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-44 sm:w-52"
                   />
                 </div>
 
@@ -3112,6 +3383,11 @@ export default function Admin() {
                 return matchesSearch && matchesType;
               });
 
+              const totalActivityPages = Math.max(1, Math.ceil(filtered.length / activityItemsPerPage));
+              const currentActivityPage = Math.min(activityPage, totalActivityPages);
+              const startIndex = (currentActivityPage - 1) * activityItemsPerPage;
+              const paginatedLogs = filtered.slice(startIndex, startIndex + activityItemsPerPage);
+
               if (activityLogsLoading && activityLogs.length === 0) {
                 return (
                   <div className="p-12 text-center text-sm text-slate-500 dark:text-zinc-400 flex items-center justify-center gap-2">
@@ -3151,156 +3427,237 @@ export default function Admin() {
                 return { label: type.toUpperCase() || 'EVENT', bg: 'bg-slate-500/15 text-slate-600 dark:text-zinc-300 border-slate-500/25' };
               };
 
+              // Helper: extract genuine changes from metadata (only fields that actually changed)
+              const extractGenuineChanges = (meta) => {
+                if (!meta) return [];
+                let parsed = meta;
+                if (typeof parsed === 'string') {
+                  try { parsed = JSON.parse(parsed); } catch { return []; }
+                }
+                if (!parsed || !parsed.changes || typeof parsed.changes !== 'object') return [];
+
+                return Object.entries(parsed.changes)
+                  .filter(([_, val]) => {
+                    if (val && typeof val === 'object' && ('from' in val || 'to' in val)) {
+                      const fromVal = String(val.from ?? '').trim();
+                      const toVal = String(val.to ?? '').trim();
+                      return fromVal !== toVal;
+                    }
+                    return false;
+                  })
+                  .map(([field, val]) => ({
+                    field,
+                    from: String(val.from || 'none'),
+                    to: String(val.to || 'none')
+                  }));
+              };
+
               return (
                 <div className="animate-fade-in">
-                  {/* Desktop Table View */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left text-sm border-collapse table-fixed">
-                      <thead>
-                        <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
-                          <th className="p-4 w-[18%]">Timestamp</th>
-                          <th className="p-4 w-[24%]">User</th>
-                          <th className="p-4 w-[15%]">Event Type</th>
-                          <th className="p-4 w-[31%]">Description & Context</th>
-                          <th className="p-4 w-[12%]">IP Address</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
-                        {filtered.map((log) => {
+                  {adminViewMode === 'table' ? (
+                    <>
+                      {/* Desktop Table View */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left text-sm border-collapse table-fixed">
+                          <thead>
+                            <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                              <th className="p-4 w-[18%]">Timestamp</th>
+                              <th className="p-4 w-[24%]">User</th>
+                              <th className="p-4 w-[15%]">Event Type</th>
+                              <th className="p-4 w-[31%]">Description & Context</th>
+                              <th className="p-4 w-[12%]">IP Address</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                            {paginatedLogs.map((log) => {
+                              const badge = getActivityBadge(log.activity_type);
+                              const genuineChanges = extractGenuineChanges(log.metadata);
+                              return (
+                                <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                                  <td className="p-4 text-xs font-bold text-slate-500 dark:text-zinc-400">
+                                    <span className="block text-slate-900 dark:text-white">
+                                      {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                    </span>
+                                    <span className="text-[11px] opacity-75">
+                                      {new Date(log.created_at).toLocaleDateString()}
+                                    </span>
+                                  </td>
+                                  <td className="p-4">
+                                    <span className="font-extrabold text-slate-900 dark:text-white block truncate">
+                                      {log.user_name || 'Guest / Unregistered'}
+                                    </span>
+                                    <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium block">
+                                      {log.user_phone || log.user_email || '—'}
+                                    </span>
+                                  </td>
+                                  <td className="p-4">
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${badge.bg}`}>
+                                      {badge.label}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-xs text-slate-800 dark:text-zinc-200">
+                                    <span className="font-semibold block leading-relaxed">{log.description}</span>
+                                    {genuineChanges.length > 0 && (
+                                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                        {genuineChanges.map((change) => (
+                                          <span key={change.field} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 font-medium text-[11px] border border-amber-500/20">
+                                            <span className="font-bold capitalize">{change.field.replace(/_/g, ' ')}:</span>
+                                            <span className="line-through text-slate-400 dark:text-zinc-500">{change.from}</span>
+                                            <span>→</span>
+                                            <span className="font-bold text-slate-900 dark:text-white">{change.to}</span>
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="p-4 text-xs font-mono">
+                                    {log.ip_address ? (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-750">
+                                        {log.ip_address}
+                                      </span>
+                                    ) : (
+                                      <span className="text-slate-400 dark:text-zinc-600">—</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile Stack View */}
+                      <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
+                        {paginatedLogs.map((log) => {
                           const badge = getActivityBadge(log.activity_type);
+                          const genuineChanges = extractGenuineChanges(log.metadata);
                           return (
-                            <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
-                              <td className="p-4 text-xs font-bold text-slate-500 dark:text-zinc-400">
-                                <span className="block text-slate-900 dark:text-white">
-                                  {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                </span>
-                                <span className="text-[11px] opacity-75">
-                                  {new Date(log.created_at).toLocaleDateString()}
-                                </span>
-                              </td>
-                              <td className="p-4">
-                                <span className="font-extrabold text-slate-900 dark:text-white block truncate">
-                                  {log.user_name || 'Guest / Unregistered'}
-                                </span>
-                                <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium block">
-                                  {log.user_phone || log.user_email || '—'}
-                                </span>
-                              </td>
-                              <td className="p-4">
+                            <div key={log.id} className="p-4 space-y-2 text-left hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
+                              <div className="flex items-center justify-between gap-2">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${badge.bg}`}>
                                   {badge.label}
                                 </span>
-                              </td>
-                              <td className="p-4 text-xs text-slate-800 dark:text-zinc-200">
-                                <span className="font-semibold block leading-relaxed">{log.description}</span>
-                                {(() => {
-                                  let meta = log.metadata;
-                                  if (typeof meta === 'string') {
-                                    try { meta = JSON.parse(meta); } catch (e) { meta = null; }
-                                  }
-                                  if (meta && meta.changes && typeof meta.changes === 'object' && Object.keys(meta.changes).length > 0) {
-                                    return (
-                                      <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                        {Object.entries(meta.changes).map(([field, val]) => {
-                                          if (val && typeof val === 'object' && ('from' in val || 'to' in val)) {
-                                            return (
-                                              <span key={field} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 font-medium text-[11px] border border-amber-500/20">
-                                                <span className="font-bold capitalize">{field.replace(/_/g, ' ')}:</span>
-                                                <span className="line-through text-slate-400 dark:text-zinc-500">{String(val.from || 'none')}</span>
-                                                <span>→</span>
-                                                <span className="font-bold text-slate-900 dark:text-white">{String(val.to || 'none')}</span>
-                                              </span>
-                                            );
-                                          }
-                                          return (
-                                            <span key={field} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-[11px] border border-slate-200 dark:border-zinc-700">
-                                              <span className="font-bold capitalize">{field.replace(/_/g, ' ')}:</span>
-                                              <span>{String(val)}</span>
-                                            </span>
-                                          );
-                                        })}
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                })()}
-                              </td>
-                              <td className="p-4 text-xs font-mono">
-                                {log.ip_address ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-750">
-                                    {log.ip_address}
-                                  </span>
-                                ) : (
-                                  <span className="text-slate-400 dark:text-zinc-600">—</span>
-                                )}
-                              </td>
-                            </tr>
+                                <span className="text-[11px] text-slate-400 dark:text-zinc-500">
+                                  {new Date(log.created_at).toLocaleString()}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="font-extrabold text-slate-900 dark:text-white text-sm block">
+                                  {log.user_name || 'Guest / Unregistered'}
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                                  {log.user_phone || log.user_email || '—'}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-700 dark:text-zinc-300 leading-normal bg-slate-50 dark:bg-zinc-800/40 p-2 rounded-xl border border-slate-100 dark:border-zinc-800 font-medium">
+                                {log.description}
+                              </p>
+                              {genuineChanges.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                  {genuineChanges.map((change) => (
+                                    <span key={change.field} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 font-medium text-[10px] border border-amber-500/20">
+                                      <span className="font-bold capitalize">{change.field.replace(/_/g, ' ')}:</span>
+                                      <span className="line-through text-slate-400 dark:text-zinc-500">{change.from}</span>
+                                      <span>→</span>
+                                      <span className="font-bold text-slate-900 dark:text-white">{change.to}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {log.ip_address && (
+                                <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 block">
+                                  IP: {log.ip_address}
+                                </span>
+                              )}
+                            </div>
                           );
                         })}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Mobile Stack View */}
-                  <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
-                    {filtered.map((log) => {
-                      const badge = getActivityBadge(log.activity_type);
-                      let meta = log.metadata;
-                      if (typeof meta === 'string') {
-                        try { meta = JSON.parse(meta); } catch (e) { meta = null; }
-                      }
-                      return (
-                        <div key={log.id} className="p-4 space-y-2 text-left hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${badge.bg}`}>
-                              {badge.label}
-                            </span>
-                            <span className="text-[11px] text-slate-400 dark:text-zinc-500">
-                              {new Date(log.created_at).toLocaleString()}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="font-extrabold text-slate-900 dark:text-white text-sm block">
-                              {log.user_name || 'Guest / Unregistered'}
-                            </span>
-                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
-                              {log.user_phone || log.user_email || '—'}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-700 dark:text-zinc-300 leading-normal bg-slate-50 dark:bg-zinc-800/40 p-2 rounded-xl border border-slate-100 dark:border-zinc-800 font-medium">
-                            {log.description}
-                          </p>
-                          {meta && meta.changes && typeof meta.changes === 'object' && Object.keys(meta.changes).length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {Object.entries(meta.changes).map(([field, val]) => {
-                                if (val && typeof val === 'object' && ('from' in val || 'to' in val)) {
-                                  return (
-                                    <span key={field} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 font-medium text-[10px] border border-amber-500/20">
-                                      <span className="font-bold capitalize">{field.replace(/_/g, ' ')}:</span>
-                                      <span className="line-through text-slate-400 dark:text-zinc-500">{String(val.from || 'none')}</span>
-                                      <span>→</span>
-                                      <span className="font-bold text-slate-900 dark:text-white">{String(val.to || 'none')}</span>
-                                    </span>
-                                  );
-                                }
-                                return (
-                                  <span key={field} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-[10px] border border-slate-200 dark:border-zinc-700">
-                                    <span className="font-bold capitalize">{field.replace(/_/g, ' ')}:</span>
-                                    <span>{String(val)}</span>
-                                  </span>
-                                );
-                              })}
+                      </div>
+                    </>
+                  ) : (
+                    /* GRID VIEW FOR ACTIVITY LOGS */
+                    <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
+                      {paginatedLogs.map((log) => {
+                        const badge = getActivityBadge(log.activity_type);
+                        const genuineChanges = extractGenuineChanges(log.metadata);
+                        return (
+                          <div
+                            key={log.id}
+                            className="glass-panel p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between text-left space-y-3"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${badge.bg}`}>
+                                {badge.label}
+                              </span>
+                              <span className="text-[11px] text-slate-400 dark:text-zinc-500">
+                                {new Date(log.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                              </span>
                             </div>
-                          )}
-                          {log.ip_address && (
-                            <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 block">
-                              IP: {log.ip_address}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+
+                            <div className="space-y-0.5">
+                              <h4 className="font-extrabold text-slate-900 dark:text-white text-sm truncate">
+                                {log.user_name || 'Guest / Unregistered'}
+                              </h4>
+                              <p className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
+                                {log.user_phone || log.user_email || '—'}
+                              </p>
+                            </div>
+
+                            <div className="bg-slate-50 dark:bg-zinc-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-zinc-800/60 space-y-2">
+                              <p className="text-xs text-slate-700 dark:text-zinc-300 font-medium leading-relaxed">
+                                {log.description}
+                              </p>
+                              {genuineChanges.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-200/50 dark:border-zinc-700/50">
+                                  {genuineChanges.map((change) => (
+                                    <span key={change.field} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 font-medium text-[10px] border border-amber-500/20">
+                                      <span className="font-bold capitalize">{change.field.replace(/_/g, ' ')}:</span>
+                                      <span className="line-through text-slate-400 dark:text-zinc-500">{change.from}</span>
+                                      <span>→</span>
+                                      <span className="font-bold text-slate-900 dark:text-white">{change.to}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between text-[11px] pt-1 text-slate-400 dark:text-zinc-500 border-t border-slate-100 dark:border-zinc-800/80">
+                              <span className="font-mono">
+                                {log.ip_address ? `IP: ${log.ip_address}` : 'No IP logged'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Activity Logs Pagination Controls */}
+                  {totalActivityPages > 1 && (
+                    <div className="flex justify-between items-center p-5 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
+                      <button
+                        type="button"
+                        onClick={() => setActivityPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentActivityPage === 1}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        {t('previousPage')}
+                      </button>
+                      <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
+                        {t('pageIndicator', { current: currentActivityPage, total: totalActivityPages })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setActivityPage(prev => Math.min(totalActivityPages, prev + 1))}
+                        disabled={currentActivityPage === totalActivityPages}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {t('nextPage')}
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })()}

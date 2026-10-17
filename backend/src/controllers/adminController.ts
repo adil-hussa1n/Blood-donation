@@ -535,17 +535,25 @@ export async function updateDonorDetailsByAdmin(req: Request, res: Response): Pr
     }
 
     const diffs: Record<string, { from: any; to: any }> = {};
-    if (name !== undefined && name.trim() !== prev.name) diffs.name = { from: prev.name, to: name.trim() };
-    if (phone !== undefined && phone.trim() !== prev.phone) diffs.phone = { from: prev.phone, to: phone.trim() };
-    if (blood_group !== undefined && blood_group !== prev.blood_group) diffs.blood_group = { from: prev.blood_group, to: blood_group };
-    if (area !== undefined && area !== prev.area) diffs.area = { from: prev.area, to: area };
+    if (name !== undefined && (name || '').trim() !== (prev.name || '').trim()) {
+      diffs.name = { from: prev.name || '', to: name.trim() };
+    }
+    if (phone !== undefined && (phone || '').trim() !== (prev.phone || '').trim()) {
+      diffs.phone = { from: prev.phone || '', to: phone.trim() };
+    }
+    if (blood_group !== undefined && (blood_group || '') !== (prev.blood_group || '')) {
+      diffs.blood_group = { from: prev.blood_group || '', to: blood_group };
+    }
+    if (area !== undefined && (area || '') !== (prev.area || '')) {
+      diffs.area = { from: prev.area || '', to: area };
+    }
     if (last_donation_date !== undefined) {
       const prevDate = prev.last_donation_date ? String(prev.last_donation_date).substring(0, 10) : '';
       const newDate = last_donation_date ? String(last_donation_date).substring(0, 10) : '';
       if (prevDate !== newDate) diffs.last_donation_date = { from: prevDate, to: newDate };
     }
-    if (total_donations !== undefined && parseInt(total_donations, 10) !== prev.total_donations) {
-      diffs.total_donations = { from: prev.total_donations, to: parseInt(total_donations, 10) || 0 };
+    if (total_donations !== undefined && parseInt(total_donations, 10) !== parseInt(prev.total_donations, 10)) {
+      diffs.total_donations = { from: parseInt(prev.total_donations, 10) || 0, to: parseInt(total_donations, 10) || 0 };
     }
     if (is_available !== undefined && Boolean(is_available) !== Boolean(prev.is_available)) {
       diffs.is_available = { from: Boolean(prev.is_available), to: Boolean(is_available) };
@@ -555,8 +563,8 @@ export async function updateDonorDetailsByAdmin(req: Request, res: Response): Pr
       const newDob = dob ? String(dob).substring(0, 10) : '';
       if (prevDob !== newDob) diffs.dob = { from: prevDob, to: newDob };
     }
-    if (email !== undefined && (email || '').trim().toLowerCase() !== (prev.email || '').toLowerCase()) {
-      diffs.email = { from: prev.email || '', to: (email || '').trim().toLowerCase() };
+    if (email !== undefined && (email || '').trim().toLowerCase() !== (prev.email || '').trim().toLowerCase()) {
+      diffs.email = { from: (prev.email || '').trim().toLowerCase(), to: (email || '').trim().toLowerCase() };
     }
 
     const updates: string[] = [];
