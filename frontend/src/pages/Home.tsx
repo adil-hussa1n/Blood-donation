@@ -233,11 +233,21 @@ export default function Home() {
             >
               {currentDonor ? (
                 <>
-                  <div className="min-w-6 h-6 px-1 rounded-full bg-red-100 dark:bg-red-950/80 text-red-600 dark:text-red-400 flex items-center justify-center font-black text-[11px] shrink-0 group-hover:scale-105 transition-transform border border-red-200 dark:border-red-800/50">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-100 dark:bg-red-950/80 text-red-600 dark:text-red-400 flex items-center justify-center font-black text-xs shrink-0 overflow-hidden ring-2 ring-red-500/20 shadow-xs group-hover:scale-105 transition-transform">
                     {currentDonor.avatar_url && !isDefaultLetterAvatar(currentDonor.avatar_url) ? (
-                      <img src={currentDonor.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                      <img
+                        src={currentDonor.avatar_url}
+                        alt={currentDonor.name || 'Donor'}
+                        className="w-full h-full object-cover rounded-full"
+                        onError={(e) => {
+                          // Fallback to initial/blood group if image fails to load
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
                     ) : (
-                      currentDonor.blood_group || (currentDonor.name ? currentDonor.name.trim().charAt(0).toUpperCase() : <User className="w-3.5 h-3.5" />)
+                      <span>
+                        {currentDonor.blood_group || (currentDonor.name ? currentDonor.name.trim().charAt(0).toUpperCase() : <User className="w-4 h-4" />)}
+                      </span>
                     )}
                   </div>
                   <span>
