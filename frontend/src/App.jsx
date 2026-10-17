@@ -17,6 +17,44 @@ function ScrollToTop() {
   return null;
 }
 
+// Dynamically manage page titles & meta descriptions per route for optimal SEO
+function PageMetadataHandler() {
+  const { pathname } = useLocation();
+
+  React.useEffect(() => {
+    let title = 'Darun Donors - Emergency Blood Donation Platform | Sylhet';
+    let description = 'Find voluntary, verified blood donors instantly across Sylhet Division. Post emergency blood requests and save lives 24/7.';
+
+    if (pathname === '/emergency') {
+      title = 'Live Emergency Blood Requests | Darun Donors Sylhet';
+      description = 'View real-time emergency blood requests in Sylhet. Connect directly with patients and emergency seekers to donate blood immediately.';
+    } else if (pathname === '/register') {
+      title = 'Register as Voluntary Blood Donor | Darun Donors';
+      description = 'Sign up as a voluntary blood donor in Sylhet. Manage your donation cooldown, availability, and receive local emergency blood alerts.';
+    } else if (pathname === '/support') {
+      title = 'Help & Support Center | Darun Donors';
+      description = 'Need help or have questions about blood donation in Sylhet? Reach out to the Darun Donors volunteer and technical support team.';
+    } else if (pathname === '/terms') {
+      title = 'Terms of Service | Darun Donors';
+      description = 'Review the official guidelines and terms of service for utilizing the Darun Donors emergency blood network.';
+    } else if (pathname === '/privacy') {
+      title = 'Privacy Policy & Data Security | Darun Donors';
+      description = 'Learn how Darun Donors protects your personal information, phone number privacy, and blood donation records.';
+    } else if (pathname === '/admin' || pathname === '/darun') {
+      title = 'Staff Verification | Darun Donors';
+      description = 'Authorized portal verification for staff moderators.';
+    }
+
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', description);
+    }
+  }, [pathname]);
+
+  return null;
+}
+
 // Automatically clean up and redirect any accidental hash fragments (e.g. /emergency#/register -> /register)
 function HashRedirectHandler() {
   const navigate = useNavigate();
@@ -61,6 +99,7 @@ export default function App() {
     <AppProvider>
       <Router>
         <ScrollToTop />
+        <PageMetadataHandler />
         <HashRedirectHandler />
         <Layout>
           <Suspense fallback={<RouteLoader />}>
