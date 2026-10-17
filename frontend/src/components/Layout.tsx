@@ -130,6 +130,10 @@ export default function Layout({ children }: LayoutProps) {
                 <img
                   src="/logo.png"
                   alt="Darun Donors Logo"
+                  width="40"
+                  height="40"
+                  fetchPriority="high"
+                  decoding="sync"
                   className="w-full h-full object-contain drop-shadow-md"
                 />
               </div>

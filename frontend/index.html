@@ -46,6 +46,9 @@
   <meta name="apple-mobile-web-app-title" content="Darun Donors" />
   <meta name="format-detection" content="telephone=yes" />
 
+  <!-- Critical Asset Preloading for Instant Logo Rendering -->
+  <link rel="preload" as="image" type="image/png" href="/logo.png" fetchpriority="high" />
+
   <!-- Favicon & Brand Icons -->
   <link rel="icon" type="image/png" href="/logo.png?v=2" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
@@ -572,7 +575,7 @@
     <div class="static-preloader__inner">
       <div class="static-preloader__logo-wrap">
         <div class="static-preloader__logo">
-          <img src="/logo.png" alt="Darun Donors" />
+          <img src="/logo.png" alt="Darun Donors" width="72" height="72" fetchpriority="high" decoding="sync" />
         </div>
       </div>
 
@@ -585,7 +588,7 @@
         <a href="https://daruntech.com" target="_blank" rel="noopener noreferrer" class="static-preloader__sponsor"
           title="Designed & Developed by Darun Tech Private Limited">
           <span class="static-preloader__sponsor-icon">
-            <img src="/daruntech-icon.png" alt="Darun Tech Logo" />
+            <img src="/daruntech-icon.png" alt="Darun Tech Logo" width="24" height="24" decoding="async" />
           </span>
           <div class="static-preloader__sponsor-info">
             <span class="static-preloader__sponsor-sub">
