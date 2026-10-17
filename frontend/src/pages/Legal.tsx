@@ -1,11 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, FileText, CheckCircle, Heart, Lock, AlertCircle, Eye, RefreshCw, Mail } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 export default function Legal() {
   const { language, t } = useApp();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'terms' | 'privacy'>('terms');
+
+  // Automatically activate the correct tab based on current URL path (/privacy -> privacy tab, /terms -> terms tab)
+  useEffect(() => {
+    if (location.pathname === '/privacy') {
+      setActiveTab('privacy');
+    } else if (location.pathname === '/terms') {
+      setActiveTab('terms');
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  }, [location.pathname]);
+
+  const handleTabChange = (tab: 'terms' | 'privacy') => {
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8 animate-fade-in text-left">
@@ -28,7 +44,7 @@ export default function Legal() {
       <div className="flex p-1.5 bg-slate-100 dark:bg-zinc-900/60 rounded-2xl border border-slate-200/50 dark:border-zinc-800/40 max-w-md mx-auto shadow-inner">
         <button
           type="button"
-          onClick={() => setActiveTab('terms')}
+          onClick={() => handleTabChange('terms')}
           className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
             activeTab === 'terms'
               ? 'bg-white dark:bg-zinc-800 text-red-600 dark:text-red-400 shadow-sm'
@@ -40,7 +56,7 @@ export default function Legal() {
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab('privacy')}
+          onClick={() => handleTabChange('privacy')}
           className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
             activeTab === 'privacy'
               ? 'bg-white dark:bg-zinc-800 text-red-600 dark:text-red-400 shadow-sm'

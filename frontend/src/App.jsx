@@ -3,6 +3,20 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocat
 import { AppProvider } from './context/AppContext';
 import Layout from './components/Layout';
 
+// Scroll to top on every route change so pages never open mid-scroll from footer clicks
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  React.useEffect(() => {
+    // Instantly scroll window to top
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [pathname]);
+
+  return null;
+}
+
 // Automatically clean up and redirect any accidental hash fragments (e.g. /emergency#/register -> /register)
 function HashRedirectHandler() {
   const navigate = useNavigate();
@@ -46,6 +60,7 @@ export default function App() {
   return (
     <AppProvider>
       <Router>
+        <ScrollToTop />
         <HashRedirectHandler />
         <Layout>
           <Suspense fallback={<RouteLoader />}>
