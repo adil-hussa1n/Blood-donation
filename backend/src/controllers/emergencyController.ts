@@ -5,6 +5,7 @@ import pool from '../config/db.js';
 import { getClientIp, logRateLimit } from '../middleware/rateLimiter.js';
 import { verifyToken } from '../middleware/auth.js';
 import { broadcastEmergencyPush } from '../services/pushNotificationService.js';
+import { logUserActivity } from './adminController.js';
 
 export async function getEmergencyRequests(req: Request, res: Response): Promise<void> {
   try {
@@ -78,6 +79,20 @@ export async function createEmergencyRequest(req: Request, res: Response): Promi
     );
 
     await logRateLimit(clientIp, 'emergency_request', 'allowed');
+
+    // Record user activity
+    await logUserActivity(
+      'user_created_emergency',
+      `Emergency request posted: ${requestData.blood_group} blood needed at ${requestData.area} (Contact: ${contact}).`,
+      {
+        userId: loggedInDonor.id,
+        userName: loggedInDonor.name,
+        userPhone: contact,
+        userEmail: loggedInDonor.email,
+        ipAddress: clientIp,
+        metadata: { blood_group: requestData.blood_group, area: requestData.area, emergency_id: id }
+      }
+    );
 
     const newRequest = {
       id,
@@ -157,6 +172,18 @@ export async function updateEmergencyRequestStatus(req: Request, res: Response):
 
     await pool.query('UPDATE emergency_requests SET status = ? WHERE id = ?', [status, id]);
     const [updated]: any = await pool.query('SELECT id, donor_id, blood_group, area, contact, note, status, created_at FROM emergency_requests WHERE id = ?', [id]);
+
+    const clientIp = getClientIp(req);
+    await logUserActivity(
+      'user_updated_emergency_status',
+      `Emergency request (${updated[0].blood_group}, ${updated[0].area}) status changed to '${status}'.`,
+      {
+        userId: updated[0].donor_id || null,
+        userPhone: updated[0].contact,
+        ipAddress: clientIp,
+        metadata: { emergency_id: id, status }
+      }
+    );
 
     res.json({ data: updated[0], error: null });
   } catch (error: any) {
@@ -257,6 +284,20 @@ export async function deleteEmergencyRequest(req: Request, res: Response): Promi
 
     // 3. Delete from active emergency_requests
     await pool.query('DELETE FROM emergency_requests WHERE id = ?', [id]);
+
+    const clientIp = getClientIp(req);
+    await logUserActivity(
+      'emergency_deleted',
+      `Emergency request (${emergency.blood_group}, ${emergency.area}, contact: ${emergency.contact}) deleted by ${deletedBy}.`,
+      {
+        userId: emergency.donor_id || null,
+        userName: requesterName || null,
+        userPhone: emergency.contact,
+        ipAddress: clientIp,
+        metadata: { deletedBy, emergency_id: id }
+      }
+    );
+
     res.json({ success: true, error: null });
   } catch (error: any) {
     res.status(500).json({ success: false, error: { message: error.message } });

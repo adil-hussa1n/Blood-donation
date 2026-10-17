@@ -33,6 +33,9 @@ import {
   createDonorCardOffer,
   updateDonorCardOffer,
   deleteDonorCardOffer,
+  getUserActivityLogs,
+  updateDonorDetailsByAdmin,
+  updateEmergencyDetailsByAdmin,
 } from '../controllers/adminController.js';
 import {
   submitSupportRequest,
@@ -93,6 +96,15 @@ router.get('/admin/blocked', requireAdmin, getBlockedPhones);
 router.get('/admin/check-blocked/:phone', checkIfBlocked);
 router.get('/admin/deleted-donors', requireAdmin, getDeletedDonors);
 router.get('/admin/deleted-emergencies', requireAdmin, getDeletedEmergencies);
+router.get('/admin/activity-logs', requireAdmin, getUserActivityLogs);
+router.put('/admin/donors/:id', requireAdmin, updateDonorDetailsByAdmin);
+router.put('/admin/emergencies/:id', requireAdmin, updateEmergencyDetailsByAdmin);
+
+// ==========================================
+// SUPPORT & PROBLEM TICKETS
+// ==========================================
+router.post('/support', submitSupportRequest);
+router.get('/support', requireAdmin, getSupportRequests);
 
 // Donor Card Configuration & Sponsorship Offers (Public view + Admin management)
 router.get('/donor-card/config', getDonorCardConfig);

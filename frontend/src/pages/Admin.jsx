@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X, UserX, FileX, Clock, Phone, AlertCircle, CreditCard, Tag, Plus, Edit3, Save } from 'lucide-react';
-import { useApp, BLOOD_GROUPS, DISTRICT_AREAS, normalizeDonor, getAreaLabel, getDistrictBadge } from '../context/AppContext';
+import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X, UserX, FileX, Clock, Phone, AlertCircle, CreditCard, Tag, Plus, Edit3, Edit2, Edit, Save, Activity, History, UserCheck, RefreshCw } from 'lucide-react';
+import { useApp, BLOOD_GROUPS, DISTRICT_AREAS, normalizeDonor, getAreaLabel, getDistrictBadge, isDefaultLetterAvatar } from '../context/AppContext';
 
 export default function Admin() {
   const {
@@ -12,6 +12,9 @@ export default function Admin() {
     logoutAdmin,
     deleteDonor,
     deleteEmergencyRequest,
+    updateDonorByAdmin,
+    updateEmergencyByAdmin,
+    getUserActivityLogs,
     blockDonorByPhone,
     unblockDonorByPhone,
     getBlockedPhones,
@@ -177,12 +180,133 @@ export default function Admin() {
     setDeletedEmergenciesLoading(false);
   };
 
+  // Activity Logs state & fetch
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [activityLogsLoading, setActivityLogsLoading] = useState(false);
+  const [activityLogsError, setActivityLogsError] = useState(null);
+  const [activitySearchQuery, setActivitySearchQuery] = useState('');
+  const [activityTypeFilter, setActivityTypeFilter] = useState('');
+
+  const fetchActivityLogs = async (filters = {}) => {
+    setActivityLogsLoading(true);
+    setActivityLogsError(null);
+    const res = await getUserActivityLogs({
+      userId: filters.userId,
+      phone: filters.phone,
+      limit: 100
+    });
+    if (res.success) {
+      setActivityLogs(res.data || []);
+    } else {
+      setActivityLogsError(res.error?.message || 'Failed to fetch user activity logs.');
+    }
+    setActivityLogsLoading(false);
+  };
+
+  // Edit Donor Modal State
+  const [editingDonor, setEditingDonor] = useState(null);
+  const [editDonorForm, setEditDonorForm] = useState({
+    name: '',
+    phone: '',
+    blood_group: 'A+',
+    area: '',
+    last_donation_date: '',
+    total_donations: 0,
+    is_available: true,
+    email: '',
+    dob: ''
+  });
+  const [saveDonorLoading, setSaveDonorLoading] = useState(false);
+
+  const openEditDonorModal = (donor) => {
+    setEditingDonor(donor);
+    setEditDonorForm({
+      name: donor.name || '',
+      phone: donor.phone || '',
+      blood_group: donor.blood_group || 'A+',
+      area: donor.area || '',
+      last_donation_date: donor.last_donation_date ? donor.last_donation_date.substring(0, 10) : '',
+      total_donations: donor.total_donations ?? 0,
+      is_available: donor.is_available !== false,
+      email: donor.email || '',
+      dob: donor.dob ? donor.dob.substring(0, 10) : ''
+    });
+  };
+
+  const handleSaveDonorDetails = async (e) => {
+    e.preventDefault();
+    if (!editingDonor) return;
+    if (!editDonorForm.name.trim() || !editDonorForm.phone.trim()) {
+      showToast('Name and phone number are required', 'warning');
+      return;
+    }
+    setSaveDonorLoading(true);
+    const res = await updateDonorByAdmin(editingDonor.id, {
+      ...editDonorForm,
+      total_donations: Number(editDonorForm.total_donations) || 0
+    });
+    if (res.success) {
+      showToast('Donor details updated successfully!', 'success');
+      setEditingDonor(null);
+      if (adminTab === 'activity_logs') {
+        fetchActivityLogs();
+      }
+    } else {
+      showToast(res.error?.message || 'Failed to update donor details', 'error');
+    }
+    setSaveDonorLoading(false);
+  };
+
+  // Edit Emergency Modal State
+  const [editingEmergency, setEditingEmergency] = useState(null);
+  const [editEmergencyForm, setEditEmergencyForm] = useState({
+    blood_group: 'A+',
+    area: '',
+    contact: '',
+    note: '',
+    status: 'needed'
+  });
+  const [saveEmergencyLoading, setSaveEmergencyLoading] = useState(false);
+
+  const openEditEmergencyModal = (emergency) => {
+    setEditingEmergency(emergency);
+    setEditEmergencyForm({
+      blood_group: emergency.blood_group || 'A+',
+      area: emergency.area || '',
+      contact: emergency.contact || '',
+      note: emergency.note || '',
+      status: emergency.status || 'needed'
+    });
+  };
+
+  const handleSaveEmergencyDetails = async (e) => {
+    e.preventDefault();
+    if (!editingEmergency) return;
+    if (!editEmergencyForm.contact.trim()) {
+      showToast('Contact phone number is required', 'warning');
+      return;
+    }
+    setSaveEmergencyLoading(true);
+    const res = await updateEmergencyByAdmin(editingEmergency.id, editEmergencyForm);
+    if (res.success) {
+      showToast('Emergency request updated successfully!', 'success');
+      setEditingEmergency(null);
+      if (adminTab === 'activity_logs') {
+        fetchActivityLogs();
+      }
+    } else {
+      showToast(res.error?.message || 'Failed to update emergency request', 'error');
+    }
+    setSaveEmergencyLoading(false);
+  };
+
   useEffect(() => {
     if (isAdmin) {
       fetchBlockedPhones();
       fetchSupportRequests();
       fetchDeletedDonors();
       fetchDeletedEmergencies();
+      fetchActivityLogs();
     }
   }, [isAdmin]);
 
@@ -702,7 +826,7 @@ export default function Admin() {
       </div>
 
       {/* Stats Quick Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
         <button
           onClick={() => setAdminTab('donors')}
           className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${adminTab === 'donors'
@@ -740,6 +864,26 @@ export default function Admin() {
           </div>
           <div className="p-2 sm:p-3 rounded-xl bg-rose-500/5 dark:bg-rose-500/10 text-rose-500 shrink-0">
             <Flame className="w-4 h-4 sm:w-6 sm:h-6" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('activity_logs')}
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${adminTab === 'activity_logs'
+              ? 'border-indigo-500/40 ring-1 ring-indigo-500/10 shadow-md'
+              : 'hover:border-slate-300 dark:hover:border-zinc-700'
+            }`}
+        >
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
+              {language === 'bn' ? 'কার্যক্রম লগ' : 'Activity Logs'}
+            </span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+              {activityLogs.length}
+            </span>
+          </div>
+          <div className="p-2 sm:p-3 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">
+            <Activity className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </button>
 
@@ -1298,7 +1442,7 @@ export default function Admin() {
                           <tr key={donor.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
                             <td className="p-4 font-bold text-slate-900 dark:text-white truncate overflow-hidden" title={donor.name}>
                               <div className="flex items-center gap-2.5">
-                                {donor.avatar_url ? (
+                                {donor.avatar_url && !isDefaultLetterAvatar(donor.avatar_url) ? (
                                   <div className="relative shrink-0">
                                     <img
                                       src={donor.avatar_url}
@@ -1311,13 +1455,13 @@ export default function Admin() {
                                       }}
                                       className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
                                     />
-                                    <div className="w-8 h-8 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 font-bold text-xs items-center justify-center border border-red-500/20 hidden">
-                                      {donor.name?.charAt(0) || 'D'}
+                                    <div className="w-8 h-8 rounded-full bg-red-650 text-white font-black text-xs items-center justify-center border border-red-500/30 hidden">
+                                      {donor.blood_group}
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-bold text-xs flex items-center justify-center border border-slate-200/60 dark:border-zinc-700 shrink-0">
-                                    {donor.name?.charAt(0) || 'D'}
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600 to-rose-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs border border-red-400/40 shrink-0">
+                                    {donor.blood_group}
                                   </div>
                                 )}
                                 <span className="truncate">{donor.name}</span>
@@ -1344,13 +1488,22 @@ export default function Admin() {
                               {t('timesUnit', { count: normalizeDonor(donor).total_donations })}
                             </td>
                             <td className="p-4 text-center">
-                              <button
-                                onClick={() => startDeleteConfirm(donor.id, 'donor')}
-                                className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all cursor-pointer"
-                                title="Delete fake/spam donor"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  onClick={() => openEditDonorModal(donor)}
+                                  className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 dark:hover:bg-amber-500/15 p-2 rounded-xl transition-all cursor-pointer"
+                                  title="Edit donor details"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => startDeleteConfirm(donor.id, 'donor')}
+                                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all cursor-pointer"
+                                  title="Delete fake/spam donor"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1364,7 +1517,7 @@ export default function Admin() {
                       <div key={donor.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-2.5 text-left">
-                            {donor.avatar_url ? (
+                            {donor.avatar_url && !isDefaultLetterAvatar(donor.avatar_url) ? (
                               <div className="relative shrink-0">
                                 <img
                                   src={donor.avatar_url}
@@ -1377,13 +1530,13 @@ export default function Admin() {
                                   }}
                                   className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
                                 />
-                                <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 font-bold text-sm items-center justify-center border border-red-500/20 hidden">
-                                  {donor.name?.charAt(0) || 'D'}
+                                <div className="w-10 h-10 rounded-full bg-red-650 text-white font-black text-xs items-center justify-center border border-red-500/30 hidden">
+                                  {donor.blood_group}
                                 </div>
                               </div>
                             ) : (
-                              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-bold text-sm flex items-center justify-center border border-slate-200/60 dark:border-zinc-700 shrink-0">
-                                {donor.name?.charAt(0) || 'D'}
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-rose-600 text-white font-black text-xs flex items-center justify-center border border-red-400/40 shadow-xs shrink-0">
+                                {donor.blood_group}
                               </div>
                             )}
                             <div className="space-y-0.5">
@@ -1410,7 +1563,14 @@ export default function Admin() {
                           </span>
                         </div>
 
-                        <div className="flex justify-end pt-1">
+                        <div className="flex justify-end gap-2 pt-1">
+                          <button
+                            onClick={() => openEditDonorModal(donor)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            Edit Details
+                          </button>
                           <button
                             onClick={() => startDeleteConfirm(donor.id, 'donor')}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
@@ -1506,13 +1666,22 @@ export default function Admin() {
                               {new Date(req.created_at).toLocaleString()}
                             </td>
                             <td className="p-4 text-center">
-                              <button
-                                onClick={() => startDeleteConfirm(req.id, 'emergency')}
-                                className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all cursor-pointer"
-                                title="Delete emergency request"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  onClick={() => openEditEmergencyModal(req)}
+                                  className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 dark:hover:bg-amber-500/15 p-2 rounded-xl transition-all cursor-pointer"
+                                  title="Edit emergency request details"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => startDeleteConfirm(req.id, 'emergency')}
+                                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all cursor-pointer"
+                                  title="Delete emergency request"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1546,13 +1715,22 @@ export default function Admin() {
 
                         <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-zinc-500 pt-1">
                           <span>{new Date(req.created_at).toLocaleString()}</span>
-                          <button
-                            onClick={() => startDeleteConfirm(req.id, 'emergency')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            {t('deleteRequest')}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => openEditEmergencyModal(req)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => startDeleteConfirm(req.id, 'emergency')}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              {t('deleteRequest')}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -2849,7 +3027,583 @@ export default function Admin() {
 
           </div>
         )}
+
+        {adminTab === 'activity_logs' && (
+          <div className="space-y-4">
+            {/* Header with Search and Filter */}
+            <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
+                  <Activity className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
+                    {language === 'bn' ? 'ব্যবহারকারীদের লাইভ কার্যক্রমের লগ' : 'User Activity & Audit Logs'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium">
+                    {language === 'bn'
+                      ? 'নিবন্ধন, লগইন, প্রোফাইল পরিবর্তন, রক্তদান ও অনুরোধের প্রতিটি কার্যক্রমের ট্র্যাকিং'
+                      : 'Real-time trace of registrations, Google/password logins, profile updates, and emergency posts'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Refresh & Filters */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={activitySearchQuery}
+                    onChange={(e) => setActivitySearchQuery(e.target.value)}
+                    placeholder={language === 'bn' ? 'নাম, ফোন বা ইমেইল খুঁজুন...' : 'Search name, phone, email...'}
+                    className="pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/70 dark:bg-zinc-800/70 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-44 sm:w-56"
+                  />
+                </div>
+
+                <select
+                  value={activityTypeFilter}
+                  onChange={(e) => setActivityTypeFilter(e.target.value)}
+                  className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/70 dark:bg-zinc-800/70 text-xs font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="">{language === 'bn' ? 'সব কার্যক্রম' : 'All Activities'}</option>
+                  <option value="login">{language === 'bn' ? 'লগইন' : 'Logins'}</option>
+                  <option value="register">{language === 'bn' ? 'নিবন্ধন' : 'Registrations'}</option>
+                  <option value="profile_update">{language === 'bn' ? 'প্রোফাইল আপডেট' : 'Profile Updates'}</option>
+                  <option value="donation">{language === 'bn' ? 'রক্তদান' : 'Donations'}</option>
+                  <option value="emergency">{language === 'bn' ? 'জরুরি অনুরোধ' : 'Emergency Requests'}</option>
+                  <option value="admin_update">{language === 'bn' ? 'অ্যাডমিন আপডেট' : 'Admin Modifications'}</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => fetchActivityLogs()}
+                  disabled={activityLogsLoading}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 transition-colors disabled:opacity-50 cursor-pointer"
+                  title="Refresh Activity Logs"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${activityLogsLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Error banner */}
+            {activityLogsError && (
+              <div className="mx-5 p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-2xl text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{activityLogsError}</span>
+              </div>
+            )}
+
+            {/* Table or Empty State */}
+            {(() => {
+              const filtered = activityLogs.filter(log => {
+                const q = activitySearchQuery.trim().toLowerCase();
+                const matchesSearch = !q ||
+                  (log.user_name && log.user_name.toLowerCase().includes(q)) ||
+                  (log.user_phone && log.user_phone.toLowerCase().includes(q)) ||
+                  (log.user_email && log.user_email.toLowerCase().includes(q)) ||
+                  (log.description && log.description.toLowerCase().includes(q));
+
+                const matchesType = !activityTypeFilter ||
+                  (log.activity_type && log.activity_type.toLowerCase().includes(activityTypeFilter.toLowerCase()));
+
+                return matchesSearch && matchesType;
+              });
+
+              if (activityLogsLoading && activityLogs.length === 0) {
+                return (
+                  <div className="p-12 text-center text-sm text-slate-500 dark:text-zinc-400 flex items-center justify-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin text-indigo-500" />
+                    <span>Loading activity audit logs...</span>
+                  </div>
+                );
+              }
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="p-12 text-center text-sm text-slate-500 dark:text-zinc-400">
+                    <Activity className="w-8 h-8 text-slate-300 dark:text-zinc-600 mx-auto mb-2 opacity-60" />
+                    <p className="font-bold">No user activity logs found.</p>
+                    <p className="text-xs text-slate-400 mt-1">Activities are automatically logged when donors register, sign in, donate, or post requests.</p>
+                  </div>
+                );
+              }
+
+              const getActivityBadge = (type) => {
+                const t = (type || '').toLowerCase();
+                if (t.includes('register')) {
+                  return { label: 'REGISTER', bg: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25' };
+                }
+                if (t.includes('login')) {
+                  return { label: 'LOGIN', bg: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/25' };
+                }
+                if (t.includes('donation')) {
+                  return { label: 'DONATION', bg: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/25' };
+                }
+                if (t.includes('emergency')) {
+                  return { label: 'EMERGENCY', bg: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25' };
+                }
+                if (t.includes('admin')) {
+                  return { label: 'ADMIN EDIT', bg: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/25' };
+                }
+                return { label: type.toUpperCase() || 'EVENT', bg: 'bg-slate-500/15 text-slate-600 dark:text-zinc-300 border-slate-500/25' };
+              };
+
+              return (
+                <div className="animate-fade-in">
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse table-fixed">
+                      <thead>
+                        <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-zinc-900/30 text-slate-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                          <th className="p-4 w-[18%]">Timestamp</th>
+                          <th className="p-4 w-[24%]">User</th>
+                          <th className="p-4 w-[15%]">Event Type</th>
+                          <th className="p-4 w-[31%]">Description & Context</th>
+                          <th className="p-4 w-[12%]">IP Address</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200/50 dark:divide-zinc-800/50 text-slate-700 dark:text-zinc-300 font-medium">
+                        {filtered.map((log) => {
+                          const badge = getActivityBadge(log.activity_type);
+                          return (
+                            <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                              <td className="p-4 text-xs font-bold text-slate-500 dark:text-zinc-400">
+                                <span className="block text-slate-900 dark:text-white">
+                                  {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </span>
+                                <span className="text-[11px] opacity-75">
+                                  {new Date(log.created_at).toLocaleDateString()}
+                                </span>
+                              </td>
+                              <td className="p-4">
+                                <span className="font-extrabold text-slate-900 dark:text-white block truncate">
+                                  {log.user_name || 'Guest / Unregistered'}
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium block">
+                                  {log.user_phone || log.user_email || '—'}
+                                </span>
+                              </td>
+                              <td className="p-4">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${badge.bg}`}>
+                                  {badge.label}
+                                </span>
+                              </td>
+                              <td className="p-4 text-xs text-slate-800 dark:text-zinc-200">
+                                <span className="font-semibold block leading-relaxed">{log.description}</span>
+                                {(() => {
+                                  let meta = log.metadata;
+                                  if (typeof meta === 'string') {
+                                    try { meta = JSON.parse(meta); } catch (e) { meta = null; }
+                                  }
+                                  if (meta && meta.changes && typeof meta.changes === 'object' && Object.keys(meta.changes).length > 0) {
+                                    return (
+                                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                        {Object.entries(meta.changes).map(([field, val]) => {
+                                          if (val && typeof val === 'object' && ('from' in val || 'to' in val)) {
+                                            return (
+                                              <span key={field} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 font-medium text-[11px] border border-amber-500/20">
+                                                <span className="font-bold capitalize">{field.replace(/_/g, ' ')}:</span>
+                                                <span className="line-through text-slate-400 dark:text-zinc-500">{String(val.from || 'none')}</span>
+                                                <span>→</span>
+                                                <span className="font-bold text-slate-900 dark:text-white">{String(val.to || 'none')}</span>
+                                              </span>
+                                            );
+                                          }
+                                          return (
+                                            <span key={field} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-[11px] border border-slate-200 dark:border-zinc-700">
+                                              <span className="font-bold capitalize">{field.replace(/_/g, ' ')}:</span>
+                                              <span>{String(val)}</span>
+                                            </span>
+                                          );
+                                        })}
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </td>
+                              <td className="p-4 text-xs font-mono">
+                                {log.ip_address ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-750">
+                                    {log.ip_address}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 dark:text-zinc-600">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Stack View */}
+                  <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850">
+                    {filtered.map((log) => {
+                      const badge = getActivityBadge(log.activity_type);
+                      let meta = log.metadata;
+                      if (typeof meta === 'string') {
+                        try { meta = JSON.parse(meta); } catch (e) { meta = null; }
+                      }
+                      return (
+                        <div key={log.id} className="p-4 space-y-2 text-left hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${badge.bg}`}>
+                              {badge.label}
+                            </span>
+                            <span className="text-[11px] text-slate-400 dark:text-zinc-500">
+                              {new Date(log.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-extrabold text-slate-900 dark:text-white text-sm block">
+                              {log.user_name || 'Guest / Unregistered'}
+                            </span>
+                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
+                              {log.user_phone || log.user_email || '—'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-700 dark:text-zinc-300 leading-normal bg-slate-50 dark:bg-zinc-800/40 p-2 rounded-xl border border-slate-100 dark:border-zinc-800 font-medium">
+                            {log.description}
+                          </p>
+                          {meta && meta.changes && typeof meta.changes === 'object' && Object.keys(meta.changes).length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {Object.entries(meta.changes).map(([field, val]) => {
+                                if (val && typeof val === 'object' && ('from' in val || 'to' in val)) {
+                                  return (
+                                    <span key={field} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 font-medium text-[10px] border border-amber-500/20">
+                                      <span className="font-bold capitalize">{field.replace(/_/g, ' ')}:</span>
+                                      <span className="line-through text-slate-400 dark:text-zinc-500">{String(val.from || 'none')}</span>
+                                      <span>→</span>
+                                      <span className="font-bold text-slate-900 dark:text-white">{String(val.to || 'none')}</span>
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <span key={field} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-[10px] border border-slate-200 dark:border-zinc-700">
+                                    <span className="font-bold capitalize">{field.replace(/_/g, ' ')}:</span>
+                                    <span>{String(val)}</span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {log.ip_address && (
+                            <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 block">
+                              IP: {log.ip_address}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
       </div>
+
+      {/* Edit Donor Details Modal rendered via createPortal */}
+      {editingDonor && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 w-screen h-screen z-[9999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+          onClick={() => setEditingDonor(null)}
+        >
+          <div
+            className="relative w-full max-w-lg rounded-3xl p-6 sm:p-7 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl space-y-5 animate-scale-up overflow-hidden text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-zinc-800/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shadow-xs">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900 dark:text-white">
+                    Edit Donor Details
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    Update profile, contact, donations count and status
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingDonor(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 bg-slate-100 dark:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDonorDetails} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editDonorForm.name}
+                    onChange={(e) => setEditDonorForm({ ...editDonorForm, name: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">Phone Number *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={editDonorForm.phone}
+                    onChange={(e) => setEditDonorForm({ ...editDonorForm, phone: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">Blood Group *</label>
+                  <select
+                    value={editDonorForm.blood_group}
+                    onChange={(e) => setEditDonorForm({ ...editDonorForm, blood_group: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  >
+                    {BLOOD_GROUPS.map(bg => (
+                      <option key={bg} value={bg}>{bg}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">District / Upazila</label>
+                  <select
+                    value={editDonorForm.area}
+                    onChange={(e) => setEditDonorForm({ ...editDonorForm, area: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  >
+                    <option value="">Select Area</option>
+                    {DISTRICT_AREAS.map(dist => (
+                      <optgroup key={dist.id} label={dist.name}>
+                        {dist.upazilas.map(upz => (
+                          <option key={upz} value={upz}>{upz}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">Total Donations</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editDonorForm.total_donations}
+                    onChange={(e) => setEditDonorForm({ ...editDonorForm, total_donations: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">Last Donation</label>
+                  <input
+                    type="date"
+                    value={editDonorForm.last_donation_date}
+                    onChange={(e) => setEditDonorForm({ ...editDonorForm, last_donation_date: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">Date of Birth</label>
+                  <input
+                    type="date"
+                    value={editDonorForm.dob}
+                    onChange={(e) => setEditDonorForm({ ...editDonorForm, dob: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-zinc-300">Email Address (Optional)</label>
+                <input
+                  type="email"
+                  value={editDonorForm.email}
+                  onChange={(e) => setEditDonorForm({ ...editDonorForm, email: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  placeholder="donor@example.com"
+                />
+              </div>
+
+              <div className="flex items-center gap-2.5 pt-2">
+                <input
+                  type="checkbox"
+                  id="donor_avail_check"
+                  checked={editDonorForm.is_available}
+                  onChange={(e) => setEditDonorForm({ ...editDonorForm, is_available: e.target.checked })}
+                  className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 cursor-pointer"
+                />
+                <label htmlFor="donor_avail_check" className="font-bold text-slate-700 dark:text-zinc-300 cursor-pointer">
+                  Available for emergency donations right now
+                </label>
+              </div>
+
+              <div className="flex gap-2.5 pt-4 border-t border-slate-100 dark:border-zinc-800/80">
+                <button
+                  type="button"
+                  onClick={() => setEditingDonor(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saveDonorLoading}
+                  className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold shadow-md shadow-amber-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  {saveDonorLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Edit Emergency Request Details Modal rendered via createPortal */}
+      {editingEmergency && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 w-screen h-screen z-[9999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+          onClick={() => setEditingEmergency(null)}
+        >
+          <div
+            className="relative w-full max-w-lg rounded-3xl p-6 sm:p-7 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl space-y-5 animate-scale-up overflow-hidden text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-zinc-800/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shadow-xs">
+                  <Flame className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900 dark:text-white">
+                    Edit Emergency Request
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    Update required group, hospital/area, contact phone & status
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingEmergency(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 bg-slate-100 dark:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEmergencyDetails} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">Blood Group Needed *</label>
+                  <select
+                    value={editEmergencyForm.blood_group}
+                    onChange={(e) => setEditEmergencyForm({ ...editEmergencyForm, blood_group: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                  >
+                    {BLOOD_GROUPS.map(bg => (
+                      <option key={bg} value={bg}>{bg}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">Contact Phone *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={editEmergencyForm.contact}
+                    onChange={(e) => setEditEmergencyForm({ ...editEmergencyForm, contact: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">Hospital / Area</label>
+                  <select
+                    value={editEmergencyForm.area}
+                    onChange={(e) => setEditEmergencyForm({ ...editEmergencyForm, area: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                  >
+                    <option value="">Select Area / Upazila</option>
+                    {DISTRICT_AREAS.map(dist => (
+                      <optgroup key={dist.id} label={dist.name}>
+                        {dist.upazilas.map(upz => (
+                          <option key={upz} value={upz}>{upz}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-zinc-300">Status</label>
+                  <select
+                    value={editEmergencyForm.status}
+                    onChange={(e) => setEditEmergencyForm({ ...editEmergencyForm, status: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                  >
+                    <option value="needed">Urgent Needed</option>
+                    <option value="responded">Donor Responded</option>
+                    <option value="fulfilled">Fulfilled / Done</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-zinc-300">Note / Hospital Details</label>
+                <textarea
+                  rows={3}
+                  value={editEmergencyForm.note}
+                  onChange={(e) => setEditEmergencyForm({ ...editEmergencyForm, note: e.target.value })}
+                  placeholder="e.g. Osmani Medical College, Bed 24, Contact relative..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                />
+              </div>
+
+              <div className="flex gap-2.5 pt-4 border-t border-slate-100 dark:border-zinc-800/80">
+                <button
+                  type="button"
+                  onClick={() => setEditingEmergency(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saveEmergencyLoading}
+                  className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-extrabold shadow-md shadow-rose-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  {saveEmergencyLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );

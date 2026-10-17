@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Navigation, Leaf, Lock } from 'lucide-react';
-import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel } from '../context/AppContext';
+import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Navigation, Leaf, Lock, User } from 'lucide-react';
+import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel, isDefaultLetterAvatar } from '../context/AppContext';
 import QuickStats from '../components/QuickStats';
 import DonorCard from '../components/DonorCard';
 import GoogleAuthButton from '../components/GoogleAuthButton';
@@ -229,16 +229,35 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 pt-2">
             <Link
               to="/register"
-              className="w-full sm:w-auto bg-white hover:bg-slate-50 text-red-600 font-bold px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base"
+              className="w-full sm:w-auto bg-white hover:bg-slate-50 text-red-600 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-red-400 dark:border dark:border-red-500/30 font-bold px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl dark:shadow-red-950/40 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base group"
             >
-              <PlusCircle className="w-5 h-5" />
-              {t('registerAsDonorButton')}
+              {currentDonor ? (
+                <>
+                  <div className="min-w-6 h-6 px-1 rounded-full bg-red-100 dark:bg-red-950/80 text-red-600 dark:text-red-400 flex items-center justify-center font-black text-[11px] shrink-0 group-hover:scale-105 transition-transform border border-red-200 dark:border-red-800/50">
+                    {currentDonor.avatar_url && !isDefaultLetterAvatar(currentDonor.avatar_url) ? (
+                      <img src={currentDonor.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                    ) : (
+                      currentDonor.blood_group || (currentDonor.name ? currentDonor.name.trim().charAt(0).toUpperCase() : <User className="w-3.5 h-3.5" />)
+                    )}
+                  </div>
+                  <span>
+                    {t('welcomeDonorButton', { 
+                      name: currentDonor.name ? currentDonor.name.trim().split(' ')[0] : (language === 'bn' ? 'রক্তদাতা' : 'Donor') 
+                    })}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  <span>{t('registerAsDonorButton')}</span>
+                </>
+              )}
             </Link>
             <Link
               to="/emergency"
-              className="w-full sm:w-auto bg-red-500/20 hover:bg-red-500/30 text-white border border-white/20 font-bold px-6 py-3 rounded-2xl backdrop-blur-sm active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base"
+              className="w-full sm:w-auto bg-red-500/20 hover:bg-red-500/30 text-white dark:bg-red-950/40 dark:hover:bg-red-900/50 dark:text-rose-200 border border-white/20 dark:border-red-500/30 font-bold px-6 py-3 rounded-2xl backdrop-blur-sm active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base"
             >
-              <Flame className="w-5 h-5 text-red-300 fill-current animate-pulse" />
+              <Flame className="w-5 h-5 text-red-300 dark:text-red-400 fill-current animate-pulse" />
               {t('postRequestButton')}
             </Link>
           </div>
@@ -655,7 +674,7 @@ export default function Home() {
                                   <tr key={normalizedDonor.id} className="hover:bg-slate-50/70 dark:hover:bg-zinc-800/40 transition-colors duration-150">
                                     <td className="py-4 px-4 align-middle">
                                       <div className="flex items-center gap-3">
-                                        {normalizedDonor.avatar_url && !normalizedDonor.hide_photo ? (
+                                        {normalizedDonor.avatar_url && !normalizedDonor.hide_photo && !isDefaultLetterAvatar(normalizedDonor.avatar_url) ? (
                                           <div className="relative shrink-0">
                                             <img
                                               src={normalizedDonor.avatar_url}
@@ -668,13 +687,13 @@ export default function Home() {
                                               }}
                                               className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
                                             />
-                                            <div className="w-9 h-9 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 font-bold text-xs items-center justify-center border border-red-500/20 hidden">
-                                              {normalizedDonor.name?.charAt(0) || 'D'}
+                                            <div className="w-9 h-9 rounded-full bg-red-650 text-white font-black text-xs items-center justify-center border border-red-500/30 hidden">
+                                              {normalizedDonor.blood_group}
                                             </div>
                                           </div>
                                         ) : (
-                                          <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-bold text-xs flex items-center justify-center border border-slate-200/60 dark:border-zinc-700 shrink-0">
-                                            {normalizedDonor.name?.charAt(0) || 'D'}
+                                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600 to-rose-600 text-white font-black text-[11px] flex items-center justify-center shadow-xs border border-red-400/40 shrink-0">
+                                            {normalizedDonor.blood_group}
                                           </div>
                                         )}
                                         <div className="flex flex-col gap-1 min-w-0">

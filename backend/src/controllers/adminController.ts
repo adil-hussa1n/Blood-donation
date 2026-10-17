@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import pool from '../config/db.js';
 import { generateToken } from '../middleware/auth.js';
+import { getClientIp } from '../middleware/rateLimiter.js';
 
 export async function googleAdminLogin(req: Request, res: Response): Promise<void> {
   const { credential, user } = req.body;
@@ -439,6 +440,229 @@ export async function deleteDonorCardOffer(req: Request, res: Response): Promise
   try {
     await pool.query('DELETE FROM donor_card_offers WHERE id = ?', [id]);
     res.json({ success: true, error: null });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { message: error.message } });
+  }
+}
+
+export async function logUserActivity(
+  activityType: string,
+  description: string,
+  options?: {
+    userId?: string | null;
+    userName?: string | null;
+    userPhone?: string | null;
+    userEmail?: string | null;
+    ipAddress?: string | null;
+    metadata?: any;
+  }
+): Promise<void> {
+  try {
+    const id = crypto.randomUUID();
+    await pool.query(
+      `INSERT INTO user_activity_logs 
+        (id, user_id, user_name, user_phone, user_email, activity_type, description, ip_address, metadata)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        options?.userId || null,
+        options?.userName || null,
+        options?.userPhone || null,
+        options?.userEmail || null,
+        activityType,
+        description,
+        options?.ipAddress || null,
+        options?.metadata ? JSON.stringify(options.metadata) : null,
+      ]
+    );
+  } catch (err: any) {
+    console.error('Failed to log user activity:', err.message);
+  }
+}
+
+export async function getUserActivityLogs(req: Request, res: Response): Promise<void> {
+  try {
+    const limit = parseInt(String(req.query.limit || '100'), 10);
+    const userId = req.query.userId ? String(req.query.userId).trim() : null;
+    const phone = req.query.phone ? String(req.query.phone).trim() : null;
+
+    let query = `
+      SELECT id, user_id, user_name, user_phone, user_email, 
+             activity_type, description, ip_address, metadata, created_at
+      FROM user_activity_logs
+    `;
+    const params: any[] = [];
+
+    if (userId) {
+      query += ` WHERE user_id = ? `;
+      params.push(userId);
+    } else if (phone) {
+      query += ` WHERE user_phone = ? `;
+      params.push(phone);
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT ?`;
+    params.push(limit);
+
+    const [rows]: any = await pool.query(query, params);
+    res.json({ success: true, data: rows || [], error: null });
+  } catch (error: any) {
+    res.status(500).json({ success: false, data: [], error: { message: error.message } });
+  }
+}
+
+export async function updateDonorDetailsByAdmin(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { name, phone, blood_group, area, last_donation_date, total_donations, is_available, dob, email } = req.body;
+  const adminName = (req as any).admin?.username || 'admin';
+
+  try {
+    const [rows]: any = await pool.query('SELECT * FROM donors WHERE id = ?', [id]);
+    if (!rows || rows.length === 0) {
+      res.status(404).json({ success: false, error: { message: 'Donor not found.' } });
+      return;
+    }
+
+    const prev = rows[0];
+
+    // Duplicate phone check if phone changed
+    if (phone && phone.trim() !== prev.phone) {
+      const [duplicate]: any = await pool.query('SELECT id FROM donors WHERE phone = ? AND id != ?', [phone.trim(), id]);
+      if (duplicate && duplicate.length > 0) {
+        res.status(409).json({ success: false, error: { message: `Phone number ${phone} is already registered to another donor.` } });
+        return;
+      }
+    }
+
+    const diffs: Record<string, { from: any; to: any }> = {};
+    if (name !== undefined && name.trim() !== prev.name) diffs.name = { from: prev.name, to: name.trim() };
+    if (phone !== undefined && phone.trim() !== prev.phone) diffs.phone = { from: prev.phone, to: phone.trim() };
+    if (blood_group !== undefined && blood_group !== prev.blood_group) diffs.blood_group = { from: prev.blood_group, to: blood_group };
+    if (area !== undefined && area !== prev.area) diffs.area = { from: prev.area, to: area };
+    if (last_donation_date !== undefined) {
+      const prevDate = prev.last_donation_date ? String(prev.last_donation_date).substring(0, 10) : '';
+      const newDate = last_donation_date ? String(last_donation_date).substring(0, 10) : '';
+      if (prevDate !== newDate) diffs.last_donation_date = { from: prevDate, to: newDate };
+    }
+    if (total_donations !== undefined && parseInt(total_donations, 10) !== prev.total_donations) {
+      diffs.total_donations = { from: prev.total_donations, to: parseInt(total_donations, 10) || 0 };
+    }
+    if (is_available !== undefined && Boolean(is_available) !== Boolean(prev.is_available)) {
+      diffs.is_available = { from: Boolean(prev.is_available), to: Boolean(is_available) };
+    }
+    if (dob !== undefined) {
+      const prevDob = prev.dob ? String(prev.dob).substring(0, 10) : '';
+      const newDob = dob ? String(dob).substring(0, 10) : '';
+      if (prevDob !== newDob) diffs.dob = { from: prevDob, to: newDob };
+    }
+    if (email !== undefined && (email || '').trim().toLowerCase() !== (prev.email || '').toLowerCase()) {
+      diffs.email = { from: prev.email || '', to: (email || '').trim().toLowerCase() };
+    }
+
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (name !== undefined) { updates.push('name = ?'); values.push(name.trim()); }
+    if (phone !== undefined) { updates.push('phone = ?'); values.push(phone.trim()); }
+    if (blood_group !== undefined) { updates.push('blood_group = ?'); values.push(blood_group); }
+    if (area !== undefined) { updates.push('area = ?'); values.push(area); }
+    if (last_donation_date !== undefined) { updates.push('last_donation_date = ?'); values.push(last_donation_date || null); }
+    if (total_donations !== undefined) { 
+      updates.push('total_donations = ?'); values.push(parseInt(total_donations, 10) || 0); 
+      updates.push('lifetime_donation_count = ?'); values.push(parseInt(total_donations, 10) || 0);
+    }
+    if (is_available !== undefined) { updates.push('is_available = ?'); values.push(is_available ? 1 : 0); }
+    if (dob !== undefined) { updates.push('dob = ?'); values.push(dob || null); }
+    if (email !== undefined) { updates.push('email = ?'); values.push(email ? email.trim().toLowerCase() : null); }
+
+    if (updates.length > 0) {
+      values.push(id);
+      await pool.query(`UPDATE donors SET ${updates.join(', ')} WHERE id = ?`, values);
+    }
+
+    const [updated]: any = await pool.query('SELECT * FROM donors WHERE id = ?', [id]);
+    const clientIp = getClientIp(req);
+
+    // Format human readable change summary
+    const changeSummary = Object.keys(diffs).length > 0
+      ? Object.entries(diffs).map(([k, v]) => `${k}: '${v.from || 'none'}' → '${v.to || 'none'}'`).join(', ')
+      : 'No field values changed';
+
+    // Log admin modification in user_activity_logs with exact diffs
+    await logUserActivity(
+      'admin_updated_donor',
+      `Admin (${adminName}) modified: ${changeSummary}.`,
+      {
+        userId: updated[0].id,
+        userName: updated[0].name,
+        userPhone: updated[0].phone,
+        userEmail: updated[0].email,
+        ipAddress: clientIp,
+        metadata: { updatedBy: adminName, changes: diffs }
+      }
+    );
+
+    res.json({ success: true, data: updated[0], error: null });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { message: error.message } });
+  }
+}
+
+export async function updateEmergencyDetailsByAdmin(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { blood_group, area, contact, note, status } = req.body;
+  const adminName = (req as any).admin?.username || 'admin';
+
+  try {
+    const [rows]: any = await pool.query('SELECT * FROM emergency_requests WHERE id = ?', [id]);
+    if (!rows || rows.length === 0) {
+      res.status(404).json({ success: false, error: { message: 'Emergency request not found.' } });
+      return;
+    }
+
+    const prev = rows[0];
+
+    const diffs: Record<string, { from: any; to: any }> = {};
+    if (blood_group !== undefined && blood_group !== prev.blood_group) diffs.blood_group = { from: prev.blood_group, to: blood_group };
+    if (area !== undefined && area !== prev.area) diffs.area = { from: prev.area, to: area };
+    if (contact !== undefined && contact.trim() !== prev.contact) diffs.contact = { from: prev.contact, to: contact.trim() };
+    if (note !== undefined && (note || '').trim() !== (prev.note || '').trim()) diffs.note = { from: prev.note || '', to: (note || '').trim() };
+    if (status !== undefined && status !== prev.status) diffs.status = { from: prev.status, to: status };
+
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (blood_group !== undefined) { updates.push('blood_group = ?'); values.push(blood_group); }
+    if (area !== undefined) { updates.push('area = ?'); values.push(area); }
+    if (contact !== undefined) { updates.push('contact = ?'); values.push(contact.trim()); }
+    if (note !== undefined) { updates.push('note = ?'); values.push(note ? note.trim() : ''); }
+    if (status !== undefined) { updates.push('status = ?'); values.push(status); }
+
+    if (updates.length > 0) {
+      values.push(id);
+      await pool.query(`UPDATE emergency_requests SET ${updates.join(', ')} WHERE id = ?`, values);
+    }
+
+    const [updated]: any = await pool.query('SELECT * FROM emergency_requests WHERE id = ?', [id]);
+    const clientIp = getClientIp(req);
+
+    const changeSummary = Object.keys(diffs).length > 0
+      ? Object.entries(diffs).map(([k, v]) => `${k}: '${v.from || 'none'}' → '${v.to || 'none'}'`).join(', ')
+      : 'No field values changed';
+
+    // Log admin modification in user_activity_logs
+    await logUserActivity(
+      'admin_updated_emergency',
+      `Admin (${adminName}) modified emergency request: ${changeSummary}.`,
+      {
+        userId: updated[0].donor_id || null,
+        userPhone: updated[0].contact,
+        ipAddress: clientIp,
+        metadata: { updatedBy: adminName, changes: diffs }
+      }
+    );
+
+    res.json({ success: true, data: updated[0], error: null });
   } catch (error: any) {
     res.status(500).json({ success: false, error: { message: error.message } });
   }

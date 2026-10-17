@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock, Download, Printer, ShieldCheck, Check, Eye, EyeOff, Trash2, Heart, Lock } from 'lucide-react';
-import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getDonorDonationCount, getAreaLabel, calculateDaysSince } from '../context/AppContext';
+import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock, Download, Printer, ShieldCheck, Check, Eye, EyeOff, Trash2, Heart, Lock, Sparkles, MapPin, Activity, CreditCard, Sliders } from 'lucide-react';
+import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getDonorDonationCount, getAreaLabel, calculateDaysSince, isDefaultLetterAvatar } from '../context/AppContext';
 import { dbService } from '../services/db';
 import GoogleAuthButton from '../components/GoogleAuthButton';
 import DonorCardModal from '../components/DonorCardModal';
@@ -768,17 +768,25 @@ export default function Register() {
     <div className="max-w-4xl mx-auto space-y-8">
       
       {/* Title */}
-      <div className="text-center space-y-2">
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+      <div className="text-center space-y-2.5">
+        {foundDonor && (
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-500/10 dark:bg-red-500/15 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-black uppercase tracking-wider mb-1">
+            <Sliders className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
+            <span>{language === 'bn' ? 'রক্তদাতা নিয়ন্ত্রণ কেন্দ্র' : 'Donor Control Center'}</span>
+          </div>
+        )}
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
           {foundDonor
-            ? t('managementPortal')
+            ? (language === 'bn' ? `স্বাগতম, ${foundDonor.name.split(' ')[0]}!` : `Welcome back, ${foundDonor.name.split(' ')[0]}!`)
             : googleProfile
             ? t('completeProfileTitle')
             : t('managementPortal')}
         </h2>
-        <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 max-w-lg mx-auto">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 max-w-lg mx-auto leading-relaxed">
           {foundDonor
-            ? t('portalDesc')
+            ? (language === 'bn' 
+                ? 'আপনার রক্তদানের তথ্য পরিচালনা করুন, কুলডাউন স্থিতি পর্যবেক্ষণ করুন এবং আপনার স্মার্ট কার্ড ডাউনলোড করুন।' 
+                : 'Manage your donation log, monitor clinical cooldown, and access your smart card privileges.')
             : googleProfile
             ? t('completeProfileSubtitle')
             : t('portalDesc')}
@@ -882,9 +890,9 @@ export default function Register() {
                   />
                 ) : null}
                 <div 
-                  className={`w-10 h-10 shrink-0 rounded-full bg-blue-500 text-white items-center justify-center font-bold text-sm shadow-sm ${googleProfile.avatar_url ? 'hidden' : 'flex'}`}
+                  className={`w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-red-600 to-rose-600 text-white items-center justify-center font-black text-sm shadow-sm ${googleProfile.avatar_url ? 'hidden' : 'flex'}`}
                 >
-                  {googleProfile.name?.charAt(0) || 'G'}
+                  {foundDonor?.blood_group || googleProfile.name?.charAt(0) || 'G'}
                 </div>
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -1278,118 +1286,177 @@ export default function Register() {
         {foundDonor && (
           <>
             <div className="md:col-span-5 space-y-6">
-              {/* Profile summary card when found */}
-              <div className="glass-panel border-red-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-5 border relative overflow-hidden space-y-3 sm:space-y-4 animate-slide-up">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full blur-xl -mr-6 -mt-6" />
-                  
-                  <div className="flex items-center justify-between gap-3 relative z-10">
-                    <div className="flex items-center gap-3">
-                      <div className="relative shrink-0">
-                        {foundDonor.avatar_url && !foundDonor.hide_photo ? (
-                          <div className="relative">
-                            <img 
-                              src={foundDonor.avatar_url} 
-                              alt={foundDonor.name} 
-                              referrerPolicy="no-referrer"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                const fallback = e.currentTarget.nextElementSibling;
-                                if (fallback) fallback.style.display = 'flex';
-                              }}
-                              className="w-12 h-12 rounded-2xl object-cover border-2 border-red-500/30 shadow-md"
-                            />
-                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white font-black text-xl items-center justify-center shadow-md hidden">
-                              {foundDonor.blood_group}
-                            </div>
-                            <span className="absolute -bottom-1 -right-1 bg-gradient-to-br from-red-600 to-rose-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-md shadow-sm border border-white dark:border-zinc-900 leading-tight">
-                              {foundDonor.blood_group}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500 text-white font-black text-lg sm:text-xl flex items-center justify-center shadow-md">
+              {/* Ultra-Modern Profile Hero Summary Card */}
+              <div className="glass-panel border-slate-200/60 dark:border-zinc-800/80 rounded-3xl p-5 sm:p-6 border relative overflow-hidden space-y-5 animate-slide-up shadow-xl shadow-slate-900/5 dark:shadow-black/40">
+                {/* Ambient dynamic glow orbs */}
+                <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-red-500/15 via-rose-500/10 to-transparent rounded-full blur-2xl pointer-events-none -mr-10 -mt-10" />
+                <div className="absolute bottom-0 left-0 w-28 h-28 bg-emerald-500/10 rounded-full blur-xl pointer-events-none -ml-8 -mb-8" />
+                
+                {/* Header: Avatar, Name, Blood Badge & Sign Out */}
+                <div className="flex items-start justify-between gap-3 relative z-10">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="relative shrink-0">
+                      {foundDonor.avatar_url && !foundDonor.hide_photo && !isDefaultLetterAvatar(foundDonor.avatar_url) ? (
+                        <div className="relative">
+                          <img 
+                            src={foundDonor.avatar_url} 
+                            alt={foundDonor.name} 
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.nextElementSibling;
+                              if (fallback) fallback.style.display = 'flex';
+                            }}
+                            className="w-14 h-14 rounded-2xl object-cover ring-2 ring-red-500/30 shadow-md"
+                          />
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white font-black text-xl items-center justify-center shadow-md hidden">
                             {foundDonor.blood_group}
                           </div>
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-extrabold text-slate-900 dark:text-white text-base">
+                          {/* Live Blood Group Tag */}
+                          <span className="absolute -bottom-1.5 -right-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[11px] font-black px-2 py-0.5 rounded-lg shadow-md border-2 border-white dark:border-zinc-900">
+                            {foundDonor.blood_group}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-550 via-red-600 to-rose-700 text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-red-500/25 border-2 border-red-400/40">
+                            {foundDonor.blood_group}
+                          </div>
+                          <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-zinc-900 rounded-full" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-black text-slate-900 dark:text-white text-lg tracking-tight truncate">
                           {foundDonor.name}
                         </h4>
-                        <span className="text-xs text-slate-400 dark:text-zinc-500 font-semibold">
-                          {getAreaLabel(foundDonor.area, t)} • {foundDonor.phone}
-                        </span>
+                        <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" title="Verified Volunteer Donor" />
                       </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        localStorage.removeItem('bb_donor_session');
-                        setCurrentDonor(null);
-                        setFoundDonor(null);
-                        setSearchPassword('');
-                        setDonorHistory([]);
-                        setSuccessMsg('');
-                        setErrorMsg('');
-                      }}
-                      className="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 dark:bg-zinc-900 dark:hover:bg-rose-950/30 text-slate-500 dark:text-zinc-400 hover:text-rose-500 dark:hover:text-rose-400 transition-all duration-200 cursor-pointer flex items-center gap-1 text-[10px] font-bold shrink-0"
-                      title={t('signOutLabel')}
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">{t('signOutLabel')}</span>
-                    </button>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    {(() => {
-                      const badge = getDonorBadge(foundDonor.total_donations);
-                      return (
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide ${badge.color}`}>
-                          {getDonorBadgeLabel(badge.label, t)}
-                        </span>
-                      );
-                    })()}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-zinc-950/50 p-3 rounded-xl border border-slate-100 dark:border-zinc-900">
-                    <div>
-                      <span className="text-slate-400 dark:text-zinc-500 block mb-0.5">{t('timesDonatedHeader')}</span>
-                      <strong className="text-slate-800 dark:text-zinc-200 font-bold text-base">{t('timesUnit', { count: foundDonor.total_donations })}</strong>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 dark:text-zinc-500 block mb-0.5">{t('lastDonation')}</span>
-                      <strong className="text-slate-800 dark:text-zinc-200 font-bold text-sm">
-                        {foundDonor.last_donation_date 
-                          ? new Date(foundDonor.last_donation_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                          : t('never')
-                        }
-                      </strong>
+                      <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold flex items-center gap-1.5 truncate mt-0.5">
+                        <MapPin className="w-3 h-3 text-red-500 shrink-0" />
+                        <span className="truncate">{getAreaLabel(foundDonor.area, t)}</span>
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 block truncate mt-0.5">
+                        {foundDonor.phone}
+                      </span>
                     </div>
                   </div>
-                  {/* Donor Card & Benefits Button */}
-                  <button
-                    type="button"
-                    onClick={() => setShowDonorCard(true)}
-                    className="w-full mt-2.5 py-2.5 px-3 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-600 text-white text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-red-500/20 active:scale-[0.98]"
-                  >
-                    <Award className="w-4 h-4 text-amber-300 shrink-0" />
-                    <span>{language === 'bn' ? 'স্মার্ট ডোনার কার্ড ও অফারসমূহ' : 'View Smart Donor Card & Offers'}</span>
-                  </button>
 
-                  {/* Delete Account Button */}
                   <button
                     type="button"
                     onClick={() => {
-                      setDeletePasswordInput(searchPassword || '');
-                      setDeleteConfirmText('');
-                      setShowDeleteModal(true);
+                      localStorage.removeItem('bb_donor_session');
+                      setCurrentDonor(null);
+                      setFoundDonor(null);
+                      setSearchPassword('');
+                      setDonorHistory([]);
+                      setSuccessMsg('');
+                      setErrorMsg('');
                     }}
-                    className="w-full mt-2 py-2 px-3 bg-rose-50/60 hover:bg-rose-100/80 dark:bg-rose-950/15 dark:hover:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/30 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                    className="p-2.5 rounded-xl bg-slate-100/80 hover:bg-rose-50 dark:bg-zinc-900/80 dark:hover:bg-rose-950/40 text-slate-400 dark:text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 transition-all duration-200 cursor-pointer flex items-center gap-1 text-[11px] font-bold shrink-0 border border-slate-200/50 dark:border-zinc-800"
+                    title={t('signOutLabel')}
                   >
-                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                    <span>{t('deleteAccountBtn')}</span>
+                    <LogOut className="w-4 h-4" />
+                    <span className="hidden sm:inline">{t('signOutLabel')}</span>
                   </button>
                 </div>
+
+                {/* Status Badges Row */}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {(() => {
+                    const badge = getDonorBadge(foundDonor.total_donations);
+                    return (
+                      <span className={`px-3 py-1 rounded-full text-[11px] font-black tracking-wide shadow-xs border ${badge.color}`}>
+                        ★ {getDonorBadgeLabel(badge.label, t)}
+                      </span>
+                    );
+                  })()}
+
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-flex items-center gap-1 border ${
+                    foundDonor.is_available 
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+                      : 'bg-slate-500/10 text-slate-500 dark:text-zinc-400 border-slate-500/20'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${foundDonor.is_available ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                    {foundDonor.is_available ? (language === 'bn' ? 'রক্তদানে প্রস্তুত' : 'Available to Donate') : (language === 'bn' ? 'অনুপলব্ধ' : 'Unavailable')}
+                  </span>
+                </div>
+
+                {/* Key Metrics Grid */}
+                <div className="grid grid-cols-2 gap-3 text-xs bg-gradient-to-br from-slate-50 to-slate-100/60 dark:from-zinc-900/70 dark:to-zinc-950/70 p-3.5 rounded-2xl border border-slate-200/50 dark:border-zinc-800/80">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 block flex items-center gap-1">
+                      <Droplet className="w-3 h-3 text-red-500" />
+                      {t('timesDonatedHeader')}
+                    </span>
+                    <strong className="text-slate-900 dark:text-white font-black text-xl block">
+                      {t('timesUnit', { count: foundDonor.total_donations })}
+                    </strong>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 block flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-sky-500" />
+                      {t('lastDonation')}
+                    </span>
+                    <strong className="text-slate-800 dark:text-zinc-200 font-bold text-sm block truncate">
+                      {foundDonor.last_donation_date 
+                        ? new Date(foundDonor.last_donation_date).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : t('never')
+                      }
+                    </strong>
+                  </div>
+                </div>
+
+                {/* VIP Smart Donor Card Action CTA */}
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-red-600 via-rose-600 to-red-800 p-4 text-white shadow-lg shadow-red-500/20 group">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none -mr-8 -mt-8" />
+                  <div className="relative z-10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-5 h-5 text-amber-300 animate-pulse" />
+                        <span className="text-xs font-black uppercase tracking-wider text-amber-200">
+                          {language === 'bn' ? 'স্মার্ট ডোনার কার্ড' : 'Smart Donor Card'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono font-bold backdrop-blur-sm">
+                        {foundDonor.blood_group} POSITIVE
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-rose-100 font-medium leading-relaxed">
+                      {language === 'bn' 
+                        ? 'আপনার ডিজিটাল রক্তদাতা কার্ড দেখুন, হাসপাতাল ডিসকাউন্ট অফার গ্রহণ করুন বা পিডিএফ প্রিন্ট করুন।' 
+                        : 'Access your verified digital card, claim partner discounts, or export clean print PDF.'
+                      }
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowDonorCard(true)}
+                      className="w-full py-2.5 px-4 bg-white hover:bg-rose-50 text-red-600 font-black text-xs rounded-xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <CreditCard className="w-4 h-4 text-red-600" />
+                      <span>{language === 'bn' ? 'স্মার্ট ডোনার কার্ড ও অফারসমূহ দেখুন' : 'Open Smart Donor Card & Offers'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Delete Account Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeletePasswordInput(searchPassword || '');
+                    setDeleteConfirmText('');
+                    setShowDeleteModal(true);
+                  }}
+                  className="w-full py-2 px-3 bg-slate-50 hover:bg-rose-50 dark:bg-zinc-900/60 dark:hover:bg-rose-950/20 border border-slate-200/60 dark:border-zinc-800/60 text-slate-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-rose-400 text-[11px] font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{t('deleteAccountBtn')}</span>
+                </button>
+              </div>
             </div>
 
             {/* Profile Update Controls & Log Donation forms */}
@@ -1407,15 +1474,19 @@ export default function Register() {
                   return (
                     <form 
                       onSubmit={handleRequestDonationLog}
-                      className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4 font-semibold text-xs relative overflow-hidden"
+                      className="glass-panel rounded-3xl p-5 sm:p-6 border border-slate-200/60 dark:border-zinc-800/80 space-y-4 font-semibold text-xs relative overflow-hidden shadow-lg shadow-slate-900/5 dark:shadow-black/30"
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0 ${isCooldown ? 'bg-amber-500' : 'bg-emerald-500'}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-200/60 dark:border-zinc-800/60">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md ${
+                            isCooldown 
+                              ? 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/25' 
+                              : 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/25'
+                          }`}>
                             {isCooldown ? <Clock className="w-4 h-4 animate-spin-slow" /> : <History className="w-4 h-4" />}
                           </div>
                           <div className="min-w-0">
-                            <h3 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight">
+                            <h3 className="font-black text-slate-900 dark:text-white text-base leading-tight tracking-tight">
                               {t('logDonationTitle')}
                             </h3>
                             <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium leading-normal mt-0.5">
@@ -1426,8 +1497,8 @@ export default function Register() {
 
                         {isCooldown && (
                           <div className="self-start sm:self-auto">
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1.5 shrink-0">
-                              <Clock className="w-3 h-3 animate-pulse" />
+                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1.5 shrink-0">
+                              <Clock className="w-3.5 h-3.5 animate-pulse" />
                               {t('daysRemainingCooldown', { days: daysRemaining })}
                             </span>
                           </div>
@@ -1436,8 +1507,8 @@ export default function Register() {
 
                       {/* Cooldown Active Warning Box */}
                       {isCooldown ? (
-                        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 space-y-2 text-xs">
-                          <div className="flex items-start gap-2">
+                        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 space-y-2 text-xs">
+                          <div className="flex items-start gap-2.5">
                             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                             <div>
                               <p className="font-bold">{t('cooldownActiveTitle')}</p>
@@ -1451,7 +1522,7 @@ export default function Register() {
                             </div>
                           </div>
                           {cooldownEndDate && (
-                            <div className="text-[10px] font-extrabold text-amber-900 dark:text-amber-200 bg-amber-500/15 px-2.5 py-1 rounded-lg inline-block">
+                            <div className="text-[10px] font-extrabold text-amber-900 dark:text-amber-200 bg-amber-500/15 px-3 py-1 rounded-lg inline-block">
                               {t('cooldownEndsOn', {
                                 date: cooldownEndDate.toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                               })}
@@ -1461,7 +1532,7 @@ export default function Register() {
                       ) : null}
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
                           {t('donationDate')}
                         </label>
                         <div className="relative">
@@ -1472,7 +1543,7 @@ export default function Register() {
                             max={new Date().toISOString().split('T')[0]}
                             value={newDonationDate}
                             onChange={(e) => setNewDonationDate(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-xs"
                           />
                           <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                         </div>
@@ -1481,10 +1552,10 @@ export default function Register() {
                       <button
                         type="submit"
                         disabled={isCooldown || formLoading}
-                        className={`w-full font-extrabold py-2.5 px-4 rounded-xl shadow-md active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 text-xs ${
+                        className={`w-full font-black py-3 px-4 rounded-xl shadow-md active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 text-xs ${
                           isCooldown
-                            ? 'bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 cursor-not-allowed border border-slate-300/40 dark:border-zinc-700/40 shadow-none'
-                            : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/10 hover:shadow-emerald-500/20 cursor-pointer disabled:opacity-50'
+                            ? 'bg-slate-200/80 dark:bg-zinc-800/80 text-slate-400 dark:text-zinc-500 cursor-not-allowed border border-slate-300/40 dark:border-zinc-700/40 shadow-none'
+                            : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/20 hover:shadow-emerald-600/30 cursor-pointer disabled:opacity-50'
                         }`}
                       >
                         {isCooldown ? (
@@ -1505,13 +1576,13 @@ export default function Register() {
                 {/* 2. Edit Profile Form */}
                 <form 
                   onSubmit={handleUpdateProfile}
-                  className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-4"
+                  className="glass-panel rounded-3xl p-5 sm:p-6 border border-slate-200/60 dark:border-zinc-800/80 space-y-4 shadow-lg shadow-slate-900/5 dark:shadow-black/30"
                 >
-                  <div className="flex items-center gap-2 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center">
+                  <div className="flex items-center gap-3 pb-3.5 border-b border-slate-200/60 dark:border-zinc-800/60">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
                       <Settings className="w-4 h-4" />
                     </div>
-                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
+                    <h3 className="font-black text-slate-900 dark:text-white text-base tracking-tight">
                       {t('updateDetailsTitle')}
                     </h3>
                   </div>
@@ -1526,7 +1597,7 @@ export default function Register() {
                         required
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white font-medium shadow-xs"
                       />
                     </div>
 
@@ -1537,7 +1608,7 @@ export default function Register() {
                       <select
                         value={editArea}
                         onChange={(e) => setEditArea(e.target.value)}
-                        className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white cursor-pointer"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white cursor-pointer font-medium shadow-xs"
                       >
                         {DISTRICT_AREAS.map((district) => (
                           <optgroup
@@ -1555,19 +1626,19 @@ export default function Register() {
                       </select>
                     </div>
 
-                    <div className="space-y-1.5 sm:col-span-2 flex items-center gap-2 pt-2">
+                    <div className="space-y-1.5 sm:col-span-2 flex items-center gap-2.5 pt-2">
                       <input
                         type="checkbox"
                         id="editAvailable"
                         checked={editAvailable}
                         onChange={(e) => setEditAvailable(e.target.checked)}
-                        className="w-5 h-5 rounded border-slate-300 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                        className="w-5 h-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                       />
                       <label htmlFor="editAvailable" className="cursor-pointer select-none">
                         <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">
                           {t('setAvailable')}
                         </span>
-                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 block">
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 block">
                           {t('toggleManualPresence')}
                         </span>
                       </label>
@@ -1581,7 +1652,7 @@ export default function Register() {
                           id="editHidePhoto"
                           checked={editHidePhoto}
                           onChange={(e) => setEditHidePhoto(e.target.checked)}
-                          className="w-5 h-5 mt-0.5 rounded border-slate-300 text-red-500 focus:ring-red-500 cursor-pointer"
+                          className="w-5 h-5 mt-0.5 rounded-md border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
                         />
                         <label htmlFor="editHidePhoto" className="cursor-pointer select-none flex-1">
                           <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
@@ -1603,79 +1674,102 @@ export default function Register() {
                   <button
                     type="submit"
                     disabled={formLoading}
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer font-bold"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-3 px-4 rounded-xl shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer"
                   >
                     <Save className="w-4 h-4" />
-                    {t('saveChanges')}
+                    <span>{t('saveChanges')}</span>
                   </button>
                 </form>
 
                 {/* 3. Donation History Log Table */}
-                <div className="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-zinc-800/50 space-y-3">
-                  <h4 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                    <History className="w-4 h-4 text-slate-400" /> {t('donationHistoryTitle')}
-                  </h4>
+                <div className="glass-panel rounded-3xl p-5 sm:p-6 border border-slate-200/60 dark:border-zinc-800/80 space-y-4 shadow-lg shadow-slate-900/5 dark:shadow-black/30">
+                  <div className="flex items-center gap-3 pb-3.5 border-b border-slate-200/60 dark:border-zinc-800/60">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center shadow-md shadow-red-500/20">
+                      <History className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 dark:text-white text-base tracking-tight">
+                        {t('donationHistoryTitle')}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+                        {language === 'bn' ? 'অতীতের সমস্ত সফল রক্তদানের রেকর্ড' : 'Verified log of all your life-saving donations'}
+                      </p>
+                    </div>
+                  </div>
+
                   {historyLoading ? (
-                    <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500 animate-pulse font-semibold">
-                      {t('loadingDonationHistory')}
+                    <div className="py-8 text-center text-xs text-slate-400 dark:text-zinc-500 animate-pulse font-semibold flex items-center justify-center gap-2">
+                      <Clock className="w-4 h-4 animate-spin" />
+                      <span>{t('loadingDonationHistory')}</span>
                     </div>
                   ) : donorHistory.length === 0 ? (
-                    <p className="text-xs text-slate-400 dark:text-zinc-500 py-2 font-semibold">
-                      {t('noDonationEvents')}
-                    </p>
+                    <div className="py-8 text-center space-y-1.5">
+                      <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 dark:bg-zinc-900 flex items-center justify-center text-slate-400">
+                        <Droplet className="w-5 h-5 text-slate-300 dark:text-zinc-600" />
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
+                        {t('noDonationEvents')}
+                      </p>
+                      <p className="text-[11px] text-slate-400 dark:text-zinc-500">
+                        {language === 'bn' ? 'উপরের ফর্ম থেকে আপনার রক্তদান যোগ করুন।' : 'Log your first donation using the form above.'}
+                      </p>
+                    </div>
                   ) : (
                     <>
-                      <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="border-b border-slate-200/50 dark:border-zinc-800/50 text-slate-400 dark:text-zinc-500">
-                            <th className="py-2 font-bold">{t('eventDateLabel')}</th>
-                            <th className="py-2 font-bold">{t('statusLabel')}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-zinc-900">
-                          {paginatedHistory.map((item, idx) => (
-                            <tr key={item.id || idx}>
-                              <td className="py-2.5 font-semibold text-slate-700 dark:text-zinc-300">
-                                {new Date(item.donation_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                              </td>
-                              <td className="py-2.5">
-                                <span className="text-[10px] bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 px-2 py-0.5 rounded-full font-medium">
-                                  {t('loggedStatus')}
-                                </span>
-                              </td>
+                      <div className="overflow-x-auto rounded-2xl border border-slate-200/60 dark:border-zinc-800/60 bg-white/40 dark:bg-zinc-950/40">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50/80 dark:bg-zinc-900/80 border-b border-slate-200/60 dark:border-zinc-800/60 text-slate-400 dark:text-zinc-500 uppercase tracking-wider text-[10px]">
+                              <th className="py-3 px-4 font-black">{t('eventDateLabel')}</th>
+                              <th className="py-3 px-4 font-black text-right">{t('statusLabel')}</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    {/* Pagination Controls */}
-                    {totalHistoryPages > 1 && (
-                      <div className="flex justify-between items-center pt-4 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
-                        <button
-                          type="button"
-                          onClick={() => setHistoryPage(prev => Math.max(1, prev - 1))}
-                          disabled={historyPage === 1}
-                          className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg text-[10px] font-bold py-1 px-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                        >
-                          <ChevronLeft className="w-3 h-3" />
-                          {t('previousPage')}
-                        </button>
-                        <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-bold">
-                          {t('pageIndicator', { current: historyPage, total: totalHistoryPages })}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setHistoryPage(prev => Math.min(totalHistoryPages, prev + 1))}
-                          disabled={historyPage === totalHistoryPages}
-                          className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg text-[10px] font-bold py-1 px-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                        >
-                          {t('nextPage')}
-                          <ChevronRight className="w-3 h-3" />
-                        </button>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-zinc-900">
+                            {paginatedHistory.map((item, idx) => (
+                              <tr key={item.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/40 transition-colors">
+                                <td className="py-3 px-4 font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                                  <span>{new Date(item.donation_date).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                </td>
+                                <td className="py-3 px-4 text-right">
+                                  <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-black uppercase tracking-wider inline-flex items-center gap-1">
+                                    <Check className="w-3 h-3" />
+                                    <span>{t('loggedStatus')}</span>
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                    )}
-                  </>
+
+                      {/* Pagination Controls */}
+                      {totalHistoryPages > 1 && (
+                        <div className="flex justify-between items-center pt-3 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
+                          <button
+                            type="button"
+                            onClick={() => setHistoryPage(prev => Math.max(1, prev - 1))}
+                            disabled={historyPage === 1}
+                            className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold py-1.5 px-3 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border border-slate-200/50 dark:border-zinc-800"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                            <span>{t('previousPage')}</span>
+                          </button>
+                          <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
+                            {t('pageIndicator', { current: historyPage, total: totalHistoryPages })}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setHistoryPage(prev => Math.min(totalHistoryPages, prev + 1))}
+                            disabled={historyPage === totalHistoryPages}
+                            className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold py-1.5 px-3 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border border-slate-200/50 dark:border-zinc-800"
+                          >
+                            <span>{t('nextPage')}</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

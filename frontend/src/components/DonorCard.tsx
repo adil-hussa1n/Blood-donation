@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapPin, Phone, MessageCircle, AlertTriangle, CheckCircle2, Clock, Calendar, Heart, ShieldCheck } from 'lucide-react';
-import { useApp, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, getAreaLabel, getDistrictBadge } from '../context/AppContext';
+import { useApp, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, getAreaLabel, getDistrictBadge, isDefaultLetterAvatar } from '../context/AppContext';
 import { Donor } from '../types';
 
 interface DonorCardProps {
@@ -57,7 +57,7 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
         <div className="flex items-start justify-between gap-2.5">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             {/* Blood Group / Avatar Squircle */}
-            {donor.avatar_url && !donor.hide_photo ? (
+            {donor.avatar_url && !donor.hide_photo && !isDefaultLetterAvatar(donor.avatar_url) ? (
               <div className="relative shrink-0">
                 <img 
                   src={donor.avatar_url} 

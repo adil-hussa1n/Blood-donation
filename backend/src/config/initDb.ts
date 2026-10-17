@@ -274,6 +274,26 @@ export async function initDatabase() {
       ) ENGINE=InnoDB;
     `);
 
+    // 10.1 User Activity Logs (Tracks user sign-ins, profile edits, emergencies, donations)
+    await dbConn.query(`
+      CREATE TABLE IF NOT EXISTS user_activity_logs (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NULL,
+        user_name VARCHAR(150) NULL,
+        user_phone VARCHAR(20) NULL,
+        user_email VARCHAR(255) NULL,
+        activity_type VARCHAR(50) NOT NULL,
+        description TEXT NOT NULL,
+        ip_address VARCHAR(45) NULL,
+        metadata JSON NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_act_user_id (user_id),
+        INDEX idx_act_user_phone (user_phone),
+        INDEX idx_act_type (activity_type),
+        INDEX idx_act_created (created_at)
+      ) ENGINE=InnoDB;
+    `);
+
     // 11. Donor Card Customization Configuration (Admin Editable)
     await dbConn.query(`
       CREATE TABLE IF NOT EXISTS donor_card_config (

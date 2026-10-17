@@ -67,15 +67,18 @@
 
   <!-- Meta Pixel Code -->
   <script>
-    !function(f,b,e,v,n,t,s)
-    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)}(window, document,'script',
-    'https://connect.facebook.net/en_US/fbevents.js');
-    
+    !function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () {
+        n.callMethod ?
+          n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+      };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+      n.queue = []; t = b.createElement(e); t.async = !0;
+      t.src = v; s = b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t, s)
+    }(window, document, 'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+
     var metaPixelId = '%VITE_META_PIXEL_ID%';
     // Initialize if ID is provided or valid
     if (metaPixelId && !metaPixelId.startsWith('%')) {
@@ -580,7 +583,7 @@
         </h1>
         <p class="static-preloader__tagline">Emergency Blood Donation Network</p>
         <a href="https://daruntech.com" target="_blank" rel="noopener noreferrer" class="static-preloader__sponsor"
-          title="Designed & Developed by Darun tech Private Limited">
+          title="Designed & Developed by Darun Tech Private Limited">
           <span class="static-preloader__sponsor-icon">
             <img src="/daruntech-icon.png" alt="Darun Tech Logo" />
           </span>
@@ -588,7 +591,7 @@
             <span class="static-preloader__sponsor-sub">
               Designed & Developed <span class="static-preloader__sponsor-dot"></span>
             </span>
-            <span class="static-preloader__sponsor-text">Darun tech Private Limited</span>
+            <span class="static-preloader__sponsor-text">Darun Tech Private Limited</span>
           </div>
         </a>
       </div>

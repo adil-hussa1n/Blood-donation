@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, ExternalLink, LucideIcon, ChevronRight, LogOut, User, Bell, BellOff, BellRing } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useApp, isDefaultLetterAvatar } from '../context/AppContext';
 
 interface NavigationItem {
   nameKey: string;
@@ -169,11 +169,10 @@ export default function Layout({ children }: LayoutProps) {
               {isNotificationsSupported && (
                 <button
                   onClick={toggleNotifications}
-                  className={`hidden lg:flex relative w-9 h-9 xl:w-9.5 xl:h-9.5 items-center justify-center rounded-xl transition-all duration-200 border shadow-xs cursor-pointer group active:scale-95 ${
-                    isNotificationsEnabled
-                      ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20'
-                      : 'text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 border-slate-200/50 dark:border-zinc-800/50'
-                  }`}
+                  className={`hidden lg:flex relative w-9 h-9 xl:w-9.5 xl:h-9.5 items-center justify-center rounded-xl transition-all duration-200 border shadow-xs cursor-pointer group active:scale-95 ${isNotificationsEnabled
+                    ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20'
+                    : 'text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-zinc-900 border-slate-200/50 dark:border-zinc-800/50'
+                    }`}
                   aria-label="Toggle Emergency Alerts"
                   title={isNotificationsEnabled ? (t('alertsActiveButton') || 'Emergency Alerts Active') : (t('enableAlertsButton') || 'Enable Emergency Blood Alerts')}
                 >
@@ -208,11 +207,16 @@ export default function Layout({ children }: LayoutProps) {
               {currentDonor && (
                 <Link
                   to="/register"
-                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-all shadow-sm"
+                  className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-all shadow-sm group"
                   title="View your donor profile"
                 >
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                   <span className="max-w-[110px] truncate">{currentDonor.name || currentDonor.phone}</span>
+                  {currentDonor.blood_group && (
+                    <span className="px-1.5 py-0.2 rounded-md bg-red-600 text-white font-black text-[10px] shadow-xs">
+                      {currentDonor.blood_group}
+                    </span>
+                  )}
                 </Link>
               )}
 
@@ -254,7 +258,7 @@ export default function Layout({ children }: LayoutProps) {
             <div key={mobileMenuAnimKey} className="mobile-nav-dropdown__inner space-y-1">
               {/* Logged-in User Profile Header in Mobile Menu */}
               {currentDonor && (
-                <div 
+                <div
                   style={{ animationDelay: '60ms' }}
                   className="mobile-nav-item mb-2.5 p-3 rounded-2xl bg-gradient-to-r from-red-500/10 via-rose-500/10 to-transparent dark:from-red-950/40 dark:via-rose-950/30 border border-red-500/20 dark:border-red-900/40"
                 >
@@ -265,7 +269,7 @@ export default function Layout({ children }: LayoutProps) {
                       className="flex items-center gap-3 min-w-0 flex-1 group"
                     >
                       <div className="relative shrink-0">
-                        {currentDonor.avatar_url ? (
+                        {currentDonor.avatar_url && !isDefaultLetterAvatar(currentDonor.avatar_url) ? (
                           <img
                             src={currentDonor.avatar_url}
                             alt={currentDonor.name || 'Donor'}
@@ -279,11 +283,11 @@ export default function Layout({ children }: LayoutProps) {
                           />
                         ) : null}
                         <div
-                          className={`w-11 h-11 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white font-bold text-base shadow-sm items-center justify-center ${currentDonor.avatar_url ? 'hidden' : 'flex'}`}
+                          className={`w-11 h-11 rounded-full bg-gradient-to-br from-red-650 via-red-600 to-rose-600 text-white font-black text-sm shadow-sm items-center justify-center tracking-tight border-2 border-red-400/40 ${currentDonor.avatar_url && !isDefaultLetterAvatar(currentDonor.avatar_url) ? 'hidden' : 'flex'}`}
                         >
-                          {currentDonor.name?.charAt(0).toUpperCase() || <User className="w-5 h-5" />}
+                          {currentDonor.blood_group || currentDonor.name?.charAt(0).toUpperCase() || <User className="w-5 h-5" />}
                         </div>
-                        {currentDonor.blood_group && (
+                        {currentDonor.avatar_url && !isDefaultLetterAvatar(currentDonor.avatar_url) && currentDonor.blood_group && (
                           <span className="absolute -bottom-1 -right-1 bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-md shadow-sm border border-white dark:border-zinc-900 leading-tight">
                             {currentDonor.blood_group}
                           </span>
@@ -374,11 +378,10 @@ export default function Layout({ children }: LayoutProps) {
                   }}
                   style={{ animationDelay: mobileMenuOpen ? `${100 + (navigation.length + 2) * 45}ms` : '0ms' }}
                   tabIndex={mobileMenuOpen ? 0 : -1}
-                  className={`mobile-nav-item w-full text-left flex items-center justify-between px-4 py-3 rounded-xl text-base font-medium transition-colors duration-200 cursor-pointer ${
-                    isNotificationsEnabled
-                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                      : 'text-slate-600 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-zinc-900'
-                  }`}
+                  className={`mobile-nav-item w-full text-left flex items-center justify-between px-4 py-3 rounded-xl text-base font-medium transition-colors duration-200 cursor-pointer ${isNotificationsEnabled
+                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                    : 'text-slate-600 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-zinc-900'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     {isNotificationsEnabled ? (
@@ -401,11 +404,10 @@ export default function Layout({ children }: LayoutProps) {
       {/* Full Screen Blurred Backdrop for Mobile Navigation (Rendered in Portal to escape header backdrop-filter bug) */}
       {typeof document !== 'undefined' && createPortal(
         <div
-          className={`lg:hidden fixed inset-0 z-35 transition-all duration-300 ${
-            mobileMenuOpen 
-              ? 'opacity-100 pointer-events-auto backdrop-blur-md bg-slate-900/40 dark:bg-black/60' 
-              : 'opacity-0 pointer-events-none'
-          }`}
+          className={`lg:hidden fixed inset-0 z-35 transition-all duration-300 ${mobileMenuOpen
+            ? 'opacity-100 pointer-events-auto backdrop-blur-md bg-slate-900/40 dark:bg-black/60'
+            : 'opacity-0 pointer-events-none'
+            }`}
           style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))' }}
           onClick={() => setMobileMenuOpen(false)}
           aria-hidden="true"
@@ -450,7 +452,7 @@ export default function Layout({ children }: LayoutProps) {
               </Link>
             </div>
             <span className="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-400 font-semibold tracking-wide">
-              A Humanitarian Initiative by <a href="https://daruntech.com" target="_blank" rel="noopener noreferrer" className="font-extrabold text-purple-600 dark:text-purple-400 hover:underline">Darun tech Private Limited</a>
+              A Humanitarian Initiative by <a href="https://daruntech.com" target="_blank" rel="noopener noreferrer" className="font-extrabold text-purple-600 dark:text-purple-400 hover:underline">Darun Tech Private Limited</a>
             </span>
           </div>
 

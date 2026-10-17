@@ -652,6 +652,46 @@ export const dbService = {
       success: !!res.success,
       error: res.error
     };
+  },
+
+  async updateDonorByAdmin(id: string, donorData: any): Promise<{ success: boolean; data: any; error: any }> {
+    const res = await apiRequest(`/admin/donors/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(donorData)
+    });
+    return {
+      success: !!res.success,
+      data: res.data,
+      error: res.error
+    };
+  },
+
+  async updateEmergencyByAdmin(id: string, emergencyData: any): Promise<{ success: boolean; data: any; error: any }> {
+    const res = await apiRequest(`/admin/emergencies/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(emergencyData)
+    });
+    return {
+      success: !!res.success,
+      data: res.data,
+      error: res.error
+    };
+  },
+
+  async getUserActivityLogs(filters?: { userId?: string; phone?: string; limit?: number }): Promise<{ success: boolean; data: any[]; error: any }> {
+    const params = new URLSearchParams();
+    if (filters?.userId) params.append('userId', filters.userId);
+    if (filters?.phone) params.append('phone', filters.phone);
+    if (filters?.limit) params.append('limit', String(filters.limit));
+
+    const url = `/admin/activity-logs${params.toString() ? `?${params.toString()}` : ''}`;
+    const res = await apiRequest(url);
+    return {
+      success: !!res.success,
+      data: res.data || [],
+      error: res.error
+    };
   }
 };
+
 

@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import pool from '../config/db.js';
 import { getClientIp, logRateLimit } from '../middleware/rateLimiter.js';
 import { generateToken, verifyToken } from '../middleware/auth.js';
+import { logUserActivity } from './adminController.js';
 
 // Format donor object to ensure boolean types matching frontend expectations
 function formatDonor(row: any) {
@@ -192,6 +193,20 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
 
     await logRateLimit(clientIp, 'donor_registration', 'allowed');
 
+    // Record user activity
+    await logUserActivity(
+      'user_registered',
+      `New donor registered: ${donorData.name.trim()} (${phone}, ${donorData.blood_group}) in ${donorData.area}.`,
+      {
+        userId: id,
+        userName: donorData.name.trim(),
+        userPhone: phone,
+        userEmail: email,
+        ipAddress: clientIp,
+        metadata: { blood_group: donorData.blood_group, area: donorData.area, is_google: Boolean(googleId) }
+      }
+    );
+
     const newDonor = {
       id,
       name: donorData.name.trim(),
@@ -219,6 +234,7 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
 
 export async function verifyDonor(req: Request, res: Response): Promise<void> {
   const { phone, password } = req.body;
+  const clientIp = getClientIp(req);
   try {
     const cleanPhone = String(phone || '').trim();
 
@@ -243,6 +259,20 @@ export async function verifyDonor(req: Request, res: Response): Promise<void> {
       res.status(401).json({ data: null, error: { message: 'Invalid phone or password.' } });
       return;
     }
+
+    // Log login activity
+    await logUserActivity(
+      'user_login',
+      `Donor logged in: ${donor.name} (${donor.phone}).`,
+      {
+        userId: donor.id,
+        userName: donor.name,
+        userPhone: donor.phone,
+        userEmail: donor.email,
+        ipAddress: clientIp,
+        metadata: { method: 'password' }
+      }
+    );
 
     const token = generateToken({ id: donor.id, phone: donor.phone, role: 'donor' });
     res.json({ data: formatDonor(donor), token, error: null });
@@ -339,6 +369,25 @@ export async function updateDonorProfile(req: Request, res: Response): Promise<v
     }
 
     const [updated]: any = await pool.query('SELECT * FROM donors WHERE id = ?', [id]);
+    const clientIp = getClientIp(req);
+
+    // Compute changed fields
+    const changedKeys = Object.keys(profileData).filter(k => k !== 'password' && k !== 'new_password');
+    const changeSummary = changedKeys.length > 0 ? changedKeys.join(', ') : 'password/availability';
+
+    await logUserActivity(
+      'user_updated_profile',
+      `Donor (${updated[0].name}, ${updated[0].phone}) updated: ${changeSummary}.`,
+      {
+        userId: updated[0].id,
+        userName: updated[0].name,
+        userPhone: updated[0].phone,
+        userEmail: updated[0].email,
+        ipAddress: clientIp,
+        metadata: { updatedFields: changedKeys }
+      }
+    );
+
     res.json({ data: formatDonor(updated[0]), error: null });
   } catch (error: any) {
     res.status(500).json({ data: null, error: { message: error.message } });
@@ -428,6 +477,20 @@ export async function addDonationEvent(req: Request, res: Response): Promise<voi
       [newCount, newCount, donation_date, id]
     );
 
+    const clientIp = getClientIp(req);
+    await logUserActivity(
+      'user_added_donation',
+      `Donor (${donor.name}, ${donor.phone}) recorded a new donation on ${donation_date}. Lifetime count is now ${newCount}.`,
+      {
+        userId: String(id),
+        userName: donor.name,
+        userPhone: donor.phone,
+        userEmail: donor.email,
+        ipAddress: clientIp,
+        metadata: { donation_date, newCount }
+      }
+    );
+
     res.status(201).json({
       data: { id: eventId, donor_id: id, donation_date },
       error: null,
@@ -513,6 +576,21 @@ export async function deleteDonor(req: Request, res: Response): Promise<void> {
     await pool.query('DELETE FROM push_subscriptions WHERE donor_id = ?', [id]);
     await pool.query('DELETE FROM donation_history WHERE donor_id = ?', [id]);
     await pool.query('DELETE FROM donors WHERE id = ?', [id]);
+
+    const clientIp = getClientIp(req);
+    await logUserActivity(
+      'donor_deleted',
+      `Donor account permanently deleted: ${donor.name} (${donor.phone}, ${donor.blood_group}) by ${deletedBy}.`,
+      {
+        userId: donor.id,
+        userName: donor.name,
+        userPhone: donor.phone,
+        userEmail: donor.email,
+        ipAddress: clientIp,
+        metadata: { deletedBy, reason: isDonorSelfDelete ? 'self_delete' : 'admin_delete' }
+      }
+    );
+
     res.json({ success: true, error: null });
   } catch (error: any) {
     res.status(500).json({ success: false, error: { message: error.message } });
@@ -611,6 +689,21 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
       }
 
       const token = generateToken({ id: donor.id, phone: donor.phone, email: donor.email, role: 'donor' });
+
+      const clientIp = getClientIp(req);
+      await logUserActivity(
+        'user_login',
+        `Donor signed in with Google: ${donor.name} (${donor.email || donor.phone}).`,
+        {
+          userId: donor.id,
+          userName: donor.name,
+          userPhone: donor.phone,
+          userEmail: donor.email,
+          ipAddress: clientIp,
+          metadata: { method: 'google_oauth' }
+        }
+      );
+
       res.json({
         success: true,
         isNewUser: false,

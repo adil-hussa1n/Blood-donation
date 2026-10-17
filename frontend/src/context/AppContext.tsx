@@ -90,6 +90,9 @@ interface AppContextType {
   getDonorCardOffers: () => Promise<{ success: boolean; data: any[]; error?: any }>;
   createDonorCardOffer: (offer: any) => Promise<{ success: boolean; data?: any; error?: any }>;
   updateDonorCardOffer: (id: string, offer: any) => Promise<{ success: boolean; data?: any; error?: any }>;
+  updateDonorByAdmin: (id: string, donorData: any) => Promise<{ success: boolean; data?: any; error?: any }>;
+  updateEmergencyByAdmin: (id: string, emergencyData: any) => Promise<{ success: boolean; data?: any; error?: any }>;
+  getUserActivityLogs: (filters?: { userId?: string; phone?: string; limit?: number }) => Promise<{ success: boolean; data: any[]; error?: any }>;
   deleteDonorCardOffer: (id: string) => Promise<{ success: boolean; error?: any }>;
   showToast: (message: string, type?: 'success' | 'error' | 'warning') => void;
   checkIfBlocked: (phone: string) => Promise<{ data: boolean; error?: any }>;
@@ -528,7 +531,8 @@ export const TRANSLATIONS = {
     everyDonorLifesaver: 'Every Blood Donor is a Lifesaver',
     lifesaverWord: 'Lifesaver',
     heroDescText: 'A local network connecting blood donors in Sylhet. Search by blood group, check real-time donor availability, and respond to local emergencies.',
-    registerAsDonorButton: 'Register as Donor',
+    registerAsDonorButton: 'Sign in / Sign up as a donor',
+    welcomeDonorButton: 'Welcome back, {name}!',
     filterDonorsTitle: 'Filter Search',
     clearButton: 'Clear',
     searchByNamePhoneLabel: 'Search by name / phone',
@@ -969,7 +973,8 @@ export const TRANSLATIONS = {
     everyDonorLifesaver: 'প্রতিটি রক্তদাতাই একজন জীবনরক্ষক',
     lifesaverWord: 'জীবনরক্ষক',
     heroDescText: 'সিলেটে রক্তদাতাদের সংযোগকারী একটি স্থানীয় নেটওয়ার্ক। রক্তের গ্রুপ দিয়ে খুঁজুন, রক্তদাতার প্রাপ্যতা দেখুন এবং স্থানীয় জরুরি অনুরোধে সাড়া দিন।',
-    registerAsDonorButton: 'রক্তদাতা হিসেবে নিবন্ধন',
+    registerAsDonorButton: 'রক্তদাতা হিসেবে সাইন ইন / সাইন আপ',
+    welcomeDonorButton: 'স্বাগতম, {name}!',
     filterDonorsTitle: 'দাতা ফিল্টার',
     clearButton: 'মুছুন',
     searchByNamePhoneLabel: 'নাম বা ফোন নম্বর',
@@ -1166,11 +1171,28 @@ export const getDonorDonationCount = (donor) => {
   return 0;
 };
 
+export const isDefaultLetterAvatar = (url: string | null | undefined): boolean => {
+  if (!url || typeof url !== 'string') return true;
+  const trimmed = url.trim();
+  if (!trimmed) return true;
+  
+  // Known generated initial placeholder URLs
+  if (trimmed.includes('dicebear.com') && trimmed.includes('/initials')) return true;
+  if (trimmed.includes('ui-avatars.com')) return true;
+  if (trimmed.includes('default-user')) return true;
+  if (trimmed.includes('AAAAAAAAAAI/AAAAAAAAAAA')) return true;
+
+  return false;
+};
+
 export const normalizeDonor = (donor) => {
   if (!donor) return donor;
   const count = getDonorDonationCount(donor);
+  const isDefaultAvatar = isDefaultLetterAvatar(donor.avatar_url);
+
   return {
     ...donor,
+    avatar_url: isDefaultAvatar ? null : donor.avatar_url,
     hide_photo: Boolean(donor.hide_photo),
     lifetime_donation_count: count,
     total_donations: count,
@@ -2165,6 +2187,47 @@ export const AppProvider = ({ children }) => {
   };
 
 
+  const updateDonorByAdmin = async (id: string, donorData: any) => {
+    if (!isAdmin) return { success: false, error: { message: 'Unauthorized' } };
+    setError(null);
+    const res = await dbService.updateDonorByAdmin(id, donorData);
+    if (!res.success) {
+      setError(res.error?.message || 'Failed to update donor');
+      return res;
+    }
+    if (res.data) {
+      const updated = normalizeDonor(res.data);
+      setDonors(prev => prev.map(d => (d.id === id ? { ...d, ...updated } : d)));
+      if (currentDonor?.id === id) {
+        setCurrentDonor((prev: any) => ({ ...prev, ...updated }));
+      }
+    }
+    window.dispatchEvent(new Event('bb_data_updated'));
+    await refreshData(true);
+    return res;
+  };
+
+  const updateEmergencyByAdmin = async (id: string, emergencyData: any) => {
+    if (!isAdmin) return { success: false, error: { message: 'Unauthorized' } };
+    setError(null);
+    const res = await dbService.updateEmergencyByAdmin(id, emergencyData);
+    if (!res.success) {
+      setError(res.error?.message || 'Failed to update emergency request');
+      return res;
+    }
+    if (res.data) {
+      setEmergencyRequests(prev => prev.map(r => (r.id === id ? { ...r, ...res.data } : r)));
+    }
+    window.dispatchEvent(new Event('bb_data_updated'));
+    await refreshData(true);
+    return res;
+  };
+
+  const getUserActivityLogs = async (filters?: { userId?: string; phone?: string; limit?: number }) => {
+    if (!isAdmin) return { success: false, data: [], error: { message: 'Unauthorized' } };
+    return await dbService.getUserActivityLogs(filters);
+  };
+
   const checkIfBlocked = async (phone: string) => {
     return await dbService.checkIfBlocked(phone);
   };
@@ -2213,6 +2276,9 @@ export const AppProvider = ({ children }) => {
         createDonorCardOffer,
         updateDonorCardOffer,
         deleteDonorCardOffer,
+        updateDonorByAdmin,
+        updateEmergencyByAdmin,
+        getUserActivityLogs,
         showToast,
         checkIfBlocked,
         notificationPermission,
