@@ -34,7 +34,6 @@ app.use(
         scriptSrc: [
           "'self'",
           "'unsafe-inline'",
-          "'unsafe-eval'",
           'https://accounts.google.com',
           'https://pagead2.googlesyndication.com',
           'https://connect.facebook.net',

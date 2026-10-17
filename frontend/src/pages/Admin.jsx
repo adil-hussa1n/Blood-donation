@@ -682,7 +682,7 @@ export default function Admin() {
             </div>
 
             <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
-              Sign in with your authorized administrator Google account to access moderator records.
+              Sign in with your authorized Google account to access staff management records.
             </p>
           </div>
 

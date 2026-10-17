@@ -1,7 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /darun
-Disallow: /api/
 
 Sitemap: https://donors.daruntech.com/sitemap.xml

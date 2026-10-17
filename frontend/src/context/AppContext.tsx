@@ -568,9 +568,9 @@ export const TRANSLATIONS = {
     pageIndicator: 'Page {current} of {total}',
 
     // Admin Dashboard Additions
-    adminAuthTitle: 'Admin Authentication',
-    adminPortalSub: 'Darun Donors Admin Portal',
-    adminDescLogin: 'Please enter administrator credentials to manage records.',
+    adminAuthTitle: 'Portal Verification',
+    adminPortalSub: 'Darun Donors Staff Portal',
+    adminDescLogin: 'Please verify authorized credentials to access management records.',
     adminLoginError: 'Invalid Administrator Credentials. Please check Admin ID and Password.',
     adminConnError: 'Authentication failed. Connection error.',
     adminPassPlaceholder: 'Enter password...',
@@ -1016,9 +1016,9 @@ export const TRANSLATIONS = {
     pageIndicator: 'পৃষ্ঠা {current} এর {total}',
 
     // Admin Dashboard Additions
-    adminAuthTitle: 'অ্যাডমিন লগইন',
-    adminPortalSub: 'দারুণ ডোনার্স অ্যাডমিন পোর্টাল',
-    adminDescLogin: 'রেকর্ড পরিচালনা করতে অ্যাডমিনিস্ট্রেটর শংসাপত্র লিখুন।',
+    adminAuthTitle: 'পোর্টাল যাচাইকরণ',
+    adminPortalSub: 'দারুণ ডোনার্স স্টাফ পোর্টাল',
+    adminDescLogin: 'রেকর্ড পরিচালনা করতে অনুমোদিত শংসাপত্র যাচাই করুন।',
     adminLoginError: 'অবৈধ অ্যাডমিনিস্ট্রেটর শংসাপত্র। অ্যাডমিন আইডি এবং পাসওয়ার্ড যাচাই করুন।',
     adminConnError: 'যাচাইকরণ ব্যর্থ হয়েছে। সংযোগ ত্রুটি।',
     adminPassPlaceholder: 'পাসওয়ার্ড লিখুন...',
