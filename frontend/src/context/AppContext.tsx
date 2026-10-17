@@ -531,7 +531,7 @@ export const TRANSLATIONS = {
     everyDonorLifesaver: 'Every Blood Donor is a Lifesaver',
     lifesaverWord: 'Lifesaver',
     heroDescText: 'A local network connecting blood donors in Sylhet. Search by blood group, check real-time donor availability, and respond to local emergencies.',
-    registerAsDonorButton: 'Sign in / Sign up as a donor',
+    registerAsDonorButton: 'Sign in / Sign up as a Donor',
     welcomeDonorButton: 'Welcome back, {name}!',
     filterDonorsTitle: 'Filter Search',
     clearButton: 'Clear',
@@ -1175,7 +1175,7 @@ export const isDefaultLetterAvatar = (url: string | null | undefined): boolean =
   if (!url || typeof url !== 'string') return true;
   const trimmed = url.trim();
   if (!trimmed) return true;
-  
+
   // Known generated initial placeholder URLs
   if (trimmed.includes('dicebear.com') && trimmed.includes('/initials')) return true;
   if (trimmed.includes('ui-avatars.com')) return true;
@@ -1236,11 +1236,44 @@ export const getAreaLabel = (area, t) => {
   return area;
 };
 
+const isMockEmergency = (req: any): boolean => {
+  if (!req) return false;
+  const note = String(req.note || '').trim().toLowerCase();
+  const contact = String(req.contact || '').trim();
+  if (note === 'aaaaa' || note.includes('aaaa') || note.includes('urgent need for surgery at mag osmani') || note.includes('platelets required urgently for dengue')) {
+    return true;
+  }
+  if (contact === '01711223344' || contact === '01811223344') {
+    return true;
+  }
+  return false;
+};
+
+const isMockDonor = (donor: any): boolean => {
+  if (!donor) return false;
+  const mockPhones = [
+    '01943157539', '01842522900', '01867895666', '01818510112',
+    '01523011555', '01651015158', '01757746456', '01977304373',
+    '01965758903', '01927566808', '01335306976', '01745485364'
+  ];
+  const phone = String(donor.phone || '').trim();
+  const name = String(donor.name || '').trim().toLowerCase();
+  if (mockPhones.includes(phone)) return true;
+  if (['keya ali', 'hasan hasan', 'sadia kazi', 'mariam kazi', 'sujon sheikh'].includes(name)) return true;
+  return false;
+};
+
 export const AppProvider = ({ children }) => {
   const [donors, setDonors] = useState(() => {
     try {
       const cached = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
-      return cached ? JSON.parse(cached) : [];
+      if (!cached) return [];
+      const parsed = JSON.parse(cached);
+      const cleaned = Array.isArray(parsed) ? parsed.filter(d => !isMockDonor(d)) : [];
+      if (cleaned.length !== parsed.length) {
+        localStorage.setItem('bb_donors_cache', JSON.stringify(cleaned));
+      }
+      return cleaned;
     } catch (e) {
       return [];
     }
@@ -1249,7 +1282,14 @@ export const AppProvider = ({ children }) => {
   const [emergencyRequests, setEmergencyRequests] = useState(() => {
     try {
       const cached = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
-      return cached ? JSON.parse(cached) : [];
+      if (!cached) return [];
+      const parsed = JSON.parse(cached);
+      const cleaned = Array.isArray(parsed) ? parsed.filter(r => !isMockEmergency(r)) : [];
+      if (cleaned.length !== parsed.length) {
+        localStorage.setItem('bb_emergencies_cache', JSON.stringify(cleaned));
+        localStorage.removeItem('bb_emergency_requests');
+      }
+      return cleaned;
     } catch (e) {
       return [];
     }
@@ -1567,7 +1607,7 @@ export const AppProvider = ({ children }) => {
 
     for (const req of newRequests) {
       if (!req || !req.id || seenEmergencyIdsRef.current.has(req.id)) continue;
-      
+
       // Mark as seen immediately so it won't trigger again
       seenEmergencyIdsRef.current.add(req.id);
       hasNewSeen = true;
@@ -1701,8 +1741,9 @@ export const AppProvider = ({ children }) => {
           const cachedRequests = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
           if (cachedRequests) {
             const parsed = JSON.parse(cachedRequests);
-            setEmergencyRequests(parsed);
-            notifyMatchingDonors(parsed);
+            const cleaned = Array.isArray(parsed) ? parsed.filter(r => !isMockEmergency(r)) : [];
+            setEmergencyRequests(cleaned);
+            notifyMatchingDonors(cleaned);
           }
         }
       });
@@ -1718,8 +1759,16 @@ export const AppProvider = ({ children }) => {
       try {
         const cachedDonors = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
         const cachedRequests = localStorage.getItem('bb_emergencies_cache') || localStorage.getItem('bb_emergency_requests');
-        if (cachedDonors) setDonors(JSON.parse(cachedDonors).map(normalizeDonor));
-        if (cachedRequests) setEmergencyRequests(JSON.parse(cachedRequests));
+        if (cachedDonors) {
+          const parsed = JSON.parse(cachedDonors);
+          const cleaned = Array.isArray(parsed) ? parsed.filter(d => !isMockDonor(d)) : [];
+          setDonors(cleaned.map(normalizeDonor));
+        }
+        if (cachedRequests) {
+          const parsed = JSON.parse(cachedRequests);
+          const cleaned = Array.isArray(parsed) ? parsed.filter(r => !isMockEmergency(r)) : [];
+          setEmergencyRequests(cleaned);
+        }
       } catch (e) { }
     } finally {
       isRefreshingRef.current = false;
@@ -1734,7 +1783,7 @@ export const AppProvider = ({ children }) => {
   // 4. Cross-tab sync via storage / custom events
   useEffect(() => {
     const hasCachedData = donors.length > 0 || emergencyRequests.length > 0;
-    
+
     // Initial fetch (silent if cache already rendered)
     refreshData(hasCachedData);
 

@@ -467,7 +467,27 @@ export async function initDatabase() {
       `);
     }
 
-    console.log('✅ All tables verified/created successfully.');
+    // Cleanup mock data and test emergencies
+    try {
+      await dbConn.query(`
+        DELETE FROM emergency_requests 
+        WHERE note = 'aaaaa' 
+           OR note LIKE '%aaaa%'
+           OR contact IN ('01711223344', '01811223344')
+           OR contact LIKE '01715%7';
+      `);
+      await dbConn.query(`
+        DELETE FROM donors 
+        WHERE phone IN (
+          '01943157539', '01842522900', '01867895666', '01818510112', 
+          '01523011555', '01651015158', '01757746456', '01977304373', 
+          '01965758903', '01927566808', '01335306976', '01745485364'
+        ) OR name IN ('Keya Ali', 'Hasan Hasan', 'Sadia Kazi', 'Mariam Kazi', 'Sujon Sheikh');
+      `);
+      console.log('🧹 Cleaned up mock donors and test emergency requests from database.');
+    } catch (cleanupErr: any) {
+      console.warn('Mock cleanup note:', cleanupErr.message);
+    }
 
     // Seed default admin if not exists
     const adminUser = 'adilhussa1n';

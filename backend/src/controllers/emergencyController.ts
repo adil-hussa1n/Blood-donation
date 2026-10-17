@@ -9,14 +9,22 @@ import { logUserActivity } from './adminController.js';
 
 export async function getEmergencyRequests(req: Request, res: Response): Promise<void> {
   try {
-    // 1. Auto-delete any emergency request older than 24 hours
-    await pool.query('DELETE FROM emergency_requests WHERE created_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)');
+    // 1. Auto-delete any emergency request older than 24 hours OR test mock data
+    await pool.query(`
+      DELETE FROM emergency_requests 
+      WHERE created_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+         OR note = 'aaaaa'
+         OR note LIKE '%aaaa%'
+         OR contact IN ('01711223344', '01811223344')
+    `);
 
     // 2. Return active requests created within the last 24 hours
     const [rows]: any = await pool.query(
       `SELECT id, donor_id, blood_group, area, contact, note, status, created_at 
        FROM emergency_requests 
        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+         AND note != 'aaaaa'
+         AND contact NOT IN ('01711223344', '01811223344')
        ORDER BY created_at DESC`
     );
     res.json({ data: rows, error: null });
