@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Navigation, Leaf, Lock, User } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel, isDefaultLetterAvatar } from '../context/AppContext';
+import { isDatabaseOrConnectionError } from '../services/db';
 import QuickStats from '../components/QuickStats';
 import DonorCard from '../components/DonorCard';
 import GoogleAuthButton from '../components/GoogleAuthButton';
@@ -582,8 +583,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Error Message (suppressed during maintenance mode to avoid showing raw errors in fields) */}
-            {error && !isMaintenanceMode && (
+            {/* Error Message (suppressed during maintenance mode or connection/server failure to avoid showing raw HTTP errors in directory fields) */}
+            {error && !isMaintenanceMode && !isDatabaseOrConnectionError(error) && (
               <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950 text-rose-700 dark:text-rose-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 shrink-0" />
                 <span>{error}</span>

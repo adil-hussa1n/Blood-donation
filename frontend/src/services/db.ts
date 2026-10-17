@@ -30,7 +30,12 @@ export function isDatabaseOrConnectionError(errMsg?: string | null): boolean {
     msg.includes('er_con_count_error') ||
     msg.includes('too many connections') ||
     msg.includes('database error') ||
-    msg.includes('service unavailable')
+    msg.includes('service unavailable') ||
+    msg.includes('http 502') ||
+    msg.includes('http 503') ||
+    msg.includes('http 504') ||
+    msg.includes('bad gateway') ||
+    msg.includes('gateway timeout')
   );
 }
 

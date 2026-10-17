@@ -1253,10 +1253,27 @@ const isMockEmergency = (req: any): boolean => {
   if (!req) return false;
   const note = String(req.note || '').trim().toLowerCase();
   const contact = String(req.contact || '').trim();
-  if (note === 'aaaaa' || note.includes('aaaa') || note.includes('urgent need for surgery at mag osmani') || note.includes('platelets required urgently for dengue')) {
+  // Detect mock / test notes
+  if (
+    note === 'aaaaa' ||
+    note.includes('aaaa') ||
+    note === 'asdfghj' ||
+    note.includes('asdf') ||
+    note === 'ookk' ||
+    note === 'test' ||
+    note.includes('urgent need for surgery at mag osmani') ||
+    note.includes('platelets required urgently for dengue')
+  ) {
     return true;
   }
-  if (contact === '01711223344' || contact === '01811223344') {
+  // Detect mock / test phones
+  if (
+    contact === '01711223344' ||
+    contact === '01811223344' ||
+    contact === '01715000000' ||
+    contact.startsWith('01715') ||
+    contact.startsWith('01700000000')
+  ) {
     return true;
   }
   return false;
@@ -1749,9 +1766,15 @@ export const AppProvider = ({ children }) => {
             data = activeRequests;
           }
 
+          // Strip any mock/dummy emergencies that might exist in old database or API responses
+          data = Array.isArray(data) ? data.filter(r => !isMockEmergency(r)) : [];
+
           setEmergencyRequests(data);
           if (!isDemoMode && data.length > 0) {
             localStorage.setItem('bb_emergencies_cache', JSON.stringify(data));
+          } else if (!isDemoMode && data.length === 0) {
+            localStorage.removeItem('bb_emergencies_cache');
+            localStorage.removeItem('bb_emergency_requests');
           }
 
           // Trigger cross-platform notifications to compatible donors for new urgent requests

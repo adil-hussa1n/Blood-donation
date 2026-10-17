@@ -13,9 +13,11 @@ export async function getEmergencyRequests(req: Request, res: Response): Promise
     await pool.query(`
       DELETE FROM emergency_requests 
       WHERE created_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-         OR note = 'aaaaa'
+         OR note IN ('aaaaa', 'asdfghj', 'ookk', 'test')
          OR note LIKE '%aaaa%'
+         OR note LIKE '%asdf%'
          OR contact IN ('01711223344', '01811223344')
+         OR contact LIKE '01715%7'
     `);
 
     // 2. Return active requests created within the last 24 hours
@@ -23,8 +25,11 @@ export async function getEmergencyRequests(req: Request, res: Response): Promise
       `SELECT id, donor_id, blood_group, area, contact, note, status, created_at 
        FROM emergency_requests 
        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-         AND note != 'aaaaa'
+         AND note NOT IN ('aaaaa', 'asdfghj', 'ookk', 'test')
+         AND note NOT LIKE '%aaaa%'
+         AND note NOT LIKE '%asdf%'
          AND contact NOT IN ('01711223344', '01811223344')
+         AND contact NOT LIKE '01715%7'
        ORDER BY created_at DESC`
     );
     res.json({ data: rows, error: null });
