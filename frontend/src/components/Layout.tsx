@@ -92,15 +92,20 @@ export default function Layout({ children }: LayoutProps) {
     <div className="min-h-screen flex flex-col transition-colors duration-300">
       {/* Top Banner for Maintenance Mode (when Database loses connection or is unreachable) */}
       {isMaintenanceMode && (
-        <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white text-xs sm:text-sm py-2.5 px-4 text-center font-medium shadow-md flex items-center justify-center gap-2 relative z-50 animate-pulse">
-          <Wrench className="w-4 h-4 shrink-0" />
-          <span className="font-bold">{t('maintenanceSubtitle')}:</span>
-          <span>{t('maintenanceNoticeBanner')}</span>
+        <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white text-xs sm:text-sm py-2.5 px-3 sm:px-4 shadow-md flex flex-wrap items-center justify-center gap-2 sm:gap-3 relative z-50">
+          <div className="flex items-center gap-1.5 font-bold">
+            <Wrench className="w-4 h-4 shrink-0 animate-bounce" />
+            <span className="tracking-wide">{t('maintenanceSubtitle')}:</span>
+          </div>
+          <span className="text-white/90 text-[11px] sm:text-xs font-medium text-center">
+            {t('maintenanceNoticeBanner')}
+          </span>
           <button
+            type="button"
             onClick={() => refreshData(false)}
-            className="ml-2 inline-flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-2.5 py-1 rounded-lg backdrop-blur-xs transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-[11px] sm:text-xs font-black px-3 py-1 rounded-full border border-white/30 shadow-xs hover:shadow transition-all active:scale-95 cursor-pointer"
           >
-            <RotateCw className="w-3 h-3" />
+            <RotateCw className="w-3 h-3 animate-spin" style={{ animationDuration: '3s' }} />
             <span>{t('maintenanceRetryButton')}</span>
           </button>
         </div>
