@@ -1,4 +1,50 @@
+# ==============================================================================
+# Robots.txt for Darun Donors (https://donors.daruntech.com)
+# Configured for Standard Search Engines & Generative AI Agents (GEO / AIO)
+# ==============================================================================
+
+# 1. Standard Web Search Crawlers (Google, Bing, Yahoo, DuckDuckGo)
 User-agent: *
 Allow: /
 
+# 2. Generative AI Search & Answer Engines
+# OpenAI ChatGPT / SearchGPT
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+# Google Gemini / Google-Extended / Vertex AI
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GoogleOther
+Allow: /
+
+# Anthropic Claude
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# Perplexity AI
+User-agent: PerplexityBot
+Allow: /
+
+# DeepSeek & Common AI Crawlers
+User-agent: DeepSeekBot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+# XML Sitemap Location
 Sitemap: https://donors.daruntech.com/sitemap.xml
