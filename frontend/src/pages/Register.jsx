@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock, Download, Printer, ShieldCheck, Check, Eye, EyeOff, Trash2, Heart, Lock, Sparkles, MapPin, Activity, CreditCard, Sliders } from 'lucide-react';
+import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock, Download, Printer, ShieldCheck, Check, Eye, EyeOff, Trash2, Heart, Lock, Sparkles, MapPin, Activity, CreditCard, Sliders, GraduationCap } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getDonorDonationCount, getAreaLabel, calculateDaysSince, isDefaultLetterAvatar } from '../context/AppContext';
 import { dbService } from '../services/db';
 import GoogleAuthButton from '../components/GoogleAuthButton';
 import DonorCardModal from '../components/DonorCardModal';
+import InstituteAutocomplete from '../components/InstituteAutocomplete';
 import { appStorage as localStorage } from '../services/storage';
 
 export default function Register() {
@@ -338,6 +339,9 @@ export default function Register() {
         if (password) setSearchPassword(password);
         setEditName(donor.name);
         setEditArea(donor.area);
+        setEditOccupation(donor.occupation || 'other');
+        setEditInstitute(donor.institute || '');
+        setEditStudentId(donor.student_id || '');
         setEditAvailable(donor.is_available);
         setEditHidePhoto(Boolean(donor.hide_photo));
         setActiveTab('update');
@@ -364,6 +368,9 @@ export default function Register() {
   const [regPhone, setRegPhone] = useState('');
   const [regBloodGroup, setRegBloodGroup] = useState('O+');
   const [regArea, setRegArea] = useState('Sylhet City Corporation');
+  const [regOccupation, setRegOccupation] = useState('other'); // 'student' | 'teacher' | 'other'
+  const [regInstitute, setRegInstitute] = useState('');
+  const [regStudentId, setRegStudentId] = useState('');
   const [regLastDonationDate, setRegLastDonationDate] = useState('');
   const [regTotalDonations, setRegTotalDonations] = useState('');
   const [regAvailable, setRegAvailable] = useState(true);
@@ -396,6 +403,9 @@ export default function Register() {
   // Profile Edit fields
   const [editName, setEditName] = useState('');
   const [editArea, setEditArea] = useState('');
+  const [editOccupation, setEditOccupation] = useState('other');
+  const [editInstitute, setEditInstitute] = useState('');
+  const [editStudentId, setEditStudentId] = useState('');
   const [editAvailable, setEditAvailable] = useState(true);
   const [editHidePhoto, setEditHidePhoto] = useState(false);
   
@@ -566,6 +576,9 @@ export default function Register() {
       phone: phoneTrimmed,
       blood_group: regBloodGroup,
       area: regArea,
+      occupation: regOccupation,
+      institute: (regOccupation === 'student' || regOccupation === 'teacher') ? regInstitute.trim() : null,
+      student_id: (regOccupation === 'student') ? regStudentId.trim() : null,
       last_donation_date: regLastDonationDate || null,
       total_donations: totalDonations,
       is_available: regAvailable,
@@ -586,6 +599,9 @@ export default function Register() {
         setRegName('');
         setRegPhone('');
         setRegDob('');
+        setRegOccupation('other');
+        setRegInstitute('');
+        setRegStudentId('');
         setRegLastDonationDate('');
         setRegTotalDonations('');
         setRegAvailable(true);
@@ -632,6 +648,9 @@ export default function Register() {
       const profileData = {
         name: editName.trim(),
         area: editArea,
+        occupation: editOccupation,
+        institute: (editOccupation === 'student' || editOccupation === 'teacher') ? editInstitute.trim() : null,
+        student_id: (editOccupation === 'student') ? editStudentId.trim() : null,
         is_available: editAvailable,
         hide_photo: editHidePhoto
       };
@@ -1032,6 +1051,77 @@ export default function Register() {
                   ))}
                 </select>
               </div>
+
+              {/* Occupation / Role Dropdown */}
+              <div className="space-y-1.5 flex flex-col justify-start sm:col-span-2">
+                <div className="flex items-center justify-between min-h-[22px]">
+                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>{t('occupationLabel')}</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md border border-indigo-200/50 dark:border-indigo-900/50">
+                    {language === 'bn' ? 'কমিউনিটি পরিচিতি' : 'Community Role'}
+                  </span>
+                </div>
+                <div className="relative">
+                  <select
+                    value={regOccupation}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setRegOccupation(val);
+                      if (val === 'other') {
+                        setRegInstitute('');
+                        setRegStudentId('');
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white cursor-pointer font-medium shadow-xs transition-all appearance-none"
+                  >
+                    <option value="other">👤 {t('occupationGeneral')}</option>
+                    <option value="student">🎓 {t('occupationStudent')}</option>
+                    <option value="teacher">👨‍🏫 {t('occupationTeacher')}</option>
+                    <option value="doctor">🩺 {t('occupationDoctor')}</option>
+                    <option value="management">💼 {t('occupationManagement')}</option>
+                    <option value="staff">👔 {t('occupationStaff')}</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">
+                    <Sliders className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Institute / Workplace Autocomplete (Visible for any non-other role) */}
+              {regOccupation && regOccupation !== 'other' && (
+                <div className="space-y-1.5 flex flex-col justify-start sm:col-span-2 p-3.5 rounded-2xl bg-gradient-to-r from-indigo-50/70 via-blue-50/50 to-purple-50/70 dark:from-indigo-950/20 dark:via-blue-950/15 dark:to-purple-950/20 border border-indigo-200/60 dark:border-indigo-800/50 animate-fade-in">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-800 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1">
+                          <span>{t('instituteLabel')}</span>
+                        </label>
+                      </div>
+                      <InstituteAutocomplete
+                        value={regInstitute}
+                        onChange={setRegInstitute}
+                        placeholder={t('institutePlaceholder')}
+                        language={language}
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-800 dark:text-zinc-200 uppercase tracking-wider block">
+                        {t('studentIdLabel')}
+                      </label>
+                      <input
+                        type="text"
+                        value={regStudentId}
+                        onChange={(e) => setRegStudentId(e.target.value)}
+                        placeholder={t('studentIdPlaceholder')}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/80 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white shadow-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Last Donation Date */}
               <div className="space-y-1.5 flex flex-col justify-start">
@@ -1625,6 +1715,67 @@ export default function Register() {
                         ))}
                       </select>
                     </div>
+
+                    {/* Occupation in Profile Edit */}
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>{t('occupationLabel')}</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={editOccupation}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditOccupation(val);
+                            if (val === 'other') {
+                              setEditInstitute('');
+                              setEditStudentId('');
+                            }
+                          }}
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white cursor-pointer font-medium shadow-xs transition-all appearance-none"
+                        >
+                          <option value="other">👤 {t('occupationGeneral')}</option>
+                          <option value="student">🎓 {t('occupationStudent')}</option>
+                          <option value="teacher">👨‍🏫 {t('occupationTeacher')}</option>
+                          <option value="doctor">🩺 {t('occupationDoctor')}</option>
+                          <option value="management">💼 {t('occupationManagement')}</option>
+                          <option value="staff">👔 {t('occupationStaff')}</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center px-3.5 pointer-events-none text-slate-400">
+                          <Sliders className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Institute & ID in Profile Edit */}
+                    {editOccupation && editOccupation !== 'other' && (
+                      <div className="space-y-3 sm:col-span-2 p-3.5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-800/40 animate-fade-in">
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
+                            {t('instituteLabel')}
+                          </label>
+                          <InstituteAutocomplete
+                            value={editInstitute}
+                            onChange={setEditInstitute}
+                            placeholder={t('institutePlaceholder')}
+                            language={language}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
+                            {editOccupation === 'student' ? t('studentIdLabel') : (language === 'bn' ? 'শিক্ষক / ফ্যাকাল্টি আইডি' : 'Faculty ID')}
+                          </label>
+                          <input
+                            type="text"
+                            value={editStudentId}
+                            onChange={(e) => setEditStudentId(e.target.value)}
+                            placeholder={editOccupation === 'student' ? 'e.g. 2021331001' : 'e.g. FAC-1024'}
+                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white font-mono"
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     <div className="space-y-1.5 sm:col-span-2 flex items-center gap-2.5 pt-2">
                       <input

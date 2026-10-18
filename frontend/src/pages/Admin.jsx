@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X, UserX, FileX, Clock, Phone, AlertCircle, CreditCard, Tag, Plus, Edit3, Edit2, Edit, Save, Activity, History, UserCheck, RefreshCw, LayoutList, LayoutGrid } from 'lucide-react';
+import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X, UserX, FileX, Clock, Phone, AlertCircle, CreditCard, Tag, Plus, Edit3, Edit2, Edit, Save, Activity, History, UserCheck, RefreshCw, LayoutList, LayoutGrid, GraduationCap } from 'lucide-react';
 import { useApp, BLOOD_GROUPS, DISTRICT_AREAS, normalizeDonor, getAreaLabel, getDistrictBadge, isDefaultLetterAvatar } from '../context/AppContext';
+import InstituteAutocomplete from '../components/InstituteAutocomplete';
 
 export default function Admin() {
   const {
@@ -39,9 +40,11 @@ export default function Admin() {
   // Blood group filter in Donors view
   const [bloodGroupFilter, setBloodGroupFilter] = useState(''); // '' means All
 
-  // Advanced Filters: Search, Area, and Date
+  // Advanced Filters: Search, Area, Role, Institute, and Date
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const [adminAreaFilter, setAdminAreaFilter] = useState('');
+  const [adminRoleFilter, setAdminRoleFilter] = useState(''); // '' means All Roles
+  const [adminInstituteFilter, setAdminInstituteFilter] = useState('');
   const [adminDateFrom, setAdminDateFrom] = useState('');
   const [adminDateTo, setAdminDateTo] = useState('');
 
@@ -211,6 +214,9 @@ export default function Admin() {
     phone: '',
     blood_group: 'A+',
     area: '',
+    occupation: 'other',
+    institute: '',
+    student_id: '',
     last_donation_date: '',
     total_donations: 0,
     is_available: true,
@@ -226,6 +232,9 @@ export default function Admin() {
       phone: donor.phone || '',
       blood_group: donor.blood_group || 'A+',
       area: donor.area || '',
+      occupation: donor.occupation || 'other',
+      institute: donor.institute || '',
+      student_id: donor.student_id || '',
       last_donation_date: donor.last_donation_date ? donor.last_donation_date.substring(0, 10) : '',
       total_donations: donor.total_donations ?? 0,
       is_available: donor.is_available !== false,
@@ -502,7 +511,7 @@ export default function Admin() {
   const safeDeletedDonors = useMemo(() => deletedDonors || [], [deletedDonors]);
   const safeDeletedEmergencies = useMemo(() => deletedEmergencies || [], [deletedEmergencies]);
 
-  // Filtered Donors list for Admin with search, area, date, and blood group
+  // Filtered Donors list for Admin with search, area, role, institute, date, and blood group
   const adminFilteredDonors = useMemo(() => {
     return safeDonors.filter((d) => {
       // Blood Group filter
@@ -511,14 +520,21 @@ export default function Admin() {
       // Area filter
       if (adminAreaFilter && d.area !== adminAreaFilter) return false;
 
-      // Search Query filter (matches name, phone, email, area)
+      // Role filter
+      if (adminRoleFilter && (d.occupation || 'other') !== adminRoleFilter) return false;
+
+      // Institute filter
+      if (adminInstituteFilter.trim() && !d.institute?.toLowerCase().includes(adminInstituteFilter.trim().toLowerCase())) return false;
+
+      // Search Query filter (matches name, phone, email, area, institute)
       if (adminSearchQuery.trim()) {
         const q = adminSearchQuery.trim().toLowerCase();
         const matchName = d.name?.toLowerCase().includes(q);
         const matchPhone = d.phone?.includes(q);
         const matchEmail = d.email?.toLowerCase().includes(q);
         const matchArea = d.area?.toLowerCase().includes(q);
-        if (!matchName && !matchPhone && !matchEmail && !matchArea) return false;
+        const matchInst = d.institute?.toLowerCase().includes(q);
+        if (!matchName && !matchPhone && !matchEmail && !matchArea && !matchInst) return false;
       }
 
       // Date Range filter (created_at or last_donation_date)
@@ -535,7 +551,7 @@ export default function Admin() {
 
       return true;
     });
-  }, [safeDonors, bloodGroupFilter, adminAreaFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
+  }, [safeDonors, bloodGroupFilter, adminAreaFilter, adminRoleFilter, adminInstituteFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
 
   // Filtered Emergencies list for Admin with search, area, and date
   const adminFilteredEmergencies = useMemo(() => {
@@ -570,17 +586,20 @@ export default function Admin() {
     });
   }, [safeEmergencies, adminAreaFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
 
-  // Compute counts for each blood group (reflecting active area/search/date filters)
+  // Compute counts for each blood group (reflecting active area/role/institute/search/date filters)
   const groupCounts = useMemo(() => {
     const baseList = safeDonors.filter(d => {
       if (adminAreaFilter && d.area !== adminAreaFilter) return false;
+      if (adminRoleFilter && (d.occupation || 'other') !== adminRoleFilter) return false;
+      if (adminInstituteFilter.trim() && !d.institute?.toLowerCase().includes(adminInstituteFilter.trim().toLowerCase())) return false;
       if (adminSearchQuery.trim()) {
         const q = adminSearchQuery.trim().toLowerCase();
         const matchName = d.name?.toLowerCase().includes(q);
         const matchPhone = d.phone?.includes(q);
         const matchEmail = d.email?.toLowerCase().includes(q);
         const matchArea = d.area?.toLowerCase().includes(q);
-        if (!matchName && !matchPhone && !matchEmail && !matchArea) return false;
+        const matchInst = d.institute?.toLowerCase().includes(q);
+        if (!matchName && !matchPhone && !matchEmail && !matchArea && !matchInst) return false;
       }
       if (adminDateFrom) {
         const itemDate = d.created_at || d.last_donation_date;
@@ -600,7 +619,7 @@ export default function Admin() {
       counts[g] = baseList.filter(d => d.blood_group === g).length;
     });
     return counts;
-  }, [safeDonors, adminAreaFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
+  }, [safeDonors, adminAreaFilter, adminRoleFilter, adminInstituteFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
 
   // Pagination for Donors
   const [donorPage, setDonorPage] = useState(1);
@@ -609,7 +628,7 @@ export default function Admin() {
   // Reset page when any filter changes
   useEffect(() => {
     setDonorPage(1);
-  }, [bloodGroupFilter, adminAreaFilter, adminSearchQuery, adminDateFrom, adminDateTo, safeDonors.length]);
+  }, [bloodGroupFilter, adminAreaFilter, adminRoleFilter, adminInstituteFilter, adminSearchQuery, adminDateFrom, adminDateTo, safeDonors.length]);
 
   const totalDonorPages = Math.max(1, Math.ceil(adminFilteredDonors.length / itemsPerPage));
   const paginatedDonors = useMemo(() => {
@@ -1012,7 +1031,7 @@ export default function Admin() {
       </div>
 
       {/* Advanced Filters Toolbar (Search, Area, Date Range) */}
-      <div className="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-200/60 dark:border-zinc-800/60 shadow-sm text-left space-y-4">
+      <div className="glass-panel relative z-30 rounded-2xl p-4 sm:p-5 border border-slate-200/60 dark:border-zinc-800/60 shadow-sm text-left space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/40 dark:border-zinc-800/40">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center">
@@ -1028,11 +1047,13 @@ export default function Admin() {
             </div>
           </div>
 
-          {(adminSearchQuery || adminAreaFilter || adminDateFrom || adminDateTo || bloodGroupFilter) && (
+          {(adminSearchQuery || adminAreaFilter || adminRoleFilter || adminInstituteFilter || adminDateFrom || adminDateTo || bloodGroupFilter) && (
             <button
               onClick={() => {
                 setAdminSearchQuery('');
                 setAdminAreaFilter('');
+                setAdminRoleFilter('');
+                setAdminInstituteFilter('');
                 setAdminDateFrom('');
                 setAdminDateTo('');
                 setBloodGroupFilter('');
@@ -1046,7 +1067,7 @@ export default function Admin() {
         </div>
 
         {/* Filter Inputs Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
           {/* 1. Keyword Search */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
@@ -1102,7 +1123,45 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* 3. Date From */}
+          {/* 3. Role / Occupation Dropdown */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+              {t('occupationLabel')}
+            </label>
+            <div className="relative">
+              <GraduationCap className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <select
+                value={adminRoleFilter}
+                onChange={(e) => setAdminRoleFilter(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all appearance-none cursor-pointer"
+              >
+                <option value="">{t('allRolesOption') || 'All Roles'}</option>
+                <option value="student">🎓 {t('studentBadge') || 'Student'}</option>
+                <option value="teacher">👨‍🏫 {t('teacherBadge') || 'Teacher'}</option>
+                <option value="doctor">🩺 {t('doctorBadge') || 'Doctor'}</option>
+                <option value="management">💼 {t('managementBadge') || 'Management'}</option>
+                <option value="staff">👔 {t('staffBadge') || 'Staff'}</option>
+                <option value="other">👤 {t('occupationGeneral') || 'General'}</option>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                ▼
+              </div>
+            </div>
+          </div>
+
+          {/* 4. College / University Autocomplete Filter */}
+          <div className="space-y-1">
+            <InstituteAutocomplete
+              value={adminInstituteFilter}
+              onChange={setAdminInstituteFilter}
+              label={language === 'bn' ? 'প্রতিষ্ঠান ফিল্টার' : 'Institute'}
+              placeholder={language === 'bn' ? 'কলেজ / ভার্সিটি...' : 'Filter institute...'}
+              language={language}
+              compact={true}
+            />
+          </div>
+
+          {/* 5. Date From */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
               {language === 'bn' ? 'তারিখ থেকে (From)' : 'Date From'}
@@ -1118,7 +1177,7 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* 4. Date To */}
+          {/* 6. Date To */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
               {language === 'bn' ? 'তারিখ পর্যন্ত (To)' : 'Date To'}
@@ -1136,7 +1195,7 @@ export default function Admin() {
         </div>
 
         {/* Active Filter Indicators */}
-        {(adminSearchQuery || adminAreaFilter || adminDateFrom || adminDateTo) && (
+        {(adminSearchQuery || adminAreaFilter || adminRoleFilter || adminInstituteFilter || adminDateFrom || adminDateTo) && (
           <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/40 text-xs">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500">Active:</span>
             {adminSearchQuery && (
@@ -1149,6 +1208,18 @@ export default function Admin() {
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20">
                 {getAreaLabel(adminAreaFilter, t)}
                 <X className="w-3 h-3 cursor-pointer" onClick={() => setAdminAreaFilter('')} />
+              </span>
+            )}
+            {adminRoleFilter && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-semibold text-[11px] border border-indigo-500/20">
+                Role: {adminRoleFilter}
+                <X className="w-3 h-3 cursor-pointer" onClick={() => setAdminRoleFilter('')} />
+              </span>
+            )}
+            {adminInstituteFilter && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold text-[11px] border border-emerald-500/20 max-w-[200px] truncate">
+                🏛️ {adminInstituteFilter}
+                <X className="w-3 h-3 cursor-pointer" onClick={() => setAdminInstituteFilter('')} />
               </span>
             )}
             {adminDateFrom && (
@@ -1519,7 +1590,41 @@ export default function Admin() {
                                         {donor.blood_group}
                                       </div>
                                     )}
-                                    <span className="truncate">{donor.name}</span>
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="truncate">{donor.name}</span>
+                                        {donor.occupation === 'student' && (
+                                          <span className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                            🎓 Student
+                                          </span>
+                                        )}
+                                        {donor.occupation === 'teacher' && (
+                                          <span className="text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                            👨‍🏫 Teacher
+                                          </span>
+                                        )}
+                                        {donor.occupation === 'doctor' && (
+                                          <span className="text-[10px] bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                            🩺 Doctor
+                                          </span>
+                                        )}
+                                        {donor.occupation === 'management' && (
+                                          <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                            💼 Management
+                                          </span>
+                                        )}
+                                        {donor.occupation === 'staff' && (
+                                          <span className="text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                            👔 Staff
+                                          </span>
+                                        )}
+                                      </div>
+                                      {donor.institute && (
+                                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-normal block truncate max-w-[220px]" title={donor.institute}>
+                                          🏛️ {donor.institute}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </td>
                                 <td className="p-4">
@@ -1595,12 +1700,44 @@ export default function Admin() {
                                   </div>
                                 )}
                                 <div className="space-y-0.5">
-                                  <span className="font-extrabold text-slate-900 dark:text-white text-base block">
-                                    {donor.name}
-                                  </span>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-extrabold text-slate-900 dark:text-white text-base block">
+                                      {donor.name}
+                                    </span>
+                                    {donor.occupation === 'student' && (
+                                      <span className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                        🎓 Student
+                                      </span>
+                                    )}
+                                    {donor.occupation === 'teacher' && (
+                                      <span className="text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                        👨‍🏫 Teacher
+                                      </span>
+                                    )}
+                                    {donor.occupation === 'doctor' && (
+                                      <span className="text-[10px] bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                        🩺 Doctor
+                                      </span>
+                                    )}
+                                    {donor.occupation === 'management' && (
+                                      <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                        💼 Management
+                                      </span>
+                                    )}
+                                    {donor.occupation === 'staff' && (
+                                      <span className="text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                        👔 Staff
+                                      </span>
+                                    )}
+                                  </div>
                                   <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">
                                     {donor.phone}
                                   </span>
+                                  {donor.institute && (
+                                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 block truncate" title={donor.institute}>
+                                      🏛️ {donor.institute}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-3 py-1 rounded-lg text-xs">
@@ -1673,12 +1810,44 @@ export default function Admin() {
                                   </div>
                                 )}
                                 <div className="min-w-0">
-                                  <h4 className="font-extrabold text-slate-900 dark:text-white text-sm truncate" title={donor.name}>
-                                    {donor.name}
-                                  </h4>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <h4 className="font-extrabold text-slate-900 dark:text-white text-sm truncate" title={donor.name}>
+                                      {donor.name}
+                                    </h4>
+                                    {donor.occupation === 'student' && (
+                                      <span className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                        🎓
+                                      </span>
+                                    )}
+                                    {donor.occupation === 'teacher' && (
+                                      <span className="text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                        👨‍🏫
+                                      </span>
+                                    )}
+                                    {donor.occupation === 'doctor' && (
+                                      <span className="text-[10px] bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                        🩺
+                                      </span>
+                                    )}
+                                    {donor.occupation === 'management' && (
+                                      <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                        💼
+                                      </span>
+                                    )}
+                                    {donor.occupation === 'staff' && (
+                                      <span className="text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 px-1.5 py-0.2 rounded-md font-bold">
+                                        👔
+                                      </span>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
                                     {donor.phone}
                                   </p>
+                                  {donor.institute && (
+                                    <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold block truncate" title={donor.institute}>
+                                      🏛️ {donor.institute}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               <span className="bg-red-500 text-white font-black px-2.5 py-0.5 rounded-lg text-xs shrink-0 shadow-xs">
@@ -3755,6 +3924,67 @@ export default function Admin() {
                   </select>
                 </div>
               </div>
+
+              {/* Occupation Selection */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                  <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Profession / Role</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={editDonorForm.occupation || 'other'}
+                    onChange={(e) => {
+                      const occ = e.target.value;
+                      setEditDonorForm({
+                        ...editDonorForm,
+                        occupation: occ,
+                        ...(occ === 'other' ? { institute: '', student_id: '' } : {})
+                      });
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer appearance-none font-medium"
+                  >
+                    <option value="other">👤 General</option>
+                    <option value="student">🎓 Student</option>
+                    <option value="teacher">👨‍🏫 Teacher</option>
+                    <option value="doctor">🩺 Doctor</option>
+                    <option value="management">💼 Management</option>
+                    <option value="staff">👔 Staff</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-3.5 pointer-events-none text-slate-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Institute & ID in Admin Modal */}
+              {editDonorForm.occupation && editDonorForm.occupation !== 'other' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-3.5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-800/40">
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 dark:text-zinc-300">Institute / Organization</label>
+                    <InstituteAutocomplete
+                      value={editDonorForm.institute}
+                      onChange={(val) => setEditDonorForm({ ...editDonorForm, institute: val })}
+                      placeholder="Type institute, hospital or workplace..."
+                      language="en"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 dark:text-zinc-300">
+                      ID (Student / Employee / Staff)
+                    </label>
+                    <input
+                      type="text"
+                      value={editDonorForm.student_id}
+                      onChange={(e) => setEditDonorForm({ ...editDonorForm, student_id: e.target.value })}
+                      placeholder="e.g. 2021331001 or EMP-104"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-850 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 <div className="space-y-1.5">

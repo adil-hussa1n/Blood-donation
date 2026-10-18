@@ -566,6 +566,15 @@ export async function updateDonorDetailsByAdmin(req: Request, res: Response): Pr
     if (email !== undefined && (email || '').trim().toLowerCase() !== (prev.email || '').trim().toLowerCase()) {
       diffs.email = { from: (prev.email || '').trim().toLowerCase(), to: (email || '').trim().toLowerCase() };
     }
+    if (req.body.occupation !== undefined && (req.body.occupation || '').trim() !== (prev.occupation || '').trim()) {
+      diffs.occupation = { from: prev.occupation || 'other', to: req.body.occupation.trim() };
+    }
+    if (req.body.institute !== undefined && (req.body.institute || '').trim() !== (prev.institute || '').trim()) {
+      diffs.institute = { from: prev.institute || '', to: req.body.institute.trim() };
+    }
+    if (req.body.student_id !== undefined && (req.body.student_id || '').trim() !== (prev.student_id || '').trim()) {
+      diffs.student_id = { from: prev.student_id || '', to: req.body.student_id.trim() };
+    }
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -582,6 +591,9 @@ export async function updateDonorDetailsByAdmin(req: Request, res: Response): Pr
     if (is_available !== undefined) { updates.push('is_available = ?'); values.push(is_available ? 1 : 0); }
     if (dob !== undefined) { updates.push('dob = ?'); values.push(dob || null); }
     if (email !== undefined) { updates.push('email = ?'); values.push(email ? email.trim().toLowerCase() : null); }
+    if (req.body.occupation !== undefined) { updates.push('occupation = ?'); values.push(req.body.occupation ? req.body.occupation.trim() : 'other'); }
+    if (req.body.institute !== undefined) { updates.push('institute = ?'); values.push(req.body.institute ? req.body.institute.trim() : null); }
+    if (req.body.student_id !== undefined) { updates.push('student_id = ?'); values.push(req.body.student_id ? req.body.student_id.trim() : null); }
 
     if (updates.length > 0) {
       values.push(id);

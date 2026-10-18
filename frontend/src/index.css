@@ -72,6 +72,30 @@ body {
 }
 
 /* ===========================
+   SELECT & OPTION DARK MODE FIXES
+   Ensures dropdown option popups have dark backgrounds and crisp light text in dark mode
+   =========================== */
+select {
+  color-scheme: light dark;
+}
+
+.dark select {
+  color-scheme: dark;
+}
+
+.dark select option,
+.dark select optgroup {
+  background-color: #18181b !important; /* zinc-900 */
+  color: #f4f4f5 !important; /* zinc-100 */
+}
+
+select option,
+select optgroup {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+/* ===========================
    MOBILE BROWSER OPTIMIZATIONS
    =========================== */
 

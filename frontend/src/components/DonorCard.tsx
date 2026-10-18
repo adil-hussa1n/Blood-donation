@@ -86,9 +86,36 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
 
             {/* Donor Identity */}
             <div className="min-w-0 flex-1">
-              <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight break-words group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-                {donor.name}
-              </h4>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight break-words group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                  {donor.name}
+                </h4>
+                {donor.occupation === 'student' && (
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+                    🎓 {t('studentBadge')}
+                  </span>
+                )}
+                {donor.occupation === 'teacher' && (
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
+                    👨‍🏫 {t('teacherBadge')}
+                  </span>
+                )}
+                {donor.occupation === 'doctor' && (
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 shrink-0">
+                    🩺 {t('doctorBadge')}
+                  </span>
+                )}
+                {donor.occupation === 'management' && (
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                    💼 {t('managementBadge')}
+                  </span>
+                )}
+                {donor.occupation === 'staff' && (
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shrink-0">
+                    👔 {t('staffBadge')}
+                  </span>
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 dark:text-zinc-300 font-medium mt-1">
                 <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border shrink-0 ${getDistrictBadge(donor.area, language).color.bg} ${getDistrictBadge(donor.area, language).color.text} ${getDistrictBadge(donor.area, language).color.border}`}>
                   {getDistrictBadge(donor.area, language).label}
@@ -97,6 +124,12 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
                   {getAreaLabel(donor.area, t)}
                 </span>
               </div>
+              {donor.institute && (
+                <div className="mt-1 flex items-center gap-1 text-[11px] text-indigo-600 dark:text-indigo-400 font-bold truncate" title={donor.institute}>
+                  <span className="shrink-0">🏛️</span>
+                  <span className="truncate">{donor.institute}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -145,7 +178,11 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
               {t('phone')}
             </span>
             <div className="font-mono font-bold text-slate-800 dark:text-zinc-200 text-xs tracking-tight">
-              {isCooldownActive ? (
+              {!donor.is_available ? (
+                <span className="text-rose-600 dark:text-rose-400 font-semibold italic text-[11px]">
+                  {language === 'bn' ? 'অনুপলব্ধ (গোপন)' : 'Unavailable (Hidden)'}
+                </span>
+              ) : isCooldownActive ? (
                 <span className="text-amber-600 dark:text-amber-400 font-semibold italic text-[11px]">
                   {language === 'bn' ? 'গোপন রাখা হয়েছে' : 'Hidden for rest'}
                 </span>
@@ -159,7 +196,7 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
 
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500 flex items-center gap-1">
-              <Heart className="w-3 h-3 text-red-500" />
+              <Heart className="w-3 mx-auto text-red-500" />
               {t('timesDonatedHeader')}
             </span>
             <div className="font-bold text-slate-800 dark:text-zinc-200 text-xs">
@@ -184,7 +221,14 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
 
       {/* Footer Actions */}
       <div className="pt-2">
-        {isCooldownActive ? (
+        {!donor.is_available ? (
+          <div className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-700 dark:text-rose-400 text-xs font-semibold select-none text-center">
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+            <span className="text-[11px] leading-tight">
+              {language === 'bn' ? 'রক্তদাতা বর্তমানে অনুপলব্ধ' : 'Donor is currently unavailable'}
+            </span>
+          </div>
+        ) : isCooldownActive ? (
           <div className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold select-none text-center">
             <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span className="text-[11px] leading-tight">

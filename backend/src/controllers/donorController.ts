@@ -24,7 +24,8 @@ export async function getDonors(req: Request, res: Response): Promise<void> {
   try {
     const [rows]: any = await pool.query(
       `SELECT id, name, phone, blood_group, area, last_donation_date, is_available, 
-              total_donations, lifetime_donation_count, email, google_id, avatar_url, hide_photo, created_at 
+              total_donations, lifetime_donation_count, email, google_id, avatar_url, hide_photo,
+              occupation, institute, student_id, created_at 
        FROM donors 
        ORDER BY is_available DESC, created_at DESC`
     );
@@ -40,7 +41,8 @@ export async function getDonorByPhone(req: Request, res: Response): Promise<void
   try {
     const [rows]: any = await pool.query(
       `SELECT id, name, phone, blood_group, area, last_donation_date, is_available, 
-              total_donations, lifetime_donation_count, email, google_id, avatar_url, hide_photo, created_at 
+              total_donations, lifetime_donation_count, email, google_id, avatar_url, hide_photo,
+              occupation, institute, student_id, created_at 
        FROM donors 
        WHERE phone = ?`,
       [phone]
@@ -167,11 +169,14 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
     const id = crypto.randomUUID();
     const isAvailable = donorData.is_available ?? true;
     const hidePhoto = Boolean(donorData.hide_photo);
+    const occupation = donorData.occupation ? String(donorData.occupation).trim() : 'other';
+    const institute = donorData.institute ? String(donorData.institute).trim() : null;
+    const studentId = donorData.student_id ? String(donorData.student_id).trim() : null;
 
     await pool.query(
       `INSERT INTO donors 
-       (id, name, phone, blood_group, area, last_donation_date, is_available, total_donations, lifetime_donation_count, password_hash, dob, email, google_id, avatar_url, hide_photo) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, name, phone, blood_group, area, last_donation_date, is_available, total_donations, lifetime_donation_count, password_hash, dob, email, google_id, avatar_url, hide_photo, occupation, institute, student_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         donorData.name.trim(),
@@ -188,6 +193,9 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
         googleId,
         avatarUrl,
         hidePhoto ? 1 : 0,
+        occupation,
+        institute,
+        studentId,
       ]
     );
 
@@ -196,14 +204,14 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
     // Record user activity
     await logUserActivity(
       'user_registered',
-      `New donor registered: ${donorData.name.trim()} (${phone}, ${donorData.blood_group}) in ${donorData.area}.`,
+      `New donor registered: ${donorData.name.trim()} (${phone}, ${donorData.blood_group}) in ${donorData.area}${institute ? ` - ${occupation} at ${institute}` : ''}.`,
       {
         userId: id,
         userName: donorData.name.trim(),
         userPhone: phone,
         userEmail: email,
         ipAddress: clientIp,
-        metadata: { blood_group: donorData.blood_group, area: donorData.area, is_google: Boolean(googleId) }
+        metadata: { blood_group: donorData.blood_group, area: donorData.area, occupation, institute, is_google: Boolean(googleId) }
       }
     );
 
@@ -222,6 +230,9 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
       google_id: googleId,
       avatar_url: avatarUrl,
       hide_photo: hidePhoto,
+      occupation,
+      institute,
+      student_id: studentId,
       created_at: new Date().toISOString(),
     };
 
@@ -357,6 +368,9 @@ export async function updateDonorProfile(req: Request, res: Response): Promise<v
     if (profileData.dob !== undefined) { updates.push('dob = ?'); values.push(profileData.dob || null); }
     if (profileData.avatar_url !== undefined) { updates.push('avatar_url = ?'); values.push(profileData.avatar_url ? String(profileData.avatar_url).trim() : null); }
     if (profileData.hide_photo !== undefined) { updates.push('hide_photo = ?'); values.push(profileData.hide_photo ? 1 : 0); }
+    if (profileData.occupation !== undefined) { updates.push('occupation = ?'); values.push(profileData.occupation ? String(profileData.occupation).trim() : 'other'); }
+    if (profileData.institute !== undefined) { updates.push('institute = ?'); values.push(profileData.institute ? String(profileData.institute).trim() : null); }
+    if (profileData.student_id !== undefined) { updates.push('student_id = ?'); values.push(profileData.student_id ? String(profileData.student_id).trim() : null); }
     if (profileData.new_password) {
       const newHash = await bcrypt.hash(profileData.new_password, 10);
       updates.push('password_hash = ?');

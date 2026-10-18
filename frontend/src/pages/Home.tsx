@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Navigation, Leaf, Lock, User } from 'lucide-react';
+import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Navigation, Leaf, Lock, User, GraduationCap } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel, isDefaultLetterAvatar } from '../context/AppContext';
 import { isDatabaseOrConnectionError } from '../services/db';
 import QuickStats from '../components/QuickStats';
 import DonorCard from '../components/DonorCard';
 import GoogleAuthButton from '../components/GoogleAuthButton';
+import InstituteAutocomplete from '../components/InstituteAutocomplete';
 import { Donor, EmergencyRequest } from '../types';
 
 export default function Home() {
@@ -18,11 +19,15 @@ export default function Home() {
   const [appliedBloodGroup, setAppliedBloodGroup] = useState('');
   const [appliedArea, setAppliedArea] = useState(currentDonor?.area || '');
   const [appliedSearchQuery, setAppliedSearchQuery] = useState('');
+  const [appliedInstitute, setAppliedInstitute] = useState('');
+  const [appliedOccupation, setAppliedOccupation] = useState('');
 
   // Local filter form buffers (held before user clicks Search button)
   const [localBloodGroup, setLocalBloodGroup] = useState('');
   const [localArea, setLocalArea] = useState(currentDonor?.area || '');
   const [localSearchQuery, setLocalSearchQuery] = useState('');
+  const [localInstitute, setLocalInstitute] = useState('');
+  const [localOccupation, setLocalOccupation] = useState('');
 
   // Auto-detect registered user address for area filter
   useEffect(() => {
@@ -81,6 +86,8 @@ export default function Home() {
     setAppliedBloodGroup(localBloodGroup);
     setAppliedArea(localArea);
     setAppliedSearchQuery(localSearchQuery);
+    setAppliedInstitute(localInstitute);
+    setAppliedOccupation(localOccupation);
 
     // Smoothly scroll down to the directory title
     setTimeout(() => {
@@ -96,10 +103,14 @@ export default function Home() {
     setLocalBloodGroup('');
     setLocalArea('');
     setLocalSearchQuery('');
+    setLocalInstitute('');
+    setLocalOccupation('');
 
     setAppliedBloodGroup('');
     setAppliedArea('');
     setAppliedSearchQuery('');
+    setAppliedInstitute('');
+    setAppliedOccupation('');
   };
 
   // Filtered Donors List (computed using applied filters, prioritized by availability)
@@ -111,9 +122,16 @@ export default function Home() {
         const matchArea = appliedArea ? donor.area === appliedArea : true;
         const matchSearch = appliedSearchQuery
           ? donor.name.toLowerCase().includes(appliedSearchQuery.toLowerCase()) ||
-          donor.phone.includes(appliedSearchQuery)
+          donor.phone.includes(appliedSearchQuery) ||
+          (donor.institute && donor.institute.toLowerCase().includes(appliedSearchQuery.toLowerCase()))
           : true;
-        return matchBlood && matchArea && matchSearch;
+        const matchInstitute = appliedInstitute
+          ? Boolean(donor.institute && donor.institute.toLowerCase().includes(appliedInstitute.toLowerCase()))
+          : true;
+        const matchOccupation = appliedOccupation
+          ? (donor.occupation || 'other').toLowerCase() === appliedOccupation.toLowerCase()
+          : true;
+        return matchBlood && matchArea && matchSearch && matchInstitute && matchOccupation;
       })
       .sort((a: Donor, b: Donor) => {
         // Compute active availability (both toggle status and 90-day cooldown)
@@ -147,14 +165,14 @@ export default function Home() {
         const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
         return timeB - timeA;
       });
-  }, [donors, appliedBloodGroup, appliedArea, appliedSearchQuery]);
+  }, [donors, appliedBloodGroup, appliedArea, appliedSearchQuery, appliedInstitute, appliedOccupation]);
 
   const [currentPage, setCurrentPage] = useState(1);
 
   // Reset page to 1 when filters are changed
   useEffect(() => {
     setCurrentPage(1);
-  }, [appliedBloodGroup, appliedArea, appliedSearchQuery]);
+  }, [appliedBloodGroup, appliedArea, appliedSearchQuery, appliedInstitute, appliedOccupation]);
 
   const itemsPerPage = 10;
   const totalPages = Math.max(1, Math.ceil(filteredDonors.length / itemsPerPage));
@@ -319,7 +337,7 @@ export default function Home() {
               </div>
             </div>
 
-            {(localBloodGroup || localArea || localSearchQuery || appliedBloodGroup || appliedArea || appliedSearchQuery) && (
+            {(localBloodGroup || localArea || localSearchQuery || localInstitute || localOccupation || appliedBloodGroup || appliedArea || appliedSearchQuery || appliedInstitute || appliedOccupation) && (
               <button
                 type="button"
                 onClick={resetFilters}
@@ -331,10 +349,10 @@ export default function Home() {
             )}
           </div>
 
-          {/* Primary Filter Controls: Search Input + Area Select + Submit Button */}
+          {/* Primary Filter Controls: Search Input + Area Select + Institute Autocomplete + Occupation */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5 items-end">
             {/* Search by Name/Phone */}
-            <div className="lg:col-span-5 space-y-1.5">
+            <div className="lg:col-span-3 space-y-1.5">
               <label className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider block">
                 {t('searchByNamePhoneLabel')}
               </label>
@@ -351,7 +369,7 @@ export default function Home() {
             </div>
 
             {/* Select Area */}
-            <div className="lg:col-span-5 space-y-1.5">
+            <div className="lg:col-span-3 space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider block">
                   {t('selectAreaLabel')}
@@ -388,14 +406,56 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Filter by Institute (Autocomplete across Sylhet region) */}
+            <div className="lg:col-span-3 space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
+                <span>{t('instituteLabel')}</span>
+              </label>
+              <InstituteAutocomplete
+                value={localInstitute}
+                onChange={setLocalInstitute}
+                placeholder={t('institutePlaceholder')}
+                language={language as 'en' | 'bn'}
+              />
+            </div>
+
+            {/* Filter by Occupation */}
+            <div className="lg:col-span-2 space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider block">
+                {t('occupationLabel')}
+              </label>
+              <div className="relative">
+                <select
+                  value={localOccupation}
+                  onChange={(e) => setLocalOccupation(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all dark:text-white appearance-none cursor-pointer"
+                >
+                  <option value="">{t('allRolesOption')}</option>
+                  <option value="student">🎓 {t('occupationStudent')}</option>
+                  <option value="teacher">👨‍🏫 {t('occupationTeacher')}</option>
+                  <option value="doctor">🩺 {t('occupationDoctor')}</option>
+                  <option value="management">💼 {t('occupationManagement')}</option>
+                  <option value="staff">👔 {t('occupationStaff')}</option>
+                  <option value="other">👤 {t('occupationGeneral')}</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center px-2.5 pointer-events-none text-slate-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
             {/* Submit Filter Button */}
-            <div className="sm:col-span-2 lg:col-span-2">
+            <div className="lg:col-span-1">
               <button
                 type="submit"
-                className="w-full bg-red-500 hover:bg-red-650 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-md hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer h-[42px]"
+                className="w-full bg-red-500 hover:bg-red-650 text-white font-extrabold py-2.5 px-3 rounded-xl shadow-md hover:shadow-red-500/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5 text-xs cursor-pointer h-[42px]"
+                title={t('searchButton')}
               >
-                <Search className="w-4 h-4" />
-                <span>{t('searchButton')}</span>
+                <Search className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline lg:hidden xl:inline">{t('searchButton')}</span>
               </button>
             </div>
           </div>
@@ -708,12 +768,46 @@ export default function Home() {
                                           </div>
                                         )}
                                         <div className="flex flex-col gap-1 min-w-0">
-                                          <span className="font-extrabold text-slate-900 dark:text-white leading-snug truncate">
-                                            {normalizedDonor.name}
-                                          </span>
-                                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide w-fit ${badge.color}`}>
-                                            {getDonorBadgeLabel(badge.label, t)}
-                                          </span>
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="font-extrabold text-slate-900 dark:text-white leading-snug truncate">
+                                              {normalizedDonor.name}
+                                            </span>
+                                            {normalizedDonor.occupation === 'student' && (
+                                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/25">
+                                                🎓 {t('studentBadge')}
+                                              </span>
+                                            )}
+                                            {normalizedDonor.occupation === 'teacher' && (
+                                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/25">
+                                                👨‍🏫 {t('teacherBadge')}
+                                              </span>
+                                            )}
+                                            {normalizedDonor.occupation === 'doctor' && (
+                                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/25">
+                                                🩺 {t('doctorBadge')}
+                                              </span>
+                                            )}
+                                            {normalizedDonor.occupation === 'management' && (
+                                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                                                💼 {t('managementBadge')}
+                                              </span>
+                                            )}
+                                            {normalizedDonor.occupation === 'staff' && (
+                                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/25">
+                                                👔 {t('staffBadge')}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide w-fit ${badge.color}`}>
+                                              {getDonorBadgeLabel(badge.label, t)}
+                                            </span>
+                                            {normalizedDonor.institute && (
+                                              <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-semibold truncate max-w-[200px]" title={normalizedDonor.institute}>
+                                                🏛️ {normalizedDonor.institute}
+                                              </span>
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
                                     </td>
@@ -724,7 +818,11 @@ export default function Home() {
                                     </td>
                                     <td className="py-4 px-4 align-middle">
                                       <span className="inline-block font-mono text-xs font-bold text-slate-700 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800/80 px-2.5 py-1 rounded-lg border border-slate-200/60 dark:border-zinc-700/60 whitespace-nowrap">
-                                        {isCooldownActive ? (
+                                        {!normalizedDonor.is_available ? (
+                                          <span className="text-rose-600 dark:text-rose-400 font-semibold italic text-[11px]">
+                                            {language === 'bn' ? 'অনুপলব্ধ (গোপন)' : 'Unavailable (Hidden)'}
+                                          </span>
+                                        ) : isCooldownActive ? (
                                           <span className="text-amber-600 dark:text-amber-400 font-semibold italic text-[11px]">
                                             {language === 'bn' ? 'গোপন (বিশ্রামে)' : 'Hidden (Resting)'}
                                           </span>
@@ -761,7 +859,12 @@ export default function Home() {
                                       }
                                     </td>
                                     <td className="py-4 px-4 align-middle text-right whitespace-nowrap">
-                                      {isCooldownActive ? (
+                                      {!normalizedDonor.is_available ? (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-700 dark:text-rose-400 text-[11px] font-semibold border border-rose-500/20">
+                                          <AlertTriangle className="w-3 h-3 text-rose-500" />
+                                          <span>{language === 'bn' ? 'অনুপলব্ধ' : 'Unavailable'}</span>
+                                        </span>
+                                      ) : isCooldownActive ? (
                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[11px] font-semibold border border-amber-500/20">
                                           <Clock className="w-3 h-3 text-amber-500" />
                                           <span>{language === 'bn' ? 'বিশ্রামে' : 'Resting'}</span>

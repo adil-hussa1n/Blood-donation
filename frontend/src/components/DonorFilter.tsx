@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, MapPin, X, CheckCircle2 } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, BLOOD_GROUPS, getAreaLabel } from '../context/AppContext';
+import InstituteAutocomplete from './InstituteAutocomplete';
 
 interface DonorFilterProps {
   localBloodGroup: string;
@@ -9,6 +10,10 @@ interface DonorFilterProps {
   setLocalArea: (area: string) => void;
   localSearchQuery: string;
   setLocalSearchQuery: (query: string) => void;
+  localInstitute?: string;
+  setLocalInstitute?: (inst: string) => void;
+  localOccupation?: string;
+  setLocalOccupation?: (occ: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onReset: () => void;
   hasActiveFilters: boolean;
@@ -21,6 +26,10 @@ export default function DonorFilter({
   setLocalArea,
   localSearchQuery,
   setLocalSearchQuery,
+  localInstitute = '',
+  setLocalInstitute,
+  localOccupation = '',
+  setLocalOccupation,
   onSubmit,
   onReset,
   hasActiveFilters
@@ -64,6 +73,46 @@ export default function DonorFilter({
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
           </div>
         </div>
+
+        {/* College / University Autocomplete Search */}
+        {setLocalInstitute && (
+          <div className="space-y-1.5 pt-1">
+            <InstituteAutocomplete
+              value={localInstitute}
+              onChange={setLocalInstitute}
+              label={t('filterByInstituteTitle')}
+              placeholder={t('searchByInstituteQueryPlaceholder')}
+            />
+          </div>
+        )}
+
+        {/* Occupation quick filter dropdown */}
+        {setLocalOccupation && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+              {t('occupationLabel')}
+            </label>
+            <div className="relative">
+              <select
+                value={localOccupation || ''}
+                onChange={(e) => setLocalOccupation(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all dark:text-white cursor-pointer font-medium appearance-none"
+              >
+                <option value="">🎯 {t('allRolesOption') || 'All Roles'}</option>
+                <option value="student">🎓 {t('studentBadge') || 'Student'}</option>
+                <option value="teacher">👨‍🏫 {t('teacherBadge') || 'Teacher'}</option>
+                <option value="doctor">🩺 {t('doctorBadge') || 'Doctor'}</option>
+                <option value="management">💼 {t('managementBadge') || 'Management'}</option>
+                <option value="staff">👔 {t('staffBadge') || 'Staff'}</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center px-3.5 pointer-events-none text-slate-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Area select */}
         <div className="space-y-1.5">
