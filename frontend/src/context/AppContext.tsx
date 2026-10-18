@@ -259,8 +259,8 @@ export interface SpecialRoleConfig {
 export const SPECIAL_ROLES: SpecialRoleConfig[] = [
   {
     id: 'none',
-    name: 'None (Standard Donor)',
-    nameBn: 'কোনোটি নয় (সাধারণ দাতা)',
+    name: 'Standard Voluntary Donor',
+    nameBn: 'সাধারণ রক্তদাতা',
     badgeText: 'Donor',
     badgeTextBn: 'রক্তদাতা',
     icon: '👤',
@@ -273,10 +273,10 @@ export const SPECIAL_ROLES: SpecialRoleConfig[] = [
   },
   {
     id: 'core_team',
-    name: 'Core Team Member',
-    nameBn: 'কোর টিম মেম্বার',
-    badgeText: 'Core Team',
-    badgeTextBn: 'কোর টিম',
+    name: 'Platform Administrator',
+    nameBn: 'প্ল্যাটফর্ম অ্যাডমিনিস্ট্রেটর',
+    badgeText: 'Platform Admin',
+    badgeTextBn: 'প্ল্যাটফর্ম অ্যাডমিন',
     icon: '🛡️',
     color: {
       bg: 'bg-gradient-to-r from-red-500/15 via-rose-500/15 to-orange-500/15 dark:from-red-950/40 dark:via-rose-950/40 dark:to-orange-950/30',
@@ -287,10 +287,10 @@ export const SPECIAL_ROLES: SpecialRoleConfig[] = [
   },
   {
     id: 'darun_team',
-    name: 'Darun Tech Team',
-    nameBn: 'দারুণ টেক টিম',
-    badgeText: 'Darun Team',
-    badgeTextBn: 'দারুণ টিম',
+    name: 'Tech & Engineering Lead',
+    nameBn: 'টেক অ্যান্ড ইঞ্জিনিয়ারিং লিড',
+    badgeText: 'Engineering Lead',
+    badgeTextBn: 'ইঞ্জিনিয়ারিং লিড',
     icon: '⚡',
     color: {
       bg: 'bg-gradient-to-r from-purple-500/15 via-fuchsia-500/15 to-indigo-500/15 dark:from-purple-950/40 dark:via-fuchsia-950/40 dark:to-indigo-950/30',
@@ -301,10 +301,10 @@ export const SPECIAL_ROLES: SpecialRoleConfig[] = [
   },
   {
     id: 'moderator',
-    name: 'Community Moderator',
-    nameBn: 'কমিউনিটি মডারেটর',
-    badgeText: 'Moderator',
-    badgeTextBn: 'মডারেটর',
+    name: 'Quality & Compliance Officer',
+    nameBn: 'কোয়ালিটি অ্যান্ড কমপ্লায়েন্স অফিসার',
+    badgeText: 'Compliance Officer',
+    badgeTextBn: 'কমপ্লায়েন্স অফিসার',
     icon: '⭐',
     color: {
       bg: 'bg-blue-500/15 dark:bg-blue-950/40',
@@ -315,10 +315,10 @@ export const SPECIAL_ROLES: SpecialRoleConfig[] = [
   },
   {
     id: 'volunteer_lead',
-    name: 'Volunteer Lead / Coordinator',
-    nameBn: 'ভলান্টিয়ার লিড / সমন্বয়ক',
-    badgeText: 'Volunteer Lead',
-    badgeTextBn: 'ভলান্টিয়ার লিড',
+    name: 'Community Operations Lead',
+    nameBn: 'কমিউনিটি অপারেশনস লিড',
+    badgeText: 'Operations Lead',
+    badgeTextBn: 'অপারেশনস লিড',
     icon: '🤝',
     color: {
       bg: 'bg-emerald-500/15 dark:bg-emerald-950/40',
@@ -329,10 +329,10 @@ export const SPECIAL_ROLES: SpecialRoleConfig[] = [
   },
   {
     id: 'medical_advisor',
-    name: 'Medical Advisor',
-    nameBn: 'মেডিকেল অ্যাডভাইজর',
-    badgeText: 'Medical Advisor',
-    badgeTextBn: 'চিকিৎসা উপদেষ্টা',
+    name: 'Medical Consultant',
+    nameBn: 'মেডিকেল কনসালটেন্ট',
+    badgeText: 'Medical Consultant',
+    badgeTextBn: 'মেডিকেল কনসালটেন্ট',
     icon: '🩺',
     color: {
       bg: 'bg-teal-500/15 dark:bg-teal-950/40',
@@ -343,10 +343,10 @@ export const SPECIAL_ROLES: SpecialRoleConfig[] = [
   },
   {
     id: 'ambassador',
-    name: 'Youth Ambassador',
-    nameBn: 'ইউথ অ্যাম্বাসেডর',
-    badgeText: 'Ambassador',
-    badgeTextBn: 'অ্যাম্বাসেডর',
+    name: 'Strategic Ambassador',
+    nameBn: 'স্ট্র্যাটেজিক অ্যাম্বাসেডর',
+    badgeText: 'Strategic Ambassador',
+    badgeTextBn: 'স্ট্র্যাটেজিক অ্যাম্বাসেডর',
     icon: '🌟',
     color: {
       bg: 'bg-amber-500/15 dark:bg-amber-950/40',
@@ -513,17 +513,17 @@ export const TRANSLATIONS = {
     searchByInstituteQueryPlaceholder: 'Search by institute or organization...',
 
     // Team & Special Roles
-    specialRoleLabel: 'Special Team / Platform Role',
-    specialRoleNone: 'None (Standard Voluntary Donor)',
-    specialRoleCoreTeam: 'Core Team Member',
-    specialRoleDarunTeam: 'Darun Tech Team',
-    specialRoleModerator: 'Community Moderator',
-    specialRoleVolunteerLead: 'Volunteer Lead / Coordinator',
-    specialRoleMedicalAdvisor: 'Medical Advisor',
-    specialRoleAmbassador: 'Youth Ambassador',
-    specialRoleFilterLabel: 'Filter by Special Team Role',
-    allSpecialRolesOption: 'All Team & Special Roles',
-    assignedRoleSuccess: 'Special role updated successfully',
+    specialRoleLabel: 'Special Platform Designation',
+    specialRoleNone: 'Standard Voluntary Donor',
+    specialRoleCoreTeam: 'Platform Administrator',
+    specialRoleDarunTeam: 'Tech & Engineering Lead',
+    specialRoleModerator: 'Quality & Compliance Officer',
+    specialRoleVolunteerLead: 'Community Operations Lead',
+    specialRoleMedicalAdvisor: 'Medical Consultant',
+    specialRoleAmbassador: 'Strategic Ambassador',
+    specialRoleFilterLabel: 'Filter by Platform Role',
+    allSpecialRolesOption: 'All Platform Designations',
+    assignedRoleSuccess: 'Platform designation updated successfully',
 
     completeRegistration: 'Complete Registration',
 
@@ -1010,17 +1010,17 @@ export const TRANSLATIONS = {
     searchByInstituteQueryPlaceholder: 'প্রতিষ্ঠান বা সংস্থার নাম দিয়ে খুঁজুন...',
 
     // Team & Special Roles
-    specialRoleLabel: 'স্পেশাল টিম / প্ল্যাটফর্ম পদবী',
-    specialRoleNone: 'কোনোটি নয় (সাধারণ রক্তদাতা)',
-    specialRoleCoreTeam: 'কোর টিম মেম্বার',
-    specialRoleDarunTeam: 'দারুণ টেক টিম',
-    specialRoleModerator: 'কমিউনিটি মডারেটর',
-    specialRoleVolunteerLead: 'ভলান্টিয়ার লিড / সমন্বয়ক',
-    specialRoleMedicalAdvisor: 'মেডিকেল অ্যাডভাইজর',
-    specialRoleAmbassador: 'ইউথ অ্যাম্বাসেডর',
-    specialRoleFilterLabel: 'টিম / স্পেশাল পদবী দিয়ে ফিল্টার',
-    allSpecialRolesOption: 'সকল টিম ও স্পেশাল পদবী',
-    assignedRoleSuccess: 'স্পেশাল পদবী সফলভাবে আপডেট করা হয়েছে',
+    specialRoleLabel: 'স্পেশাল প্ল্যাটফর্ম পদবী',
+    specialRoleNone: 'সাধারণ রক্তদাতা',
+    specialRoleCoreTeam: 'প্ল্যাটফর্ম অ্যাডমিনিস্ট্রেটর',
+    specialRoleDarunTeam: 'টেক অ্যান্ড ইঞ্জিনিয়ারিং লিড',
+    specialRoleModerator: 'কোয়ালিটি অ্যান্ড কমপ্লায়েন্স অফিসার',
+    specialRoleVolunteerLead: 'কমিউনিটি অপারেশনস লিড',
+    specialRoleMedicalAdvisor: 'মেডিকেল কনসালটেন্ট',
+    specialRoleAmbassador: 'স্ট্র্যাটেজিক অ্যাম্বাসেডর',
+    specialRoleFilterLabel: 'প্ল্যাটফর্ম পদবী দিয়ে ফিল্টার',
+    allSpecialRolesOption: 'সকল প্ল্যাটফর্ম পদবী',
+    assignedRoleSuccess: 'প্ল্যাটফর্ম পদবী সফলভাবে আপডেট করা হয়েছে',
 
     completeRegistration: 'নিবন্ধন সম্পন্ন করুন',
 

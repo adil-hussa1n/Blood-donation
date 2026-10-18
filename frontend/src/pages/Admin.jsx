@@ -4082,8 +4082,8 @@ export default function Admin() {
                 </div>
                 <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 font-medium">
                   {language === 'bn' 
-                    ? 'টিম মেম্বার বা বিশেষ প্ল্যাটফর্ম পদবী দিলে প্রোফাইলে ও কার্ডে বিশেষ ব্যাজ প্রদর্শিত হবে।' 
-                    : 'Assign team members or advisors to display exclusive certified platform badges.'}
+                    ? 'অনুমোদিত প্ল্যাটফর্ম পদবী নির্বাচন করলে রক্তদাতার প্রোফাইল ও কার্ডে এক্সক্লুসিভ প্রফেশনাল ব্যাজ প্রদর্শিত হবে।' 
+                    : 'Assign authorized professional platform designations to display certified executive badges.'}
                 </p>
               </div>
 
