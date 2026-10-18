@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Navigation, Leaf, Lock, User, GraduationCap } from 'lucide-react';
-import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getAreaLabel, isDefaultLetterAvatar } from '../context/AppContext';
+import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, getSpecialRoleBadge, normalizeDonor, getAreaLabel, isDefaultLetterAvatar } from '../context/AppContext';
 import { isDatabaseOrConnectionError } from '../services/db';
 import QuickStats from '../components/QuickStats';
 import DonorCard from '../components/DonorCard';
@@ -745,6 +745,20 @@ export default function Home() {
                                             <span className="font-extrabold text-slate-900 dark:text-white leading-snug truncate">
                                               {normalizedDonor.name}
                                             </span>
+                                            {(() => {
+                                              const sRole = getSpecialRoleBadge(normalizedDonor.special_role, language);
+                                              if (!sRole) return null;
+                                              return (
+                                                <span
+                                                  key={sRole.id}
+                                                  className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black border shadow-xs tracking-wide shrink-0 ${sRole.color.bg} ${sRole.color.text} ${sRole.color.border}`}
+                                                  title={sRole.name}
+                                                >
+                                                  <span>{sRole.icon}</span>
+                                                  <span>{sRole.label}</span>
+                                                </span>
+                                              );
+                                            })()}
                                             {normalizedDonor.occupation === 'student' && (
                                               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/25">
                                                 🎓 {t('studentBadge')}
