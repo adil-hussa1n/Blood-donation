@@ -1,11 +1,11 @@
-/** Minimum time the splash stays visible (avoids 1-frame flash on cached loads). */
-const MIN_DISPLAY_MS = 180;
+/** Minimum time the splash stays visible for a smooth, premium loading experience. */
+const MIN_DISPLAY_MS = 1200;
 
-/** Fade-out transition length — keep in sync with CSS. */
-export const PRELOADER_FADE_MS = 300;
+/** Fade-out transition length — keep in sync with CSS (0.45s). */
+export const PRELOADER_FADE_MS = 450;
 
 /** Safety cap so the splash never sticks if bundle loading is slow on mobile */
-const MAX_WAIT_MS = 2500;
+const MAX_WAIT_MS = 3500;
 
 const getNow = () => (window.performance && window.performance.now) ? window.performance.now() : Date.now();
 
