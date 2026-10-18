@@ -300,16 +300,11 @@
       background-color: inherit;
     }
 
-    /* Lock scroll AND overflow on html+body so no gap shows through */
+    /* Mobile-safe preloader classes: avoids locking root scroll/touch gestures */
     html.preloader-html,
     body.preloader-active {
-      height: 100% !important;
-      height: 100dvh !important;
-      overflow: hidden !important;
-      touch-action: none;
       padding: 0 !important;
       margin: 0 !important;
-      overscroll-behavior: none;
     }
 
     @keyframes preloader-enter {

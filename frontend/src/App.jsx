@@ -74,14 +74,51 @@ function HashRedirectHandler() {
   return null;
 }
 
-// Route-based code splitting: each page is loaded on-demand
-// This reduces initial JS payload from ~585KB to ~200KB
-const Home = React.lazy(() => import('./pages/Home.tsx'));
-const Register = React.lazy(() => import('./pages/Register'));
-const Emergency = React.lazy(() => import('./pages/Emergency'));
-const Admin = React.lazy(() => import('./pages/Admin'));
-const Support = React.lazy(() => import('./pages/Support'));
-const Legal = React.lazy(() => import('./pages/Legal'));
+import ErrorBoundary from './components/ErrorBoundary';
+
+// Resilient dynamic importer for mobile devices & flaky networks:
+// Retries failed chunk downloads and auto-recovers from bundle hash changes
+function lazyWithRetry(componentImport) {
+  return React.lazy(async () => {
+    const pageKey = 'chunk_retry_' + window.location.pathname;
+    try {
+      const component = await componentImport();
+      try { sessionStorage.removeItem(pageKey); } catch (e) {}
+      return component;
+    } catch (error) {
+      console.warn('Initial chunk load failed on mobile network, retrying in 350ms...', error);
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        const component = await componentImport();
+        try { sessionStorage.removeItem(pageKey); } catch (e) {}
+        return component;
+      } catch (retryErr) {
+        let alreadyRetried = false;
+        try {
+          alreadyRetried = sessionStorage.getItem(pageKey) === 'true';
+          if (!alreadyRetried) {
+            sessionStorage.setItem(pageKey, 'true');
+          }
+        } catch (e) {}
+
+        if (!alreadyRetried) {
+          console.warn('Retrying with full page reload to fetch latest bundle...');
+          window.location.reload();
+          return new Promise(() => {});
+        }
+        throw retryErr;
+      }
+    }
+  });
+}
+
+// Route-based code splitting with resilient network retry
+const Home = lazyWithRetry(() => import('./pages/Home.tsx'));
+const Register = lazyWithRetry(() => import('./pages/Register'));
+const Emergency = lazyWithRetry(() => import('./pages/Emergency'));
+const Admin = lazyWithRetry(() => import('./pages/Admin'));
+const Support = lazyWithRetry(() => import('./pages/Support'));
+const Legal = lazyWithRetry(() => import('./pages/Legal'));
 
 // Lightweight loading fallback for lazy-loaded routes
 function RouteLoader() {
@@ -99,35 +136,39 @@ function RouteLoader() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <Router>
-        <ScrollToTop />
-        <PageMetadataHandler />
-        <HashRedirectHandler />
-        <Layout>
-          <Suspense fallback={<RouteLoader />}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/emergency" element={<Emergency />} />
-              <Route path="/support" element={<Support />} />
-              <Route path="/terms" element={<Legal />} />
-              <Route path="/privacy" element={<Legal />} />
-              <Route path="/legal" element={<Legal />} />
-              <Route path="/install" element={<Legal />} />
-              <Route path="/manual" element={<Legal />} />
-              <Route path="/pwa" element={<Legal />} />
+    <ErrorBoundary>
+      <AppProvider>
+        <Router>
+          <ScrollToTop />
+          <PageMetadataHandler />
+          <HashRedirectHandler />
+          <Layout>
+            <ErrorBoundary>
+              <Suspense fallback={<RouteLoader />}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/emergency" element={<Emergency />} />
+                  <Route path="/support" element={<Support />} />
+                  <Route path="/terms" element={<Legal />} />
+                  <Route path="/privacy" element={<Legal />} />
+                  <Route path="/legal" element={<Legal />} />
+                  <Route path="/install" element={<Legal />} />
+                  <Route path="/manual" element={<Legal />} />
+                  <Route path="/pwa" element={<Legal />} />
 
-              {/* Admin routes: support /admin, /adil, and /darun */}
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/darun" element={<Admin />} />
+                  {/* Admin routes: support /admin, /adil, and /darun */}
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/darun" element={<Admin />} />
 
-              {/* Fallback route */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </Layout>
-      </Router>
-    </AppProvider>
+                  {/* Fallback route */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
+          </Layout>
+        </Router>
+      </AppProvider>
+    </ErrorBoundary>
   );
 }

@@ -100,7 +100,8 @@ export default function Emergency() {
 
   const bloodGroupCounts = useMemo(() => {
     const counts = Object.fromEntries((BLOOD_GROUPS as string[]).map((group) => [group, 0]));
-    (emergencyRequests as EmergencyRequest[]).forEach((req) => {
+    const list = (emergencyRequests || []) as EmergencyRequest[];
+    list.forEach((req) => {
       if (counts[req.blood_group] !== undefined) {
         counts[req.blood_group] += 1;
       }
@@ -114,7 +115,7 @@ export default function Emergency() {
   }, [userLocationArea]);
 
   const filteredEmergencyRequests = useMemo(() => {
-    const list = (emergencyRequests as EmergencyRequest[]).filter((req) => {
+    const list = ((emergencyRequests || []) as EmergencyRequest[]).filter((req) => {
       const matchBlood = !feedBloodFilter || req.blood_group === feedBloodFilter;
       const matchArea = !feedAreaFilter || req.area === feedAreaFilter;
       return matchBlood && matchArea;
@@ -146,7 +147,7 @@ export default function Emergency() {
   // Reset page when feed filters or request list changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [feedBloodFilter, feedAreaFilter, emergencyRequests.length]);
+  }, [feedBloodFilter, feedAreaFilter, emergencyRequests?.length]);
 
   const itemsPerPage = 10;
   const totalPages = Math.max(1, Math.ceil(filteredEmergencyRequests.length / itemsPerPage));

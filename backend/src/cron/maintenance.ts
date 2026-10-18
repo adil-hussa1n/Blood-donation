@@ -3,20 +3,7 @@ import pool from '../config/db.js';
 
 export async function runMaintenance(): Promise<void> {
   try {
-    // 1. Reset availability for donors after 90 days cooldown
-    const [cooldownResult]: any = await pool.query(`
-      UPDATE donors 
-      SET is_available = 1 
-      WHERE is_available = 0 
-        AND last_donation_date IS NOT NULL 
-        AND last_donation_date <= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
-    `);
-
-    if (cooldownResult?.affectedRows > 0) {
-      console.log(`[Cron] Reset cooldown for ${cooldownResult.affectedRows} donors.`);
-    }
-
-    // 2. Prune emergency requests older than 24 hours
+    // 1. Prune emergency requests older than 24 hours
     const [pruneResult]: any = await pool.query(`
       DELETE FROM emergency_requests 
       WHERE created_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)

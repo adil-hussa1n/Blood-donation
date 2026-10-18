@@ -487,7 +487,7 @@ export async function addDonationEvent(req: Request, res: Response): Promise<voi
     const newCount = (donor.lifetime_donation_count || donor.total_donations || 0) + 1;
     await pool.query(
       `UPDATE donors 
-       SET total_donations = ?, lifetime_donation_count = ?, last_donation_date = ?, is_available = 0 
+       SET total_donations = ?, lifetime_donation_count = ?, last_donation_date = ? 
        WHERE id = ?`,
       [newCount, newCount, donation_date, id]
     );

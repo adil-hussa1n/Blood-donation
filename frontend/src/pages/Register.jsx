@@ -722,10 +722,8 @@ export default function Register() {
           total_donations: newCount,
           lifetime_donation_count: newCount,
           last_donation_date: newDonationDate,
-          is_available: false
         });
         setFoundDonor(updatedDonor);
-        setEditAvailable(false);
         setNewDonationDate(new Date().toISOString().split('T')[0]);
 
         try {
