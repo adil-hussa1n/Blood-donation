@@ -368,7 +368,7 @@ export const TRANSLATIONS = {
     occupationDoctor: 'Doctor / Medical Professional',
     occupationManagement: 'Management / Executive',
     occupationStaff: 'Staff / Corporate Official',
-    instituteLabel: 'Educational Institute / Workplace (Sylhet Region)',
+    instituteLabel: 'Educational Institute / Workplace',
     institutePlaceholder: 'Type college, university, hospital, or workplace...',
     studentIdLabel: 'Student / Employee / Faculty ID (Optional)',
     studentIdPlaceholder: 'e.g. 2021331001 or EMP-104',
@@ -705,6 +705,7 @@ export const TRANSLATIONS = {
     // Legal & Privacy
     termsNav: 'Terms & Conditions',
     privacyNav: 'Privacy Policy',
+    appInstallNav: 'Install Web App',
     agreeToTermsPrefix: 'I have read and agree to the',
     termsAndConditionsText: 'Terms & Conditions',
     andText: 'and',
@@ -1177,6 +1178,7 @@ export const TRANSLATIONS = {
     // Legal & Privacy
     termsNav: 'শর্তাবলী',
     privacyNav: 'গোপনীয়তা নীতি',
+    appInstallNav: 'অ্যাপ ইনস্টল নির্দেশিকা',
     agreeToTermsPrefix: 'আমি প্ল্যাটফর্মের',
     termsAndConditionsText: 'ব্যবহারের শর্তাবলী',
     andText: 'ও',
@@ -1467,21 +1469,27 @@ export const AppProvider = ({ children }) => {
     return null;
   });
 
-  const setCurrentDonor = (donor: any | null) => {
-    setCurrentDonorState(donor);
-    if (donor) {
-      try {
-        const cached = localStorage.getItem('bb_donor_session');
-        const existing = cached ? JSON.parse(cached) : {};
-        localStorage.setItem('bb_donor_session', JSON.stringify({
-          ...existing,
-          donor,
-          googleAuth: existing.googleAuth ?? (existing.password ? false : true),
-        }));
-      } catch (e) { }
-    } else {
-      localStorage.removeItem('bb_donor_session');
-    }
+  const setCurrentDonor = (donorOrUpdater: any | null) => {
+    setCurrentDonorState((prev: any) => {
+      const nextDonor = typeof donorOrUpdater === 'function' ? donorOrUpdater(prev) : donorOrUpdater;
+      if (nextDonor) {
+        try {
+          const cached = appStorage.getItem('bb_donor_session') || localStorage.getItem('bb_donor_session');
+          const existing = cached ? JSON.parse(cached) : {};
+          const sessionPayload = JSON.stringify({
+            ...existing,
+            donor: nextDonor,
+            googleAuth: existing.googleAuth ?? (existing.password ? false : true),
+          });
+          appStorage.setItem('bb_donor_session', sessionPayload);
+          localStorage.setItem('bb_donor_session', sessionPayload);
+        } catch (e) { }
+      } else {
+        appStorage.removeItem('bb_donor_session');
+        localStorage.removeItem('bb_donor_session');
+      }
+      return nextDonor;
+    });
     window.dispatchEvent(new Event('bb_donor_session_updated'));
   };
 
@@ -1784,10 +1792,30 @@ export const AppProvider = ({ children }) => {
         if (res) {
           if (res.error) throw new Error(res.error.message);
           const data = res.data || [];
-          setDonors(data.map(normalizeDonor));
+          const normalizedList = data.map(normalizeDonor);
+          setDonors(normalizedList);
           if (!isDemoMode && data.length > 0) {
             localStorage.setItem('bb_donors_cache', JSON.stringify(data));
           }
+
+          // Keep currentDonor in sync with the database, maintaining user's latest is_available status
+          try {
+            const cachedSession = localStorage.getItem('bb_donor_session');
+            if (cachedSession) {
+              const session = JSON.parse(cachedSession);
+              const activeId = session?.donor?.id;
+              if (activeId) {
+                const refreshedSelf = normalizedList.find(d => d.id === activeId || d.phone === session.donor.phone);
+                if (refreshedSelf) {
+                  setCurrentDonorState(refreshedSelf);
+                  localStorage.setItem('bb_donor_session', JSON.stringify({
+                    ...session,
+                    donor: refreshedSelf,
+                  }));
+                }
+              }
+            }
+          } catch (e) { }
         } else {
           console.warn("Donors database fetch timed out. Using offline cache.");
           const cachedDonors = localStorage.getItem('bb_donors_cache') || localStorage.getItem('bb_donors');
@@ -2151,6 +2179,13 @@ export const AppProvider = ({ children }) => {
       setError(error.message);
       await refreshData(true);
       return { success: false, error };
+    }
+    if (data) {
+      const normalizedUpdated = normalizeDonor(data);
+      setDonors(prev => prev.map(d => d.id === id ? normalizedUpdated : d));
+      if (currentDonor?.id === id) {
+        setCurrentDonor((prev: any) => ({ ...prev, ...normalizedUpdated }));
+      }
     }
     window.dispatchEvent(new Event('bb_data_updated'));
     await refreshData(true);

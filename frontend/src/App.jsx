@@ -40,6 +40,9 @@ function PageMetadataHandler() {
     } else if (pathname === '/privacy') {
       title = 'Privacy Policy & Data Security | Darun Donors';
       description = 'Learn how Darun Donors protects your personal information, phone number privacy, and blood donation records.';
+    } else if (pathname === '/install' || pathname === '/manual' || pathname === '/pwa') {
+      title = 'Web App User Manual (Android, iOS, PC, Mac) | Darun Donors';
+      description = 'Step-by-step user manual instructions to install and use Darun Donors as a fast, offline-ready web app on Android, iPhone/iPad (iOS), Windows, and Mac.';
     } else if (pathname === '/admin' || pathname === '/darun') {
       title = 'Staff Verification | Darun Donors';
       description = 'Authorized portal verification for staff moderators.';
@@ -111,6 +114,9 @@ export default function App() {
               <Route path="/terms" element={<Legal />} />
               <Route path="/privacy" element={<Legal />} />
               <Route path="/legal" element={<Legal />} />
+              <Route path="/install" element={<Legal />} />
+              <Route path="/manual" element={<Legal />} />
+              <Route path="/pwa" element={<Legal />} />
 
               {/* Admin routes: support /admin, /adil, and /darun */}
               <Route path="/admin" element={<Admin />} />

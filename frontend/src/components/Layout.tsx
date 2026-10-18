@@ -477,6 +477,13 @@ export default function Layout({ children }: LayoutProps) {
               >
                 {t('privacyNav')}
               </Link>
+              <span className="text-slate-300 dark:text-zinc-700">|</span>
+              <Link
+                to="/install"
+                className="text-xs sm:text-sm font-bold text-slate-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 transition-colors inline-flex items-center gap-1"
+              >
+                {t('appInstallNav')}
+              </Link>
             </div>
             <span className="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-400 font-semibold tracking-wide">
               A Humanitarian Initiative by <a href="https://daruntech.com" target="_blank" rel="noopener noreferrer" className="font-extrabold text-purple-600 dark:text-purple-400 hover:underline">Darun Tech Private Limited</a>

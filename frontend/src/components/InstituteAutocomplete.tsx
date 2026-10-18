@@ -131,7 +131,7 @@ export default function InstituteAutocomplete({
 
       {/* Dropdown List */}
       {isOpen && !disabled && (
-        <div className="absolute z-[100] left-0 right-0 mt-1 max-h-64 overflow-y-auto rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl p-1.5 space-y-1 animate-scale-up">
+        <div className="absolute z-[100] left-0 right-auto sm:right-auto w-full min-w-[280px] sm:min-w-[360px] md:min-w-[420px] max-w-[90vw] mt-1.5 max-h-72 overflow-y-auto rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl p-1.5 space-y-1 animate-scale-up">
           <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
             <span>Sylhet Regional Institutes ({filteredList.length})</span>
             <span className="text-red-500 font-bold">Select or type custom</span>
@@ -152,7 +152,9 @@ export default function InstituteAutocomplete({
                 searchTerm.trim().toLowerCase() === inst.nameBn.trim().toLowerCase();
 
               const typeBadge =
-                inst.type === 'university'
+                inst.type === 'hospital'
+                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+                  : inst.type === 'university'
                   ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20'
                   : inst.type === 'medical_college'
                   ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20'
@@ -161,13 +163,15 @@ export default function InstituteAutocomplete({
                   : 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20';
 
               const typeLabel =
-                inst.type === 'university'
-                  ? 'University'
+                inst.type === 'hospital'
+                  ? (language === 'bn' ? 'হাসপাতাল' : 'Hospital')
+                  : inst.type === 'university'
+                  ? (language === 'bn' ? 'বিশ্ববিদ্যালয়' : 'University')
                   : inst.type === 'medical_college'
-                  ? 'Medical College'
+                  ? (language === 'bn' ? 'মেডিকেল' : 'Medical')
                   : inst.type === 'polytechnic'
-                  ? 'Polytechnic'
-                  : 'College';
+                  ? (language === 'bn' ? 'পলিটেকনিক' : 'Polytechnic')
+                  : (language === 'bn' ? 'কলেজ' : 'College');
 
               return (
                 <button

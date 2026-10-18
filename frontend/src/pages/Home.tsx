@@ -319,7 +319,7 @@ export default function Home() {
         {/* Filter Card Form (Visible on desktop/tablet, toggleable on mobile) */}
         <form
           onSubmit={handleSearchSubmit}
-          className={`glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/60 dark:border-zinc-800/60 space-y-4 sm:space-y-5 shadow-xs ${filterOpen ? 'block' : 'hidden'} md:block animate-fade-in`}
+          className={`glass-panel relative z-30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/60 dark:border-zinc-800/60 space-y-4 sm:space-y-5 shadow-xs ${filterOpen ? 'block' : 'hidden'} md:block animate-fade-in`}
         >
           {/* Header Row */}
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200/50 dark:border-zinc-800/50">
@@ -349,10 +349,10 @@ export default function Home() {
             )}
           </div>
 
-          {/* Primary Filter Controls: Search Input + Area Select + Institute Autocomplete + Occupation */}
+          {/* Primary Filter Controls: Search Input + Area Select + Institute Autocomplete */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5 items-end">
             {/* Search by Name/Phone */}
-            <div className="lg:col-span-3 space-y-1.5">
+            <div className="lg:col-span-4 space-y-1.5">
               <label className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider block">
                 {t('searchByNamePhoneLabel')}
               </label>
@@ -407,7 +407,7 @@ export default function Home() {
             </div>
 
             {/* Filter by Institute (Autocomplete across Sylhet region) */}
-            <div className="lg:col-span-3 space-y-1.5">
+            <div className="lg:col-span-4 space-y-1.5">
               <label className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                 <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
                 <span>{t('instituteLabel')}</span>
@@ -418,33 +418,6 @@ export default function Home() {
                 placeholder={t('institutePlaceholder')}
                 language={language as 'en' | 'bn'}
               />
-            </div>
-
-            {/* Filter by Occupation */}
-            <div className="lg:col-span-2 space-y-1.5">
-              <label className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider block">
-                {t('occupationLabel')}
-              </label>
-              <div className="relative">
-                <select
-                  value={localOccupation}
-                  onChange={(e) => setLocalOccupation(e.target.value)}
-                  className="w-full pl-3 pr-8 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all dark:text-white appearance-none cursor-pointer"
-                >
-                  <option value="">{t('allRolesOption')}</option>
-                  <option value="student">🎓 {t('occupationStudent')}</option>
-                  <option value="teacher">👨‍🏫 {t('occupationTeacher')}</option>
-                  <option value="doctor">🩺 {t('occupationDoctor')}</option>
-                  <option value="management">💼 {t('occupationManagement')}</option>
-                  <option value="staff">👔 {t('occupationStaff')}</option>
-                  <option value="other">👤 {t('occupationGeneral')}</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center px-2.5 pointer-events-none text-slate-400">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
             </div>
 
             {/* Submit Filter Button */}

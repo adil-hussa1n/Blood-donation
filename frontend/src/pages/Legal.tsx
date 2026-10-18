@@ -1,24 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, FileText, CheckCircle, Heart, Lock, AlertCircle, Eye, RefreshCw, Mail } from 'lucide-react';
+import {
+  ShieldCheck,
+  FileText,
+  CheckCircle,
+  Heart,
+  Lock,
+  AlertCircle,
+  Eye,
+  RefreshCw,
+  Mail,
+  Smartphone,
+  Apple,
+  Monitor,
+  Laptop,
+  Download,
+  Share2,
+  MoreVertical,
+  PlusSquare,
+  Sparkles,
+  ArrowRight,
+  Shield,
+  PhoneOff
+} from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Link, useLocation } from 'react-router-dom';
+
+type LegalTab = 'terms' | 'privacy' | 'install';
 
 export default function Legal() {
   const { language, t } = useApp();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'terms' | 'privacy'>('terms');
+  const [activeTab, setActiveTab] = useState<LegalTab>('terms');
+  const [activeDevicePlatform, setActiveDevicePlatform] = useState<'android' | 'ios' | 'windows' | 'mac'>('android');
 
-  // Automatically activate the correct tab based on current URL path (/privacy -> privacy tab, /terms -> terms tab)
+  // Automatically activate the correct tab based on current URL path
   useEffect(() => {
     if (location.pathname === '/privacy') {
       setActiveTab('privacy');
     } else if (location.pathname === '/terms') {
       setActiveTab('terms');
+    } else if (location.pathname === '/install' || location.pathname === '/manual' || location.pathname === '/pwa') {
+      setActiveTab('install');
     }
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
   }, [location.pathname]);
 
-  const handleTabChange = (tab: 'terms' | 'privacy') => {
+  const handleTabChange = (tab: LegalTab) => {
     setActiveTab(tab);
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
   };
@@ -28,49 +55,75 @@ export default function Legal() {
       {/* Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex p-3 rounded-2xl bg-red-500/10 text-red-500 dark:bg-red-500/20">
-          <ShieldCheck className="w-8 h-8" />
+          {activeTab === 'install' ? (
+            <Download className="w-8 h-8" />
+          ) : (
+            <ShieldCheck className="w-8 h-8" />
+          )}
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-          {language === 'bn' ? 'শর্তাবলী ও গোপনীয়তা নীতি' : 'Terms & Privacy Policy'}
+          {activeTab === 'install'
+            ? language === 'bn'
+              ? 'ওয়েব অ্যাপ ইনস্টল ও ব্যবহার ম্যানুয়াল'
+              : 'Web App User Installation Manual'
+            : language === 'bn'
+            ? 'শর্তাবলী, গোপনীয়তা ও ব্যবহার নির্দেশিকা'
+            : 'Terms, Privacy & User Manual'}
         </h1>
-        <p className="text-sm text-slate-500 dark:text-zinc-400 font-medium max-w-lg mx-auto">
-          {language === 'bn'
-            ? 'দারুণ ডোনার্স প্ল্যাটফর্ম ব্যবহারের নিয়মাবলী এবং আপনার তথ্যের সর্বোচ্চ সুরক্ষার প্রতিশ্রুতি।'
-            : 'Operational guidelines and our steadfast commitment to protecting your personal data.'}
+        <p className="text-sm text-slate-500 dark:text-zinc-400 font-medium max-w-xl mx-auto">
+          {activeTab === 'install'
+            ? language === 'bn'
+              ? 'অ্যান্ড্রয়েড, আইওএস (iPhone/iPad), উইন্ডোজ এবং ম্যাক ডিভাইসে দারুণ ডোনার্স ইনস্টল করে একটি স্বয়ংসম্পূর্ণ অ্যাপের মতো ব্যবহারের ধাপে ধাপে নির্দেশিকা।'
+              : 'Step-by-step instructions for installing and running Darun Donors as a fast, native-like Progressive Web App on Android, iOS, Windows, and macOS.'
+            : language === 'bn'
+            ? 'দারুণ ডোনার্স প্ল্যাটফর্ম ব্যবহারের নিয়মাবলী, রক্তদাতার তথ্যের সুরক্ষা ও দায়িত্বশীল ব্যবহারের স্পষ্ট অঙ্গীকার।'
+            : 'Comprehensive operational guidelines, voluntary donor protection, and our steadfast commitment to privacy.'}
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex p-1.5 bg-slate-100 dark:bg-zinc-900/60 rounded-2xl border border-slate-200/50 dark:border-zinc-800/40 max-w-md mx-auto shadow-inner">
+      <div className="flex p-1.5 bg-slate-100 dark:bg-zinc-900/60 rounded-2xl border border-slate-200/50 dark:border-zinc-800/40 max-w-lg mx-auto shadow-inner">
         <button
           type="button"
           onClick={() => handleTabChange('terms')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
             activeTab === 'terms'
               ? 'bg-white dark:bg-zinc-800 text-red-600 dark:text-red-400 shadow-sm'
               : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
           }`}
         >
-          <FileText className="w-4 h-4" />
-          {language === 'bn' ? 'ব্যবহারের শর্তাবলী' : 'Terms of Service'}
+          <FileText className="w-4 h-4 shrink-0" />
+          <span>{language === 'bn' ? 'শর্তাবলী' : 'Terms'}</span>
         </button>
         <button
           type="button"
           onClick={() => handleTabChange('privacy')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
             activeTab === 'privacy'
               ? 'bg-white dark:bg-zinc-800 text-red-600 dark:text-red-400 shadow-sm'
               : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
           }`}
         >
-          <Lock className="w-4 h-4" />
-          {language === 'bn' ? 'গোপনীয়তা নীতি' : 'Privacy Policy'}
+          <Lock className="w-4 h-4 shrink-0" />
+          <span>{language === 'bn' ? 'গোপনীয়তা' : 'Privacy'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTabChange('install')}
+          className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+            activeTab === 'install'
+              ? 'bg-white dark:bg-zinc-800 text-red-600 dark:text-red-400 shadow-sm'
+              : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Download className="w-4 h-4 shrink-0" />
+          <span>{language === 'bn' ? 'অ্যাপ গাইড' : 'App Guide'}</span>
         </button>
       </div>
 
       {/* Main Content Area */}
       <div className="glass-panel rounded-3xl p-6 sm:p-10 space-y-8 relative overflow-hidden border border-slate-200/60 dark:border-zinc-800/60 shadow-xl">
-        {activeTab === 'terms' ? (
+        {activeTab === 'terms' && (
           /* ================= TERMS & CONDITIONS ================= */
           <div className="space-y-6 text-slate-700 dark:text-zinc-300 leading-relaxed text-sm sm:text-base">
             <div className="flex items-center gap-3 border-b border-slate-200 dark:border-zinc-800 pb-4">
@@ -169,8 +222,21 @@ export default function Legal() {
             {/* Section 5 */}
             <div className="space-y-2">
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <PhoneOff className="w-4 h-4 text-red-500" />
+                {language === 'bn' ? '৫. অপ্রাপ্য (Unavailable) ডোনারদের অধিকার ও যোগাযোগ তথ্য গোপনীয়তা' : '5. Unavailable Donor Rights & Phone Number Masking'}
+              </h3>
+              <p className="text-slate-600 dark:text-zinc-400 text-sm">
+                {language === 'bn'
+                  ? 'রক্তদাতাদের মানসিক শান্তি ও বিশ্রাম নিশ্চিত করতে আমরা কঠোর অনুপলব্ধতা নীতি মেনে চলি। কোনো রক্তদাতা যখন তার প্রাপ্যতা "Unavailable" বা অপ্রাপ্য হিসেবে সেট করেন, তখন প্ল্যাটফর্ম তার ফোন নম্বর ও ডিরেক্ট কল বোতাম স্বয়ংক্রিয়ভাবে লুকিয়ে রাখে। অপ্রাপ্য থাকাকালীন কোনো ডোনারকে কল করার চেষ্টা করা বা ব্যক্তিগত পর্যায়ে বিরক্ত করা নীতিমালার স্পষ্ট লঙ্ঘন।'
+                  : 'To respect volunteer rest and recovery, donors marked as "Unavailable" have their phone numbers and direct call capabilities completely masked across the platform. Calling, pressuring, or harvesting contacts of inactive or resting donors violates our terms and will lead to an immediate ban.'}
+              </p>
+            </div>
+
+            {/* Section 6 */}
+            <div className="space-y-2">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Lock className="w-4 h-4 text-indigo-500" />
-                {language === 'bn' ? '৫. প্ল্যাটফর্মের নিরাপত্তা, অপব্যবহার প্রতিরোধ ও রেট লিমিটিং' : '5. Platform Security, Anti-Abuse & Rate Limiting'}
+                {language === 'bn' ? '৬. প্ল্যাটফর্মের নিরাপত্তা, অপব্যবহার প্রতিরোধ ও রেট লিমিটিং' : '6. Platform Security, Anti-Abuse & Rate Limiting'}
               </h3>
               <p className="text-slate-600 dark:text-zinc-400 text-sm">
                 {language === 'bn'
@@ -179,11 +245,11 @@ export default function Legal() {
               </p>
             </div>
 
-            {/* Section 6 */}
+            {/* Section 7 */}
             <div className="space-y-2">
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <RefreshCw className="w-4 h-4 text-purple-500" />
-                {language === 'bn' ? '৬. অ্যাকাউন্ট নিয়ন্ত্রণ, তথ্য হালনাগাদ ও মুছে ফেলার অধিকার' : '6. Account Sovereignty, Modification & Termination'}
+                {language === 'bn' ? '৭. অ্যাকাউন্ট নিয়ন্ত্রণ, তথ্য হালনাগাদ ও মুছে ফেলার অধিকার' : '7. Account Sovereignty, Modification & Termination'}
               </h3>
               <p className="text-slate-600 dark:text-zinc-400 text-sm">
                 {language === 'bn'
@@ -192,7 +258,9 @@ export default function Legal() {
               </p>
             </div>
           </div>
-        ) : (
+        )}
+
+        {activeTab === 'privacy' && (
           /* ================= PRIVACY POLICY ================= */
           <div className="space-y-6 text-slate-700 dark:text-zinc-300 leading-relaxed text-sm sm:text-base">
             <div className="flex items-center gap-3 border-b border-slate-200 dark:border-zinc-800 pb-4">
@@ -223,6 +291,11 @@ export default function Legal() {
                   {language === 'bn'
                     ? 'নাম, রক্তের গ্রুপ, বিভাগ, জেলা ও উপজেলা (রোগীর নিকটস্থ সামঞ্জস্যপূর্ণ ডোনার খুঁজে বের করতে)।'
                     : 'Full Name, Blood Group, Division, District, and Upazila (to identify geographically compatible donors).'}
+                </li>
+                <li>
+                  {language === 'bn'
+                    ? 'পেশা / পদবী এবং শিক্ষা প্রতিষ্ঠান বা কর্মস্থলের তথ্য (স্বেচ্ছাসেবী নেটওয়ার্কের বিশ্বাসযোগ্যতা বৃদ্ধি করতে)।'
+                    : 'Designation / Profession and Educational Institution or Workplace (to enhance network trust and community relevance).'}
                 </li>
                 <li>
                   {language === 'bn'
@@ -263,8 +336,21 @@ export default function Legal() {
             {/* Privacy Section 3 */}
             <div className="space-y-2">
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <PhoneOff className="w-4 h-4 text-amber-500" />
+                {language === 'bn' ? '৩. অপ্রাপ্য ডোনারদের নম্বর মাস্কিং ও প্রাইভেসি গার্ড' : '3. Privacy Guard & Contact Masking for Resting Donors'}
+              </h3>
+              <p className="text-slate-600 dark:text-zinc-400 text-sm">
+                {language === 'bn'
+                  ? 'কোনো ডোনার তার স্ট্যাটাস যখন অপ্রাপ্য (Unavailable) রাখেন, তখন সিস্টেমে তার যোগাযোগের নম্বর প্রদর্শন পুরোপুরি বন্ধ থাকে। রক্তদানের বিরতিকালে অথবা ব্যক্তিগত বিশ্রামের সময় ডোনারকে অযথা কল পাওয়া থেকে বাঁচাতে এই নিরাপত্তা স্তরটি স্বয়ংক্রিয়ভাবে সক্রিয় থাকে।'
+                  : 'Whenever a volunteer donor marks their availability status as "Unavailable", our user interface automatically conceals the telephone number and disables call buttons. This guarantees uninterrupted personal rest during the mandatory 90-day biological donation cooldown.'}
+              </p>
+            </div>
+
+            {/* Privacy Section 4 */}
+            <div className="space-y-2">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Lock className="w-4 h-4 text-blue-500" />
-                {language === 'bn' ? '৩. তথ্য কোনো অবস্থাতেই বিক্রয় বা বাণিজ্যিক ব্যবহার নয়' : '3. Absolute Zero Commercialization of Personal Data'}
+                {language === 'bn' ? '৪. তথ্য কোনো অবস্থাতেই বিক্রয় বা বাণিজ্যিক ব্যবহার নয়' : '4. Absolute Zero Commercialization of Personal Data'}
               </h3>
               <p className="text-slate-600 dark:text-zinc-400 text-sm">
                 {language === 'bn'
@@ -273,11 +359,11 @@ export default function Legal() {
               </p>
             </div>
 
-            {/* Privacy Section 4 */}
+            {/* Privacy Section 5 */}
             <div className="space-y-2">
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-teal-500" />
-                {language === 'bn' ? '৪. অ্যানালিটিক্স, বিজ্ঞাপন ও কুকিজ নীতি (Cookies & Analytics)' : '4. Third-Party Services, Cookies & Digital Analytics'}
+                {language === 'bn' ? '৫. অ্যানালিটিক্স, বিজ্ঞাপন ও কুকিজ নীতি (Cookies & Analytics)' : '5. Third-Party Services, Cookies & Digital Analytics'}
               </h3>
               <p className="text-slate-600 dark:text-zinc-400 text-sm">
                 {language === 'bn'
@@ -286,11 +372,11 @@ export default function Legal() {
               </p>
             </div>
 
-            {/* Privacy Section 5 */}
+            {/* Privacy Section 6 */}
             <div className="space-y-2">
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-purple-500" />
-                {language === 'bn' ? '৫. জরুরি পুশ নোটিফিকেশন সুবিধা' : '5. Web Push Notification Handling'}
+                {language === 'bn' ? '৬. জরুরি পুশ নোটিফিকেশন সুবিধা' : '6. Web Push Notification Handling'}
               </h3>
               <p className="text-slate-600 dark:text-zinc-400 text-sm">
                 {language === 'bn'
@@ -299,11 +385,11 @@ export default function Legal() {
               </p>
             </div>
 
-            {/* Privacy Section 6 */}
+            {/* Privacy Section 7 */}
             <div className="space-y-2">
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <RefreshCw className="w-4 h-4 text-rose-500" />
-                {language === 'bn' ? '৬. তথ্য মুছে ফেলা ও অধিকার (Right to Erasure)' : '6. Right to Erasure & Data Deletion'}
+                {language === 'bn' ? '৭. তথ্য মুছে ফেলা ও অধিকার (Right to Erasure)' : '7. Right to Erasure & Data Deletion'}
               </h3>
               <p className="text-slate-600 dark:text-zinc-400 text-sm">
                 {language === 'bn'
@@ -312,11 +398,11 @@ export default function Legal() {
               </p>
             </div>
 
-            {/* Privacy Section 7 */}
+            {/* Privacy Section 8 */}
             <div className="space-y-2">
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Mail className="w-4 h-4 text-amber-500" />
-                {language === 'bn' ? '৭. যোগাযোগ, অভিযোগ ও নিরাপত্তা সংক্রান্ত জিজ্ঞাসা' : '7. Privacy Inquiries, Security Notices & Contact'}
+                {language === 'bn' ? '৮. যোগাযোগ, অভিযোগ ও নিরাপত্তা সংক্রান্ত জিজ্ঞাসা' : '8. Privacy Inquiries, Security Notices & Contact'}
               </h3>
               <p className="text-slate-600 dark:text-zinc-400 text-sm">
                 {language === 'bn' ? (
@@ -337,6 +423,486 @@ export default function Legal() {
                   </>
                 )}
               </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'install' && (
+          /* ================= PWA / WEB APP INSTALLATION MANUAL ================= */
+          <div className="space-y-8 text-slate-700 dark:text-zinc-300 leading-relaxed text-sm sm:text-base">
+            <div className="flex items-center gap-3 border-b border-slate-200 dark:border-zinc-800 pb-4">
+              <Download className="w-6 h-6 text-red-500 shrink-0" />
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                  {language === 'bn' ? 'ওয়েব অ্যাপ ইনস্টলেশন ও ব্যবহার নির্দেশিকা' : 'Progressive Web App (PWA) Installation Manual'}
+                </h2>
+                <span className="text-xs text-slate-400 dark:text-zinc-500">
+                  {language === 'bn'
+                    ? 'প্লেস্টোর বা অ্যাপ স্টোর ছাড়া সরাসরি যেকোনো ডিভাইসে দ্রুত ইনস্টল করুন'
+                    : 'Install directly on any device without Play Store or App Store'}
+                </span>
+              </div>
+            </div>
+
+            {/* Benefit Highlight banner */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-red-500/10 via-rose-500/10 to-amber-500/10 border border-red-500/20 text-slate-800 dark:text-zinc-200 flex flex-col sm:flex-row items-start sm:items-center gap-3.5 shadow-xs">
+              <div className="w-12 h-12 rounded-2xl bg-white dark:bg-zinc-800 p-1.5 shadow-md shrink-0 border border-red-500/20 flex items-center justify-center">
+                <img
+                  src="/logo.png"
+                  alt="Darun Donors App"
+                  className="w-full h-full object-contain drop-shadow-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                  {language === 'bn' ? 'কেন ওয়েব অ্যাপ ইনস্টল করবেন?' : 'Why Install the Darun Donors Web App?'}
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                  {language === 'bn'
+                    ? '১ সেকেন্ডেরও কম সময়ে ওপেন হয়, কোনো স্টোরেজ খরচ হয় না, অফলাইনেও চালু থাকে এবং ব্যাকগ্রাউন্ডে জরুরি রক্তের লাইভ পুশ নোটিফিকেশন পাওয়া যায়।'
+                    : 'Lightning-fast 1-click launch from your home screen, zero phone storage consumed, offline-ready caching, and instant emergency blood push alerts.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Platform Selector Buttons */}
+            <div className="space-y-3">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                {language === 'bn' ? 'আপনার অপারেটিং সিস্টেম নির্বাচন করুন:' : 'Select Your Device / Operating System:'}
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {/* Android */}
+                <button
+                  type="button"
+                  onClick={() => setActiveDevicePlatform('android')}
+                  className={`flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                    activeDevicePlatform === 'android'
+                      ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-md ring-2 ring-emerald-500/20'
+                      : 'bg-slate-50 dark:bg-zinc-900/40 border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 text-slate-600 dark:text-zinc-400'
+                  }`}
+                >
+                  <Smartphone className="w-6 h-6" />
+                  <span className="text-xs sm:text-sm font-black">Android</span>
+                  <span className="text-[10px] font-semibold opacity-75">Chrome / Edge</span>
+                </button>
+
+                {/* iOS */}
+                <button
+                  type="button"
+                  onClick={() => setActiveDevicePlatform('ios')}
+                  className={`flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                    activeDevicePlatform === 'ios'
+                      ? 'bg-blue-500/10 border-blue-500 text-blue-600 dark:text-blue-400 shadow-md ring-2 ring-blue-500/20'
+                      : 'bg-slate-50 dark:bg-zinc-900/40 border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 text-slate-600 dark:text-zinc-400'
+                  }`}
+                >
+                  <Apple className="w-6 h-6" />
+                  <span className="text-xs sm:text-sm font-black">iPhone / iPad</span>
+                  <span className="text-[10px] font-semibold opacity-75">Safari (iOS)</span>
+                </button>
+
+                {/* Windows */}
+                <button
+                  type="button"
+                  onClick={() => setActiveDevicePlatform('windows')}
+                  className={`flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                    activeDevicePlatform === 'windows'
+                      ? 'bg-indigo-500/10 border-indigo-500 text-indigo-600 dark:text-indigo-400 shadow-md ring-2 ring-indigo-500/20'
+                      : 'bg-slate-50 dark:bg-zinc-900/40 border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 text-slate-600 dark:text-zinc-400'
+                  }`}
+                >
+                  <Monitor className="w-6 h-6" />
+                  <span className="text-xs sm:text-sm font-black">Windows</span>
+                  <span className="text-[10px] font-semibold opacity-75">Chrome / Edge</span>
+                </button>
+
+                {/* macOS */}
+                <button
+                  type="button"
+                  onClick={() => setActiveDevicePlatform('mac')}
+                  className={`flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                    activeDevicePlatform === 'mac'
+                      ? 'bg-purple-500/10 border-purple-500 text-purple-600 dark:text-purple-400 shadow-md ring-2 ring-purple-500/20'
+                      : 'bg-slate-50 dark:bg-zinc-900/40 border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 text-slate-600 dark:text-zinc-400'
+                  }`}
+                >
+                  <Laptop className="w-6 h-6" />
+                  <span className="text-xs sm:text-sm font-black">macOS</span>
+                  <span className="text-[10px] font-semibold opacity-75">Safari / Chrome</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Platform Guides */}
+            <div className="pt-2">
+              {/* --- ANDROID INSTRUCTIONS --- */}
+              {activeDevicePlatform === 'android' && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-bold text-sm">
+                    <Smartphone className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    <span>
+                      {language === 'bn'
+                        ? 'অ্যান্ড্রয়েড ফোন বা ট্যাবলেটে ইনস্টল করার নিয়ম (Google Chrome / Samsung Internet)'
+                        : 'Android Phone & Tablet Instructions (Google Chrome or Samsung Internet)'}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-4">
+                    {/* Step 1 */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        1
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white">
+                          {language === 'bn' ? 'ওয়েবসাইটে প্রবেশ করুন' : 'Open in Google Chrome'}
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'আপনার অ্যান্ড্রয়েড ফোনের গুগল ক্রোম (Google Chrome) ব্রাউজারে darun-donors বা আমাদের ওয়েবসাইট লিঙ্কটি ওপেন করুন।'
+                            : 'Open our platform link inside Google Chrome or Samsung Internet on your Android device.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 2 */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        2
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                          <span>{language === 'bn' ? 'মেনু বাটনে ট্যাপ করুন' : 'Tap the Three Dots Menu'}</span>
+                          <span className="p-1 rounded-md bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 inline-flex">
+                            <MoreVertical className="w-3.5 h-3.5" />
+                          </span>
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'ব্রাউজারের ওপরের ডান কোণায় থাকা তিনটি ডট (Three dots: ⋮) মেনু আইকনে ট্যাপ করুন।'
+                            : 'Tap the three-dot overflow menu (⋮) located at the top-right corner of Chrome.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        3
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                          <span>
+                            {language === 'bn'
+                              ? '"Install app" অথবা "Add to Home screen" নির্বাচন করুন'
+                              : 'Select "Install App" or "Add to Home screen"'}
+                          </span>
+                          <Download className="w-4 h-4 text-emerald-500" />
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'মেনু থেকে "Install app" (অথবা কিছু ডিভাইসে "Add to Home screen") অপশনে ট্যাপ করুন এবং "Install" বাটনে নিশ্চিত করুন।'
+                            : 'From the dropdown menu, select "Install app" (or "Add to Home screen"), then confirm by tapping "Install".'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 4 */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        4
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white">
+                          {language === 'bn' ? 'হোম স্ক্রিন থেকে সরাসরি ব্যবহার করুন' : 'Done! Launch from Your App Drawer'}
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'কয়েক সেকেন্ডের মধ্যে দারুণ ডোনার্স আইকন আপনার ফোনের হোম স্ক্রিন ও অ্যাপ ড্রয়ারে যুক্ত হয়ে যাবে। সেখান থেকে ট্যাপ করে ফুল-স্ক্রিন মোডে সাধারণ অ্যাপের মতো ব্যবহার করুন।'
+                            : 'Within seconds, the Darun Donors red icon will appear on your Home Screen and App Drawer. Tap it to launch full-screen without URL bars.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* --- IOS (IPHONE / IPAD) INSTRUCTIONS --- */}
+              {activeDevicePlatform === 'ios' && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-800 dark:text-blue-300 font-bold text-sm">
+                    <Apple className="w-5 h-5 shrink-0 text-blue-600 dark:text-blue-400" />
+                    <span>
+                      {language === 'bn'
+                        ? 'আইফোন ও আইপ্যাডে ইনস্টল করার নিয়ম (Apple Safari ব্রাউজার)'
+                        : 'iPhone & iPad Instructions (Apple Safari Browser)'}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-4">
+                    {/* Step 1 */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-blue-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        1
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white">
+                          {language === 'bn' ? 'Safari ব্রাউজারে ওপেন করুন' : 'Open in Apple Safari'}
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'অ্যাপল আইওএস সিস্টেমে পিডব্লিউএ ইনস্টলের জন্য Safari ব্রাউজার ব্যবহার করা আবশ্যক। Safari-তে ওয়েবসাইটটি লোড করুন।'
+                            : 'Apple requires Safari for PWA installation on iOS. Open Safari on your iPhone/iPad and navigate to the site.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 2 */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-blue-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        2
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                          <span>{language === 'bn' ? 'Share (শেয়ার) বাটনে চাপ দিন' : 'Tap the Share Button'}</span>
+                          <span className="p-1 rounded-md bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 inline-flex">
+                            <Share2 className="w-3.5 h-3.5" />
+                          </span>
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'স্ক্রিনের নিচের বারে থাকা Share আইকন (একটি বক্স যার ওপরের দিকে তীর চিহ্ন রয়েছে) চাপ দিন।'
+                            : 'Tap the Share button (square icon with an upward-pointing arrow) at the bottom toolbar of Safari.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-blue-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        3
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                          <span>
+                            {language === 'bn'
+                              ? 'স্ক্রোল করে "Add to Home Screen" এ ট্যাপ করুন'
+                              : 'Tap "Add to Home Screen"'}
+                          </span>
+                          <PlusSquare className="w-4 h-4 text-blue-500" />
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'শেয়ার মেনুর নিচে কিছুটা স্ক্রোল করে "Add to Home Screen" অপশনে ট্যাপ করুন এবং ওপরের ডান কোণায় "Add" বাটনে চাপ দিন।'
+                            : 'Scroll down through the share sheet options and tap "Add to Home Screen" (➕), then tap "Add" in the top right.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 4 */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-blue-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        4
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white">
+                          {language === 'bn' ? 'আইওএস পুশ নোটিফিকেশন সুবিধা' : 'Native Experience & iOS Web Push'}
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'আইওএস ১৬.৪+ ভার্সনে হোম স্ক্রিন অ্যাপ হিসেবে ইনস্টল করার পর অ্যাপের ভেতর থেকে নোটিফিকেশন অন করলে সরাসরি লক স্ক্রিনে রক্তের জরুরি নোটিফিকেশন আসবে।'
+                            : 'On iOS 16.4+, running Darun Donors as a Home Screen web app enables full lock-screen emergency push notifications.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* --- WINDOWS INSTRUCTIONS --- */}
+              {activeDevicePlatform === 'windows' && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-800 dark:text-indigo-300 font-bold text-sm">
+                    <Monitor className="w-5 h-5 shrink-0 text-indigo-600 dark:text-indigo-400" />
+                    <span>
+                      {language === 'bn'
+                        ? 'উইন্ডোজ পিসি ও ল্যাপটপে ইনস্টল করার নিয়ম (Google Chrome / Microsoft Edge)'
+                        : 'Windows PC & Laptop Instructions (Google Chrome or Microsoft Edge)'}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-4">
+                    {/* Step 1 */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        1
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white">
+                          {language === 'bn' ? 'ক্রোম বা এজ ব্রাউজারে প্রবেশ করুন' : 'Open in Chrome or Microsoft Edge'}
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'আপনার উইন্ডোজ কম্পিউটারে Google Chrome অথবা Microsoft Edge ব্রাউজারে ওয়েবসাইটটি লোড করুন।'
+                            : 'Open our platform link in either Google Chrome or Microsoft Edge on your Windows 10/11 desktop or laptop.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 2 */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        2
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                          <span>
+                            {language === 'bn'
+                              ? 'অ্যাড্রেস বারের ইনস্টল আইকনে ক্লিক করুন'
+                              : 'Click the Install Icon in the URL Address Bar'}
+                          </span>
+                          <Download className="w-4 h-4 text-indigo-500" />
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'ব্রাউজারের অ্যাড্রেস বার (URL bar)-এর একদম ডান পাশে একটি ছোট কম্পিউটার বা ডাউনলোড আইকন ("Install Darun Donors") দেখতে পাবেন, সেখানে ক্লিক করুন।'
+                            : 'In the right-hand corner of your browser address bar (URL omnibox), look for the "Install Darun Donors" icon.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        3
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white">
+                          {language === 'bn' ? 'Install বাটনে ক্লিক করুন' : 'Confirm Installation'}
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'পপ-আপে আসা "Install" বাটনে ক্লিক করুন। আপনি চাইলে উইন্ডোজ টাস্কবারে (Taskbar) বা স্টার্ট মেনুতে পিন করে রাখতে পারেন।'
+                            : 'Click "Install" in the modal prompt. You can check "Pin to taskbar" and "Pin to Start" for convenient desktop access.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 4 */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        4
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white">
+                          {language === 'bn' ? 'স্বতন্ত্র উইন্ডো ও নোটিফিকেশন' : 'Standalone Window with Windows Action Center'}
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'অ্যাপটি একটি স্বতন্ত্র ডেস্কটপ সফটওয়্যারের মতো চালু হবে এবং উইন্ডোজ নোটিফিকেশন সেন্টারে সরাসরি রক্তের এলার্ট পাঠাতে সক্ষম হবে।'
+                            : 'The app launches into its own borderless window and directly pipes emergency donor notifications into your Windows Action Center.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* --- MACOS INSTRUCTIONS --- */}
+              {activeDevicePlatform === 'mac' && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-800 dark:text-purple-300 font-bold text-sm">
+                    <Laptop className="w-5 h-5 shrink-0 text-purple-600 dark:text-purple-400" />
+                    <span>
+                      {language === 'bn'
+                        ? 'ম্যাক (macOS) এ ইনস্টল করার নিয়ম (Safari / Google Chrome)'
+                        : 'Apple macOS Instructions (Safari Sonoma+ or Google Chrome)'}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-4">
+                    {/* Method A: Safari Sonoma */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-purple-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        1
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white">
+                          {language === 'bn'
+                            ? 'পদ্ধতি ১: Safari-তে "Add to Dock" (macOS Sonoma বা তার পরবর্তী)'
+                            : 'Method 1: Apple Safari "Add to Dock" (macOS Sonoma+)'}
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'Safari ব্রাউজারে সাইটটি ওপেন করে ওপরের মেনু বার থেকে File > "Add to Dock..." সিলেক্ট করুন এবং "Add" বাটনে ক্লিক করুন। এটি আপনার ম্যাক ডকে একটি আইকন যুক্ত করবে।'
+                            : 'In Apple Safari, navigate to the site. Click the top macOS menu bar: File > "Add to Dock...", customize the title, and click "Add". The app will appear in your Mac Dock.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Method B: Chrome for Mac */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-purple-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        2
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white">
+                          {language === 'bn'
+                            ? 'পদ্ধতি ২: Google Chrome / Edge ব্যবহার করে ইনস্টল'
+                            : 'Method 2: Google Chrome / Microsoft Edge on macOS'}
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'Chrome ব্রাউজারে অ্যাড্রেস বারের ডান পাশে ইনস্টল আইকনে ক্লিক করুন অথবা মেনু থেকে Cast, save, and share > "Install Darun Donors" অপশনে ক্লিক করুন।'
+                            : 'In Chrome for Mac, click the Install icon in the URL bar, or select Chrome menu (⋮) > "Cast, save, and share" > "Install Darun Donors".'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Benefit */}
+                    <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-xl bg-purple-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                        3
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white">
+                          {language === 'bn' ? 'Spotlight সার্চ ও নোটিফিকেশন সেন্টার' : 'Spotlight & macOS Notification Center Integration'}
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                          {language === 'bn'
+                            ? 'ইনস্টল করার পর Command (⌘) + Space চেপে Spotlight দিয়ে তাৎক্ষণিক Darun Donors ওপেন করতে পারবেন এবং সরাসরি ম্যাকের নোটিফিকেশন সেন্টারে এলার্ট পাবেন।'
+                            : 'Once added, launch Darun Donors directly from Spotlight Search (⌘ + Space) or Launchpad with full native macOS Notification Center alerts.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick troubleshooting tips */}
+            <div className="p-5 rounded-2xl bg-slate-100 dark:bg-zinc-900/60 border border-slate-200/60 dark:border-zinc-800/60 space-y-3">
+              <h4 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+                {language === 'bn' ? 'জরুরি টিপস ও ট্রাবলশুটিং' : 'Troubleshooting & Notification Tips'}
+              </h4>
+              <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+                <li>
+                  {language === 'bn'
+                    ? 'ইনস্টল করার পর প্ল্যাটফর্মের ওপরের বেল (Bell) আইকনে ক্লিক করে "Allow Notifications" অনুমোদন দিন, যাতে জরুরি রক্তের প্রয়োজনে আপনি রিয়েল-টাইম নোটিফিকেশন পান।'
+                    : 'After installing, click the Bell notification icon in the header or menu and allow notification permissions so you receive emergency blood alerts.'}
+                </li>
+                <li>
+                  {language === 'bn'
+                    ? 'যদি অ্যাড্রেস বারে ইনস্টল আইকন দেখতে না পান, তবে নিশ্চিত করুন যে আপনি কোনো ইনকগনিটো (Incognito / Private) ট্যাবে নেই।'
+                    : 'If the install button does not appear in your address bar, ensure you are browsing in standard mode rather than Incognito / Private browsing.'}
+                </li>
+                <li>
+                  {language === 'bn'
+                    ? 'অ্যাপটি যেকোনো সময় আনইনস্টল করতে ব্রাউজারের সেটিংসে গিয়ে Apps ম্যানেজমেন্ট থেকে এক ক্লিকেই মুছে ফেলতে পারবেন।'
+                    : 'To uninstall, simply navigate to your browser\'s Settings > Apps or right-click the app icon to remove it.'}
+                </li>
+              </ul>
             </div>
           </div>
         )}

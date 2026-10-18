@@ -577,7 +577,7 @@ export default function Register() {
       blood_group: regBloodGroup,
       area: regArea,
       occupation: regOccupation,
-      institute: (regOccupation === 'student' || regOccupation === 'teacher') ? regInstitute.trim() : null,
+      institute: (regOccupation && regOccupation !== 'other') ? regInstitute.trim() : null,
       student_id: (regOccupation === 'student') ? regStudentId.trim() : null,
       last_donation_date: regLastDonationDate || null,
       total_donations: totalDonations,
@@ -649,7 +649,7 @@ export default function Register() {
         name: editName.trim(),
         area: editArea,
         occupation: editOccupation,
-        institute: (editOccupation === 'student' || editOccupation === 'teacher') ? editInstitute.trim() : null,
+        institute: (editOccupation && editOccupation !== 'other') ? editInstitute.trim() : null,
         student_id: (editOccupation === 'student') ? editStudentId.trim() : null,
         is_available: editAvailable,
         hide_photo: editHidePhoto
