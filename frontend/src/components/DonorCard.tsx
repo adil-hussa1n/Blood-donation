@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapPin, Phone, MessageCircle, AlertTriangle, CheckCircle2, Clock, Calendar, Heart, ShieldCheck } from 'lucide-react';
-import { useApp, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, getAreaLabel, getDistrictBadge, isDefaultLetterAvatar } from '../context/AppContext';
+import { useApp, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, getSpecialRoleBadge, getAreaLabel, getDistrictBadge, isDefaultLetterAvatar } from '../context/AppContext';
 import { Donor } from '../types';
 
 interface DonorCardProps {
@@ -90,6 +90,20 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
                 <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight break-words group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                   {donor.name}
                 </h4>
+                {(() => {
+                  const sRole = getSpecialRoleBadge(donor.special_role, language);
+                  if (!sRole) return null;
+                  return (
+                    <span 
+                      key={sRole.id}
+                      className={`inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full font-black border shadow-xs tracking-wide shrink-0 ${sRole.color.bg} ${sRole.color.text} ${sRole.color.border}`}
+                      title={sRole.name}
+                    >
+                      <span>{sRole.icon}</span>
+                      <span>{sRole.label}</span>
+                    </span>
+                  );
+                })()}
                 {donor.occupation === 'student' && (
                   <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
                     🎓 {t('studentBadge')}

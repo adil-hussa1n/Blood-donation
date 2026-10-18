@@ -569,6 +569,9 @@ export async function updateDonorDetailsByAdmin(req: Request, res: Response): Pr
     if (req.body.occupation !== undefined && (req.body.occupation || '').trim() !== (prev.occupation || '').trim()) {
       diffs.occupation = { from: prev.occupation || 'other', to: req.body.occupation.trim() };
     }
+    if (req.body.special_role !== undefined && (req.body.special_role || '').trim() !== (prev.special_role || '').trim()) {
+      diffs.special_role = { from: prev.special_role || 'none', to: req.body.special_role.trim() };
+    }
     if (req.body.institute !== undefined && (req.body.institute || '').trim() !== (prev.institute || '').trim()) {
       diffs.institute = { from: prev.institute || '', to: req.body.institute.trim() };
     }
@@ -592,6 +595,7 @@ export async function updateDonorDetailsByAdmin(req: Request, res: Response): Pr
     if (dob !== undefined) { updates.push('dob = ?'); values.push(dob || null); }
     if (email !== undefined) { updates.push('email = ?'); values.push(email ? email.trim().toLowerCase() : null); }
     if (req.body.occupation !== undefined) { updates.push('occupation = ?'); values.push(req.body.occupation ? req.body.occupation.trim() : 'other'); }
+    if (req.body.special_role !== undefined) { updates.push('special_role = ?'); values.push(req.body.special_role ? req.body.special_role.trim() : 'none'); }
     if (req.body.institute !== undefined) { updates.push('institute = ?'); values.push(req.body.institute ? req.body.institute.trim() : null); }
     if (req.body.student_id !== undefined) { updates.push('student_id = ?'); values.push(req.body.student_id ? req.body.student_id.trim() : null); }
 

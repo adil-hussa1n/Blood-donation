@@ -241,6 +241,135 @@ export const getDistrictBadge = (area: string | undefined | null, language: stri
 
 export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
+export interface SpecialRoleConfig {
+  id: string;
+  name: string;
+  nameBn: string;
+  badgeText: string;
+  badgeTextBn: string;
+  icon: string;
+  color: {
+    bg: string;
+    text: string;
+    border: string;
+    gradient: string;
+  };
+}
+
+export const SPECIAL_ROLES: SpecialRoleConfig[] = [
+  {
+    id: 'none',
+    name: 'None (Standard Donor)',
+    nameBn: 'কোনোটি নয় (সাধারণ দাতা)',
+    badgeText: 'Donor',
+    badgeTextBn: 'রক্তদাতা',
+    icon: '👤',
+    color: {
+      bg: 'bg-slate-100 dark:bg-zinc-800',
+      text: 'text-slate-600 dark:text-zinc-400',
+      border: 'border-slate-200 dark:border-zinc-700',
+      gradient: 'from-slate-500 to-zinc-600'
+    }
+  },
+  {
+    id: 'core_team',
+    name: 'Core Team Member',
+    nameBn: 'কোর টিম মেম্বার',
+    badgeText: 'Core Team',
+    badgeTextBn: 'কোর টিম',
+    icon: '🛡️',
+    color: {
+      bg: 'bg-gradient-to-r from-red-500/15 via-rose-500/15 to-orange-500/15 dark:from-red-950/40 dark:via-rose-950/40 dark:to-orange-950/30',
+      text: 'text-red-750 dark:text-rose-300 font-black',
+      border: 'border-red-500/30 dark:border-red-500/40',
+      gradient: 'from-red-600 via-rose-600 to-orange-600'
+    }
+  },
+  {
+    id: 'darun_team',
+    name: 'Darun Tech Team',
+    nameBn: 'দারুণ টেক টিম',
+    badgeText: 'Darun Team',
+    badgeTextBn: 'দারুণ টিম',
+    icon: '⚡',
+    color: {
+      bg: 'bg-gradient-to-r from-purple-500/15 via-fuchsia-500/15 to-indigo-500/15 dark:from-purple-950/40 dark:via-fuchsia-950/40 dark:to-indigo-950/30',
+      text: 'text-purple-750 dark:text-purple-300 font-black',
+      border: 'border-purple-500/30 dark:border-purple-500/40',
+      gradient: 'from-purple-600 via-fuchsia-600 to-indigo-600'
+    }
+  },
+  {
+    id: 'moderator',
+    name: 'Community Moderator',
+    nameBn: 'কমিউনিটি মডারেটর',
+    badgeText: 'Moderator',
+    badgeTextBn: 'মডারেটর',
+    icon: '⭐',
+    color: {
+      bg: 'bg-blue-500/15 dark:bg-blue-950/40',
+      text: 'text-blue-750 dark:text-blue-300 font-extrabold',
+      border: 'border-blue-500/30 dark:border-blue-500/40',
+      gradient: 'from-blue-600 to-cyan-600'
+    }
+  },
+  {
+    id: 'volunteer_lead',
+    name: 'Volunteer Lead / Coordinator',
+    nameBn: 'ভলান্টিয়ার লিড / সমন্বয়ক',
+    badgeText: 'Volunteer Lead',
+    badgeTextBn: 'ভলান্টিয়ার লিড',
+    icon: '🤝',
+    color: {
+      bg: 'bg-emerald-500/15 dark:bg-emerald-950/40',
+      text: 'text-emerald-750 dark:text-emerald-300 font-extrabold',
+      border: 'border-emerald-500/30 dark:border-emerald-500/40',
+      gradient: 'from-emerald-600 to-teal-600'
+    }
+  },
+  {
+    id: 'medical_advisor',
+    name: 'Medical Advisor',
+    nameBn: 'মেডিকেল অ্যাডভাইজর',
+    badgeText: 'Medical Advisor',
+    badgeTextBn: 'চিকিৎসা উপদেষ্টা',
+    icon: '🩺',
+    color: {
+      bg: 'bg-teal-500/15 dark:bg-teal-950/40',
+      text: 'text-teal-750 dark:text-teal-300 font-extrabold',
+      border: 'border-teal-500/30 dark:border-teal-500/40',
+      gradient: 'from-teal-600 to-emerald-600'
+    }
+  },
+  {
+    id: 'ambassador',
+    name: 'Youth Ambassador',
+    nameBn: 'ইউথ অ্যাম্বাসেডর',
+    badgeText: 'Ambassador',
+    badgeTextBn: 'অ্যাম্বাসেডর',
+    icon: '🌟',
+    color: {
+      bg: 'bg-amber-500/15 dark:bg-amber-950/40',
+      text: 'text-amber-750 dark:text-amber-300 font-extrabold',
+      border: 'border-amber-500/30 dark:border-amber-500/40',
+      gradient: 'from-amber-600 to-orange-500'
+    }
+  }
+];
+
+export const getSpecialRoleBadge = (roleId?: string | null, language: string = 'en') => {
+  if (!roleId || roleId === 'none') return null;
+  const found = SPECIAL_ROLES.find(r => r.id === roleId);
+  if (!found) return null;
+  return {
+    id: found.id,
+    label: language === 'bn' ? found.badgeTextBn : found.badgeText,
+    name: language === 'bn' ? found.nameBn : found.name,
+    icon: found.icon,
+    color: found.color
+  };
+};
+
 export const TRANSLATIONS = {
   en: {
     dobLabel: 'Date of Birth',
@@ -382,6 +511,19 @@ export const TRANSLATIONS = {
     staffBadge: 'Staff',
     allRolesOption: 'All Roles',
     searchByInstituteQueryPlaceholder: 'Search by institute or organization...',
+
+    // Team & Special Roles
+    specialRoleLabel: 'Special Team / Platform Role',
+    specialRoleNone: 'None (Standard Voluntary Donor)',
+    specialRoleCoreTeam: 'Core Team Member',
+    specialRoleDarunTeam: 'Darun Tech Team',
+    specialRoleModerator: 'Community Moderator',
+    specialRoleVolunteerLead: 'Volunteer Lead / Coordinator',
+    specialRoleMedicalAdvisor: 'Medical Advisor',
+    specialRoleAmbassador: 'Youth Ambassador',
+    specialRoleFilterLabel: 'Filter by Special Team Role',
+    allSpecialRolesOption: 'All Team & Special Roles',
+    assignedRoleSuccess: 'Special role updated successfully',
 
     completeRegistration: 'Complete Registration',
 
@@ -867,6 +1009,19 @@ export const TRANSLATIONS = {
     allRolesOption: 'সকল পেশা',
     searchByInstituteQueryPlaceholder: 'প্রতিষ্ঠান বা সংস্থার নাম দিয়ে খুঁজুন...',
 
+    // Team & Special Roles
+    specialRoleLabel: 'স্পেশাল টিম / প্ল্যাটফর্ম পদবী',
+    specialRoleNone: 'কোনোটি নয় (সাধারণ রক্তদাতা)',
+    specialRoleCoreTeam: 'কোর টিম মেম্বার',
+    specialRoleDarunTeam: 'দারুণ টেক টিম',
+    specialRoleModerator: 'কমিউনিটি মডারেটর',
+    specialRoleVolunteerLead: 'ভলান্টিয়ার লিড / সমন্বয়ক',
+    specialRoleMedicalAdvisor: 'মেডিকেল অ্যাডভাইজর',
+    specialRoleAmbassador: 'ইউথ অ্যাম্বাসেডর',
+    specialRoleFilterLabel: 'টিম / স্পেশাল পদবী দিয়ে ফিল্টার',
+    allSpecialRolesOption: 'সকল টিম ও স্পেশাল পদবী',
+    assignedRoleSuccess: 'স্পেশাল পদবী সফলভাবে আপডেট করা হয়েছে',
+
     completeRegistration: 'নিবন্ধন সম্পন্ন করুন',
 
     // Profile Update Section
@@ -1258,6 +1413,7 @@ export const normalizeDonor = (donor) => {
     avatar_url: isDefaultAvatar ? null : donor.avatar_url,
     hide_photo: Boolean(donor.hide_photo),
     occupation: donor.occupation || 'other',
+    special_role: donor.special_role || 'none',
     institute: donor.institute || null,
     student_id: donor.student_id || null,
     lifetime_donation_count: count,

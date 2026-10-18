@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { UserPlus, Settings, CheckCircle2, AlertTriangle, Calendar, Phone, Save, History, ChevronLeft, ChevronRight, LogOut, X, Award, Flame, Droplet, Clock, Download, Printer, ShieldCheck, Check, Eye, EyeOff, Trash2, Heart, Lock, Sparkles, MapPin, Activity, CreditCard, Sliders, GraduationCap } from 'lucide-react';
-import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, normalizeDonor, getDonorDonationCount, getAreaLabel, calculateDaysSince, isDefaultLetterAvatar } from '../context/AppContext';
+import { useApp, AREAS, DISTRICT_AREAS, getDistrictBadge, BLOOD_GROUPS, getDonorBadge, getDonorBadgeLabel, getSpecialRoleBadge, normalizeDonor, getDonorDonationCount, getAreaLabel, calculateDaysSince, isDefaultLetterAvatar } from '../context/AppContext';
 import { dbService } from '../services/db';
 import GoogleAuthButton from '../components/GoogleAuthButton';
 import DonorCardModal from '../components/DonorCardModal';
@@ -1418,10 +1418,24 @@ export default function Register() {
                     </div>
 
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <h4 className="font-black text-slate-900 dark:text-white text-lg tracking-tight truncate">
                           {foundDonor.name}
                         </h4>
+                        {(() => {
+                          const sRole = getSpecialRoleBadge(foundDonor.special_role, language);
+                          if (!sRole) return null;
+                          return (
+                            <span 
+                              key={sRole.id}
+                              className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-black border shadow-xs tracking-wide shrink-0 ${sRole.color.bg} ${sRole.color.text} ${sRole.color.border}`}
+                              title={sRole.name}
+                            >
+                              <span>{sRole.icon}</span>
+                              <span>{sRole.label}</span>
+                            </span>
+                          );
+                        })()}
                         <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" title="Verified Volunteer Donor" />
                       </div>
                       <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold flex items-center gap-1.5 truncate mt-0.5">

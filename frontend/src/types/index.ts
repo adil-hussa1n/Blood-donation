@@ -14,6 +14,7 @@ export interface Donor {
   avatar_url?: string | null;
   hide_photo?: boolean;
   occupation?: 'student' | 'teacher' | 'other' | string | null;
+  special_role?: string | null;
   institute?: string | null;
   student_id?: string | null;
   password?: string;

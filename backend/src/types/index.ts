@@ -14,6 +14,10 @@ export interface Donor {
   google_id?: string | null;
   avatar_url?: string | null;
   hide_photo?: boolean;
+  occupation?: string;
+  special_role?: string;
+  institute?: string | null;
+  student_id?: string | null;
   created_at?: string;
 }
 

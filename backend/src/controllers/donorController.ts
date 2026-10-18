@@ -13,6 +13,7 @@ function formatDonor(row: any) {
     ...row,
     is_available: Boolean(row.is_available),
     hide_photo: Boolean(row.hide_photo),
+    special_role: row.special_role || 'none',
     total_donations: Number(row.total_donations) || 0,
     lifetime_donation_count: Number(row.lifetime_donation_count) || 0,
     // Ensure password_hash is NEVER exposed to clients
@@ -25,7 +26,7 @@ export async function getDonors(req: Request, res: Response): Promise<void> {
     const [rows]: any = await pool.query(
       `SELECT id, name, phone, blood_group, area, last_donation_date, is_available, 
               total_donations, lifetime_donation_count, email, google_id, avatar_url, hide_photo,
-              occupation, institute, student_id, created_at 
+              occupation, special_role, institute, student_id, created_at 
        FROM donors 
        ORDER BY is_available DESC, created_at DESC`
     );
@@ -42,7 +43,7 @@ export async function getDonorByPhone(req: Request, res: Response): Promise<void
     const [rows]: any = await pool.query(
       `SELECT id, name, phone, blood_group, area, last_donation_date, is_available, 
               total_donations, lifetime_donation_count, email, google_id, avatar_url, hide_photo,
-              occupation, institute, student_id, created_at 
+              occupation, special_role, institute, student_id, created_at 
        FROM donors 
        WHERE phone = ?`,
       [phone]

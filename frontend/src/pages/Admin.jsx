@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X, UserX, FileX, Clock, Phone, AlertCircle, CreditCard, Tag, Plus, Edit3, Edit2, Edit, Save, Activity, History, UserCheck, RefreshCw, LayoutList, LayoutGrid, GraduationCap } from 'lucide-react';
-import { useApp, BLOOD_GROUPS, DISTRICT_AREAS, normalizeDonor, getAreaLabel, getDistrictBadge, isDefaultLetterAvatar } from '../context/AppContext';
+import { useApp, BLOOD_GROUPS, DISTRICT_AREAS, SPECIAL_ROLES, getSpecialRoleBadge, normalizeDonor, getAreaLabel, getDistrictBadge, isDefaultLetterAvatar } from '../context/AppContext';
 import InstituteAutocomplete from '../components/InstituteAutocomplete';
 
 export default function Admin() {
@@ -40,10 +40,11 @@ export default function Admin() {
   // Blood group filter in Donors view
   const [bloodGroupFilter, setBloodGroupFilter] = useState(''); // '' means All
 
-  // Advanced Filters: Search, Area, Role, Institute, and Date
+  // Advanced Filters: Search, Area, Role, Institute, Special Role, and Date
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const [adminAreaFilter, setAdminAreaFilter] = useState('');
   const [adminRoleFilter, setAdminRoleFilter] = useState(''); // '' means All Roles
+  const [adminSpecialRoleFilter, setAdminSpecialRoleFilter] = useState(''); // '' means All Special Roles
   const [adminInstituteFilter, setAdminInstituteFilter] = useState('');
   const [adminDateFrom, setAdminDateFrom] = useState('');
   const [adminDateTo, setAdminDateTo] = useState('');
@@ -215,6 +216,7 @@ export default function Admin() {
     blood_group: 'A+',
     area: '',
     occupation: 'other',
+    special_role: 'none',
     institute: '',
     student_id: '',
     last_donation_date: '',
@@ -233,6 +235,7 @@ export default function Admin() {
       blood_group: donor.blood_group || 'A+',
       area: donor.area || '',
       occupation: donor.occupation || 'other',
+      special_role: donor.special_role || 'none',
       institute: donor.institute || '',
       student_id: donor.student_id || '',
       last_donation_date: donor.last_donation_date ? donor.last_donation_date.substring(0, 10) : '',
@@ -511,7 +514,7 @@ export default function Admin() {
   const safeDeletedDonors = useMemo(() => deletedDonors || [], [deletedDonors]);
   const safeDeletedEmergencies = useMemo(() => deletedEmergencies || [], [deletedEmergencies]);
 
-  // Filtered Donors list for Admin with search, area, role, institute, date, and blood group
+  // Filtered Donors list for Admin with search, area, role, special role, institute, date, and blood group
   const adminFilteredDonors = useMemo(() => {
     return safeDonors.filter((d) => {
       // Blood Group filter
@@ -520,8 +523,11 @@ export default function Admin() {
       // Area filter
       if (adminAreaFilter && d.area !== adminAreaFilter) return false;
 
-      // Role filter
+      // Role filter (standard occupation)
       if (adminRoleFilter && (d.occupation || 'other') !== adminRoleFilter) return false;
+
+      // Special Role filter (Core Team, Moderator, etc.)
+      if (adminSpecialRoleFilter && (d.special_role || 'none') !== adminSpecialRoleFilter) return false;
 
       // Institute filter
       if (adminInstituteFilter.trim() && !d.institute?.toLowerCase().includes(adminInstituteFilter.trim().toLowerCase())) return false;
@@ -551,7 +557,7 @@ export default function Admin() {
 
       return true;
     });
-  }, [safeDonors, bloodGroupFilter, adminAreaFilter, adminRoleFilter, adminInstituteFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
+  }, [safeDonors, bloodGroupFilter, adminAreaFilter, adminRoleFilter, adminSpecialRoleFilter, adminInstituteFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
 
   // Filtered Emergencies list for Admin with search, area, and date
   const adminFilteredEmergencies = useMemo(() => {
@@ -586,11 +592,12 @@ export default function Admin() {
     });
   }, [safeEmergencies, adminAreaFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
 
-  // Compute counts for each blood group (reflecting active area/role/institute/search/date filters)
+  // Compute counts for each blood group (reflecting active area/role/specialRole/institute/search/date filters)
   const groupCounts = useMemo(() => {
     const baseList = safeDonors.filter(d => {
       if (adminAreaFilter && d.area !== adminAreaFilter) return false;
       if (adminRoleFilter && (d.occupation || 'other') !== adminRoleFilter) return false;
+      if (adminSpecialRoleFilter && (d.special_role || 'none') !== adminSpecialRoleFilter) return false;
       if (adminInstituteFilter.trim() && !d.institute?.toLowerCase().includes(adminInstituteFilter.trim().toLowerCase())) return false;
       if (adminSearchQuery.trim()) {
         const q = adminSearchQuery.trim().toLowerCase();
@@ -619,7 +626,7 @@ export default function Admin() {
       counts[g] = baseList.filter(d => d.blood_group === g).length;
     });
     return counts;
-  }, [safeDonors, adminAreaFilter, adminRoleFilter, adminInstituteFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
+  }, [safeDonors, adminAreaFilter, adminRoleFilter, adminSpecialRoleFilter, adminInstituteFilter, adminSearchQuery, adminDateFrom, adminDateTo]);
 
   // Pagination for Donors
   const [donorPage, setDonorPage] = useState(1);
@@ -628,7 +635,7 @@ export default function Admin() {
   // Reset page when any filter changes
   useEffect(() => {
     setDonorPage(1);
-  }, [bloodGroupFilter, adminAreaFilter, adminRoleFilter, adminInstituteFilter, adminSearchQuery, adminDateFrom, adminDateTo, safeDonors.length]);
+  }, [bloodGroupFilter, adminAreaFilter, adminRoleFilter, adminSpecialRoleFilter, adminInstituteFilter, adminSearchQuery, adminDateFrom, adminDateTo, safeDonors.length]);
 
   const totalDonorPages = Math.max(1, Math.ceil(adminFilteredDonors.length / itemsPerPage));
   const paginatedDonors = useMemo(() => {
@@ -1047,12 +1054,13 @@ export default function Admin() {
             </div>
           </div>
 
-          {(adminSearchQuery || adminAreaFilter || adminRoleFilter || adminInstituteFilter || adminDateFrom || adminDateTo || bloodGroupFilter) && (
+          {(adminSearchQuery || adminAreaFilter || adminRoleFilter || adminSpecialRoleFilter || adminInstituteFilter || adminDateFrom || adminDateTo || bloodGroupFilter) && (
             <button
               onClick={() => {
                 setAdminSearchQuery('');
                 setAdminAreaFilter('');
                 setAdminRoleFilter('');
+                setAdminSpecialRoleFilter('');
                 setAdminInstituteFilter('');
                 setAdminDateFrom('');
                 setAdminDateTo('');
@@ -1149,6 +1157,31 @@ export default function Admin() {
             </div>
           </div>
 
+          {/* 3.1 Special Team Role Dropdown */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+              {t('specialRoleLabel')}
+            </label>
+            <div className="relative">
+              <Shield className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-amber-500 pointer-events-none" />
+              <select
+                value={adminSpecialRoleFilter}
+                onChange={(e) => setAdminSpecialRoleFilter(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer"
+              >
+                <option value="">{t('allSpecialRolesOption') || 'All Special Roles'}</option>
+                {SPECIAL_ROLES.filter(r => r.id !== 'none').map(role => (
+                  <option key={role.id} value={role.id}>
+                    {role.icon} {language === 'bn' ? role.nameBn : role.name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                ▼
+              </div>
+            </div>
+          </div>
+
           {/* 4. College / University Autocomplete Filter */}
           <div className="space-y-1">
             <InstituteAutocomplete
@@ -1195,7 +1228,7 @@ export default function Admin() {
         </div>
 
         {/* Active Filter Indicators */}
-        {(adminSearchQuery || adminAreaFilter || adminRoleFilter || adminInstituteFilter || adminDateFrom || adminDateTo) && (
+        {(adminSearchQuery || adminAreaFilter || adminRoleFilter || adminSpecialRoleFilter || adminInstituteFilter || adminDateFrom || adminDateTo) && (
           <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/40 text-xs">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500">Active:</span>
             {adminSearchQuery && (
@@ -1216,6 +1249,16 @@ export default function Admin() {
                 <X className="w-3 h-3 cursor-pointer" onClick={() => setAdminRoleFilter('')} />
               </span>
             )}
+            {adminSpecialRoleFilter && (() => {
+              const rBadge = getSpecialRoleBadge(adminSpecialRoleFilter, language);
+              return (
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-bold text-[11px] border ${rBadge?.color?.bg || 'bg-amber-500/10'} ${rBadge?.color?.text || 'text-amber-600'} ${rBadge?.color?.border || 'border-amber-500/30'}`}>
+                  <span>{rBadge?.icon}</span>
+                  <span>{rBadge?.name || adminSpecialRoleFilter}</span>
+                  <X className="w-3 h-3 cursor-pointer" onClick={() => setAdminSpecialRoleFilter('')} />
+                </span>
+              );
+            })()}
             {adminInstituteFilter && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold text-[11px] border border-emerald-500/20 max-w-[200px] truncate">
                 🏛️ {adminInstituteFilter}
@@ -1593,6 +1636,20 @@ export default function Admin() {
                                     <div className="min-w-0">
                                       <div className="flex items-center gap-1.5 flex-wrap">
                                         <span className="truncate">{donor.name}</span>
+                                        {(() => {
+                                          const sRole = getSpecialRoleBadge(donor.special_role, language);
+                                          if (!sRole) return null;
+                                          return (
+                                            <span 
+                                              key={sRole.id}
+                                              className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black border shadow-xs ${sRole.color.bg} ${sRole.color.text} ${sRole.color.border}`}
+                                              title={sRole.name}
+                                            >
+                                              <span>{sRole.icon}</span>
+                                              <span>{sRole.label}</span>
+                                            </span>
+                                          );
+                                        })()}
                                         {donor.occupation === 'student' && (
                                           <span className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-1.5 py-0.2 rounded-md font-bold">
                                             🎓 Student
@@ -1704,6 +1761,20 @@ export default function Admin() {
                                     <span className="font-extrabold text-slate-900 dark:text-white text-base block">
                                       {donor.name}
                                     </span>
+                                    {(() => {
+                                      const sRole = getSpecialRoleBadge(donor.special_role, language);
+                                      if (!sRole) return null;
+                                      return (
+                                        <span 
+                                          key={sRole.id}
+                                          className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black border shadow-xs ${sRole.color.bg} ${sRole.color.text} ${sRole.color.border}`}
+                                          title={sRole.name}
+                                        >
+                                          <span>{sRole.icon}</span>
+                                          <span>{sRole.label}</span>
+                                        </span>
+                                      );
+                                    })()}
                                     {donor.occupation === 'student' && (
                                       <span className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-1.5 py-0.2 rounded-md font-bold">
                                         🎓 Student
@@ -1814,6 +1885,20 @@ export default function Admin() {
                                     <h4 className="font-extrabold text-slate-900 dark:text-white text-sm truncate" title={donor.name}>
                                       {donor.name}
                                     </h4>
+                                    {(() => {
+                                      const sRole = getSpecialRoleBadge(donor.special_role, language);
+                                      if (!sRole) return null;
+                                      return (
+                                        <span 
+                                          key={sRole.id}
+                                          className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black border shadow-xs ${sRole.color.bg} ${sRole.color.text} ${sRole.color.border}`}
+                                          title={sRole.name}
+                                        >
+                                          <span>{sRole.icon}</span>
+                                          <span>{sRole.label}</span>
+                                        </span>
+                                      );
+                                    })()}
                                     {donor.occupation === 'student' && (
                                       <span className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-1.5 py-0.2 rounded-md font-bold">
                                         🎓
@@ -3929,7 +4014,7 @@ export default function Admin() {
               <div className="space-y-1.5">
                 <label className="font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                   <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Profession / Role</span>
+                  <span>Profession / Occupation</span>
                 </label>
                 <div className="relative">
                   <select
@@ -3957,6 +4042,49 @@ export default function Admin() {
                     </svg>
                   </div>
                 </div>
+              </div>
+
+              {/* Special Team / Platform Role Selection */}
+              <div className="p-3.5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-black text-amber-800 dark:text-amber-300 flex items-center gap-1.5 text-xs">
+                    <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span>{t('specialRoleLabel') || 'Special Team / Platform Role'}</span>
+                  </label>
+                  {(() => {
+                    const badge = getSpecialRoleBadge(editDonorForm.special_role, language);
+                    if (!badge) return null;
+                    return (
+                      <span className={`inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full font-black border shadow-xs ${badge.color.bg} ${badge.color.text} ${badge.color.border}`}>
+                        <span>{badge.icon}</span>
+                        <span>{badge.label}</span>
+                      </span>
+                    );
+                  })()}
+                </div>
+                <div className="relative">
+                  <select
+                    value={editDonorForm.special_role || 'none'}
+                    onChange={(e) => setEditDonorForm({ ...editDonorForm, special_role: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-amber-300/70 dark:border-amber-700/60 bg-white dark:bg-zinc-850 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer appearance-none text-xs"
+                  >
+                    {SPECIAL_ROLES.map(role => (
+                      <option key={role.id} value={role.id}>
+                        {role.icon} {language === 'bn' ? role.nameBn : role.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-3.5 pointer-events-none text-slate-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 font-medium">
+                  {language === 'bn' 
+                    ? 'টিম মেম্বার বা বিশেষ প্ল্যাটফর্ম পদবী দিলে প্রোফাইলে ও কার্ডে বিশেষ ব্যাজ প্রদর্শিত হবে।' 
+                    : 'Assign team members or advisors to display exclusive certified platform badges.'}
+                </p>
               </div>
 
               {/* Institute & ID in Admin Modal */}
