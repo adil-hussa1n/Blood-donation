@@ -41,14 +41,15 @@ function hidePreloader(el) {
 }
 
 export function dismissPreloader() {
-  // Always immediately ensure root classes cannot block mobile gestures
-  try {
-    document.body.classList.remove('preloader-active');
-    document.documentElement.classList.remove('preloader-html');
-  } catch (e) {}
-
   const el = document.getElementById('static-preloader');
-  if (!el) return;
+  if (!el) {
+    // If element is not in DOM, make sure preloader classes are cleaned up
+    try {
+      document.body.classList.remove('preloader-active');
+      document.documentElement.classList.remove('preloader-html');
+    } catch (e) {}
+    return;
+  }
 
   const start = window.__PRELOADER_START__ ?? getNow();
   const elapsed = getNow() - start;

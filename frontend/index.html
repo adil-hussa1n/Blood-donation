@@ -300,11 +300,30 @@
       background-color: inherit;
     }
 
-    /* Mobile-safe preloader classes: avoids locking root scroll/touch gestures */
+    /* Full mobile viewport containment during preloading */
     html.preloader-html,
     body.preloader-active {
+      overflow: hidden !important;
+      height: 100% !important;
+      height: 100vh !important;
+      height: 100dvh !important;
       padding: 0 !important;
       margin: 0 !important;
+      touch-action: none !important;
+      overscroll-behavior: none !important;
+    }
+
+    /* Completely hide React root DOM while the preloader is displaying to guarantee
+       zero page content (headers, sections, buttons) can ever bleed or peek through on mobile browsers */
+    html.preloader-html #root,
+    body.preloader-active #root {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    #root {
+      transition: opacity 0.25s ease-out;
     }
 
     @keyframes preloader-enter {
@@ -379,12 +398,19 @@
 
     .static-preloader {
       position: fixed;
-      /* Bleed 100px beyond all edges to cover Safari status/navigation bar safe areas and elastic scrolling */
-      top: -100px;
-      left: -100px;
-      right: -100px;
-      bottom: -100px;
-      z-index: 9999;
+      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      width: 100vw;
+      width: 100dvw;
+      height: 100%;
+      height: 100vh;
+      height: 100dvh;
+      min-height: -webkit-fill-available;
+      z-index: 999999;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -399,11 +425,25 @@
       transition: opacity 0.45s ease, visibility 0.45s ease;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      overflow: hidden;
+      touch-action: none;
+      overscroll-behavior: none;
     }
 
     .static-preloader__backdrop {
-      position: absolute;
+      position: fixed;
       inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      width: 100vw;
+      width: 100dvw;
+      height: 100%;
+      height: 100vh;
+      height: 100dvh;
+      min-height: -webkit-fill-available;
       background: var(--pl-bg, #fafafa);
       z-index: 0;
       pointer-events: none;
@@ -411,8 +451,19 @@
 
     .static-preloader::before {
       content: "";
-      position: absolute;
+      position: fixed;
       inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      width: 100vw;
+      width: 100dvw;
+      height: 100%;
+      height: 100vh;
+      height: 100dvh;
+      min-height: -webkit-fill-available;
       pointer-events: none;
       z-index: 1;
       background:
@@ -625,7 +676,7 @@
     }
 
     .static-preloader__bar {
-      position: fixed;
+      position: absolute;
       z-index: 2;
       bottom: max(36px, calc(env(safe-area-inset-bottom) + 20px));
       left: 50%;
@@ -710,6 +761,10 @@
     window.__PRELOADER_START__ = (window.performance && window.performance.now) ? window.performance.now() : Date.now();
     // Lock html scroll and apply bg inline before preloader paints
     try {
+      if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+      }
+      window.scrollTo(0, 0);
       document.documentElement.classList.add('preloader-html');
     } catch (e) { }
   </script>
