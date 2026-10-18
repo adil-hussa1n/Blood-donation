@@ -1410,6 +1410,7 @@ export const normalizeDonor = (donor) => {
 
   return {
     ...donor,
+    is_available: donor.is_available !== undefined ? Boolean(donor.is_available) : true,
     avatar_url: isDefaultAvatar ? null : donor.avatar_url,
     hide_photo: Boolean(donor.hide_photo),
     occupation: donor.occupation || 'other',

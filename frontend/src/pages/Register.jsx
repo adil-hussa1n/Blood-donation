@@ -10,7 +10,7 @@ import InstituteAutocomplete from '../components/InstituteAutocomplete';
 import { appStorage as localStorage } from '../services/storage';
 
 export default function Register() {
-  const { registerDonor, updateDonorProfile, addDonationHistory, deleteDonor, currentDonor, setCurrentDonor, logoutDonor, language, t } = useApp();
+  const { registerDonor, updateDonorProfile, updateDonorAvailability, addDonationHistory, deleteDonor, currentDonor, setCurrentDonor, logoutDonor, showToast, language, t } = useApp();
   const location = useLocation();
   
   // Tab control: 'register' or 'update'
@@ -1478,14 +1478,34 @@ export default function Register() {
                     );
                   })()}
 
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-flex items-center gap-1 border ${
-                    foundDonor.is_available 
-                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
-                      : 'bg-slate-500/10 text-slate-500 dark:text-zinc-400 border-slate-500/20'
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${foundDonor.is_available ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-                    {foundDonor.is_available ? (language === 'bn' ? 'রক্তদানে প্রস্তুত' : 'Available to Donate') : (language === 'bn' ? 'অনুপলব্ধ' : 'Unavailable')}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const newStatus = !foundDonor.is_available;
+                      setEditAvailable(newStatus);
+                      const res = await updateDonorAvailability(foundDonor.id, newStatus, searchPassword);
+                      if (res.success) {
+                        setFoundDonor(prev => prev ? { ...prev, is_available: newStatus } : prev);
+                        showToast(
+                          newStatus 
+                            ? (language === 'bn' ? 'স্ট্যাটাস আপডেট: আপনি এখন রক্তদানে প্রস্তুত।' : 'Status updated: Available to donate.')
+                            : (language === 'bn' ? 'স্ট্যাটাস আপডেট: আপনি এখন অনুপলব্ধ।' : 'Status updated: Marked as unavailable.'),
+                          'success'
+                        );
+                      } else {
+                        showToast(res.error?.message || 'Failed to update status', 'error');
+                      }
+                    }}
+                    className={`px-3 py-1 rounded-full text-[10px] font-bold inline-flex items-center gap-1.5 border transition-all cursor-pointer shadow-xs active:scale-95 ${
+                      foundDonor.is_available 
+                        ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 ring-2 ring-emerald-500/10' 
+                        : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/25 ring-2 ring-rose-500/10'
+                    }`}
+                    title={foundDonor.is_available ? (language === 'bn' ? 'অনুপলব্ধ করতে ক্লিক করুন' : 'Click to toggle unavailable') : (language === 'bn' ? 'প্রস্তুত করতে ক্লিক করুন' : 'Click to toggle available')}
+                  >
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${foundDonor.is_available ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                    <span className="font-extrabold">{foundDonor.is_available ? (language === 'bn' ? 'রক্তদানে প্রস্তুত (ক্লিক করে পরিবর্তন)' : 'Available to Donate (Tap to toggle)') : (language === 'bn' ? 'অনুপলব্ধ (ক্লিক করে প্রস্তুত করুন)' : 'Unavailable (Tap to toggle)')}</span>
+                  </button>
                 </div>
 
                 {/* Key Metrics Grid */}
