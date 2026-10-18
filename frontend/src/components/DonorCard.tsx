@@ -40,6 +40,7 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
   }
 
   const badge = getDonorBadge(donor.total_donations);
+  const sRole = getSpecialRoleBadge(donor.special_role, language);
 
   const cleanPhone = donor.phone.trim();
   const waPhone = cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone;
@@ -48,30 +49,58 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
   );
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-5 shadow-xs hover:shadow-xl hover:border-red-500/30 transition-all duration-300 flex flex-col justify-between space-y-4 relative group overflow-hidden">
-      {/* Top subtle highlight */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500/0 via-red-500/40 to-rose-600/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <div className={`h-full bg-white dark:bg-zinc-900 border rounded-3xl p-4 sm:p-5 shadow-xs transition-all duration-300 flex flex-col justify-between space-y-4 relative group overflow-hidden ${
+      sRole 
+        ? `vip-card-glow ${sRole.glowClass} ${sRole.cardBorder}` 
+        : 'border-slate-200/80 dark:border-zinc-800 hover:shadow-xl hover:border-red-500/30'
+    }`}>
+      {/* Ambient Radial Spotlight for Special Role */}
+      {sRole && (
+        <>
+          <div 
+            className="absolute -top-14 -right-14 w-52 h-52 rounded-full blur-3xl pointer-events-none opacity-30 dark:opacity-45" 
+            style={{ background: sRole.ambientGradient }}
+          />
+          <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-white/40 dark:from-white/5 to-transparent rounded-full blur-xl pointer-events-none" />
+        </>
+      )}
 
-      {/* Header: Blood Group, Name, Area & Tier Badge */}
-      <div className="space-y-3">
+      {/* Top Organization Header for Special Roles */}
+      {sRole ? (
+        <div className="bg-slate-50/90 dark:bg-zinc-800/60 border-b border-slate-200/60 dark:border-zinc-800 -mx-4 -mt-4 sm:-mx-5 sm:-mt-5 px-4 sm:px-5 py-1.5 flex items-center text-[10.5px] sm:text-[11px] font-extrabold tracking-tight text-slate-700 dark:text-zinc-300">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 mr-1.5" />
+          <span>Darun Tech Private Limited</span>
+        </div>
+      ) : (
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500/0 via-red-500/40 to-rose-600/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      )}
+
+      {/* Main Body: flex-1 flex flex-col to push stats & actions cleanly */}
+      <div className="space-y-3 flex-1 flex flex-col">
+        {/* Header: Blood Group, Name, Area & Tier Badge */}
         <div className="flex items-start justify-between gap-2.5">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
             {/* Blood Group / Avatar Squircle */}
             {donor.avatar_url && !donor.hide_photo && !isDefaultLetterAvatar(donor.avatar_url) ? (
               <div className="relative shrink-0">
-                <img 
-                  src={donor.avatar_url} 
-                  alt={donor.name}
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                    const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = 'flex';
-                  }}
-                  className="w-14 h-14 rounded-2xl object-cover border-2 border-red-500/20 shadow-md shadow-red-500/10"
-                />
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 to-rose-700 text-white font-black text-xl items-center justify-center shadow-md shadow-red-500/25 tracking-wider hidden">
-                  {donor.blood_group}
+                {sRole && (
+                  <div className={`absolute -inset-1 rounded-2.5xl bg-gradient-to-tr ${sRole.avatarRing} opacity-40 dark:opacity-55 blur-xs group-hover:opacity-70 transition-opacity duration-300`} />
+                )}
+                <div className={`relative ${sRole ? `p-[2px] rounded-2xl bg-gradient-to-tr ${sRole.avatarRing} shadow-md` : ''}`}>
+                  <img 
+                    src={donor.avatar_url} 
+                    alt={donor.name}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                      const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                    className={`w-14 h-14 rounded-2xl object-cover shadow-md shadow-red-500/10 ${sRole ? 'border border-white/60 dark:border-zinc-800' : 'border-2 border-red-500/20'}`}
+                  />
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 to-rose-700 text-white font-black text-xl items-center justify-center shadow-md shadow-red-500/25 tracking-wider hidden">
+                    {donor.blood_group}
+                  </div>
                 </div>
                 {/* Prominent high-contrast blood group badge */}
                 <span className="absolute -bottom-1.5 -right-1.5 bg-gradient-to-r from-red-650 via-red-600 to-rose-600 text-white text-xs font-black px-2 py-0.5 rounded-lg shadow-md border-2 border-white dark:border-zinc-900 tracking-wider">
@@ -79,8 +108,15 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
                 </span>
               </div>
             ) : (
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 via-rose-600 to-red-700 text-white font-black text-xl shadow-lg shadow-red-500/30 flex items-center justify-center shrink-0 tracking-wider border-2 border-red-400/30">
-                {donor.blood_group}
+              <div className="relative shrink-0">
+                {sRole && (
+                  <div className={`absolute -inset-1 rounded-2.5xl bg-gradient-to-tr ${sRole.avatarRing} opacity-40 dark:opacity-55 blur-xs group-hover:opacity-70 transition-opacity duration-300`} />
+                )}
+                <div className={`relative ${sRole ? `p-[2px] rounded-2xl bg-gradient-to-tr ${sRole.avatarRing} shadow-md` : ''}`}>
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 via-rose-600 to-red-700 text-white font-black text-xl shadow-lg shadow-red-500/30 flex items-center justify-center shrink-0 tracking-wider border-2 border-red-400/30">
+                    {donor.blood_group}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -90,20 +126,25 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
                 <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight break-words group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                   {donor.name}
                 </h4>
-                {(() => {
-                  const sRole = getSpecialRoleBadge(donor.special_role, language);
-                  if (!sRole) return null;
-                  return (
-                    <span 
-                      key={sRole.id}
-                      className={`inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full font-black border shadow-xs tracking-wide shrink-0 ${sRole.color.bg} ${sRole.color.text} ${sRole.color.border}`}
-                      title={sRole.name}
-                    >
-                      <span>{sRole.icon}</span>
-                      <span>{sRole.label}</span>
+                {sRole && (
+                  <span title={`Verified ${sRole.name}`} className="inline-flex items-center">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0 drop-shadow-xs" />
+                  </span>
+                )}
+                {sRole && (
+                  <span 
+                    key={sRole.id}
+                    className={`vip-badge-shimmer inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full font-black border shadow-xs tracking-wide shrink-0 transition-transform duration-200 hover:scale-[1.03] ${sRole.color.bg} ${sRole.color.text} ${sRole.color.border}`}
+                    title={sRole.name}
+                  >
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${sRole.dotColor}`} />
+                      <span className={`relative inline-flex rounded-full h-2 w-2 ${sRole.dotColor}`} />
                     </span>
-                  );
-                })()}
+                    <span className="text-xs leading-none">{sRole.icon}</span>
+                    <span className="leading-none">{sRole.label}</span>
+                  </span>
+                )}
                 {donor.occupation === 'student' && (
                   <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
                     🎓 {t('studentBadge')}
@@ -184,14 +225,14 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
           </div>
         )}
 
-        {/* Key Stats Grid */}
-        <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-100 dark:border-zinc-800/80">
-          <div className="space-y-0.5">
+        {/* Key Stats Grid - anchored with mt-auto so all cards have aligned stats and action buttons */}
+        <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-100 dark:border-zinc-800/80 mt-auto">
+          <div className="space-y-0.5 min-w-0">
             <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500 flex items-center gap-1">
-              <Phone className="w-3 h-3 text-slate-400" />
-              {t('phone')}
+              <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+              <span className="truncate">{t('phone')}</span>
             </span>
-            <div className="font-mono font-bold text-slate-800 dark:text-zinc-200 text-xs tracking-tight">
+            <div className="font-mono font-bold text-slate-800 dark:text-zinc-200 text-xs tracking-tight truncate">
               {!donor.is_available ? (
                 <span className="text-rose-600 dark:text-rose-400 font-semibold italic text-[11px]">
                   {language === 'bn' ? 'অনুপলব্ধ (গোপন)' : 'Unavailable (Hidden)'}
@@ -208,22 +249,22 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
             </div>
           </div>
 
-          <div className="space-y-0.5">
+          <div className="space-y-0.5 min-w-0">
             <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500 flex items-center gap-1">
-              <Heart className="w-3 mx-auto text-red-500" />
-              {t('timesDonatedHeader')}
+              <Heart className="w-3 h-3 text-red-500 shrink-0" />
+              <span className="truncate">{t('timesDonatedHeader')}</span>
             </span>
-            <div className="font-bold text-slate-800 dark:text-zinc-200 text-xs">
+            <div className="font-bold text-slate-800 dark:text-zinc-200 text-xs truncate">
               {t('timesUnit', { count: donor.total_donations })}
             </div>
           </div>
 
-          <div className="col-span-2 pt-2 border-t border-slate-200/60 dark:border-zinc-700/50 flex items-center justify-between">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500 flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-slate-400" />
-              {t('lastDonation')}
+          <div className="col-span-2 pt-2 border-t border-slate-200/60 dark:border-zinc-700/50 flex items-center justify-between gap-2">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500 flex items-center gap-1 shrink-0">
+              <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+              <span>{t('lastDonation')}</span>
             </span>
-            <span className="font-semibold text-slate-700 dark:text-zinc-300 text-xs">
+            <span className="font-semibold text-slate-700 dark:text-zinc-300 text-xs text-right truncate">
               {donor.last_donation_date 
                 ? new Date(donor.last_donation_date).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                 : t('never')
@@ -234,7 +275,7 @@ export default function DonorCard({ donor, revealed, onReveal }: DonorCardProps)
       </div>
 
       {/* Footer Actions */}
-      <div className="pt-2">
+      <div className="pt-2 mt-auto">
         {!donor.is_available ? (
           <div className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-700 dark:text-rose-400 text-xs font-semibold select-none text-center">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0" />

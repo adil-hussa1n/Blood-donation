@@ -254,6 +254,12 @@ export interface SpecialRoleConfig {
     border: string;
     gradient: string;
   };
+  glowClass?: string;
+  topBarGradient?: string;
+  avatarRing?: string;
+  ambientGradient?: string;
+  dotColor?: string;
+  cardBorder?: string;
 }
 
 export const SPECIAL_ROLES: SpecialRoleConfig[] = [
@@ -279,11 +285,17 @@ export const SPECIAL_ROLES: SpecialRoleConfig[] = [
     badgeTextBn: 'প্ল্যাটফর্ম অ্যাডমিন',
     icon: '🛡️',
     color: {
-      bg: 'bg-gradient-to-r from-red-500/15 via-rose-500/15 to-orange-500/15 dark:from-red-950/40 dark:via-rose-950/40 dark:to-orange-950/30',
-      text: 'text-red-750 dark:text-rose-300 font-black',
-      border: 'border-red-500/30 dark:border-red-500/40',
-      gradient: 'from-red-600 via-rose-600 to-orange-600'
-    }
+      bg: 'bg-gradient-to-r from-rose-500/15 via-red-500/15 to-amber-500/15 dark:from-rose-950/50 dark:via-red-950/50 dark:to-amber-950/40 backdrop-blur-md',
+      text: 'text-rose-700 dark:text-rose-200 font-extrabold',
+      border: 'border-rose-400/40 dark:border-rose-500/50',
+      gradient: 'from-rose-600 via-red-600 to-amber-600'
+    },
+    glowClass: 'vip-glow-core',
+    topBarGradient: 'from-rose-500 via-red-500 to-amber-500',
+    avatarRing: 'from-rose-500 via-red-500 to-amber-400',
+    ambientGradient: 'radial-gradient(circle at top right, rgba(244, 63, 94, 0.16) 0%, rgba(251, 146, 60, 0.08) 40%, transparent 70%)',
+    dotColor: 'bg-rose-500',
+    cardBorder: 'border-rose-500/25 dark:border-rose-500/35'
   },
   {
     id: 'darun_team',
@@ -293,11 +305,17 @@ export const SPECIAL_ROLES: SpecialRoleConfig[] = [
     badgeTextBn: 'ইঞ্জিনিয়ারিং লিড',
     icon: '⚡',
     color: {
-      bg: 'bg-gradient-to-r from-purple-500/15 via-fuchsia-500/15 to-indigo-500/15 dark:from-purple-950/40 dark:via-fuchsia-950/40 dark:to-indigo-950/30',
-      text: 'text-purple-750 dark:text-purple-300 font-black',
-      border: 'border-purple-500/30 dark:border-purple-500/40',
+      bg: 'bg-gradient-to-r from-purple-500/15 via-fuchsia-500/15 to-indigo-500/15 dark:from-purple-950/50 dark:via-fuchsia-950/50 dark:to-indigo-950/40 backdrop-blur-md',
+      text: 'text-purple-700 dark:text-purple-200 font-extrabold',
+      border: 'border-purple-400/40 dark:border-purple-500/50',
       gradient: 'from-purple-600 via-fuchsia-600 to-indigo-600'
-    }
+    },
+    glowClass: 'vip-glow-tech',
+    topBarGradient: 'from-purple-600 via-fuchsia-500 to-indigo-500',
+    avatarRing: 'from-purple-600 via-fuchsia-500 to-indigo-500',
+    ambientGradient: 'radial-gradient(circle at top right, rgba(168, 85, 247, 0.16) 0%, rgba(217, 70, 239, 0.08) 40%, transparent 70%)',
+    dotColor: 'bg-purple-500',
+    cardBorder: 'border-purple-500/25 dark:border-purple-500/35'
   },
   {
     id: 'moderator',
@@ -307,11 +325,17 @@ export const SPECIAL_ROLES: SpecialRoleConfig[] = [
     badgeTextBn: 'কমপ্লায়েন্স অফিসার',
     icon: '⭐',
     color: {
-      bg: 'bg-blue-500/15 dark:bg-blue-950/40',
-      text: 'text-blue-750 dark:text-blue-300 font-extrabold',
-      border: 'border-blue-500/30 dark:border-blue-500/40',
+      bg: 'bg-gradient-to-r from-blue-500/15 via-sky-500/15 to-cyan-500/15 dark:from-blue-950/50 dark:via-sky-950/50 dark:to-cyan-950/40 backdrop-blur-md',
+      text: 'text-blue-700 dark:text-blue-200 font-extrabold',
+      border: 'border-blue-400/40 dark:border-blue-500/50',
       gradient: 'from-blue-600 to-cyan-600'
-    }
+    },
+    glowClass: 'vip-glow-mod',
+    topBarGradient: 'from-blue-600 via-sky-500 to-cyan-500',
+    avatarRing: 'from-blue-600 via-sky-500 to-cyan-400',
+    ambientGradient: 'radial-gradient(circle at top right, rgba(59, 130, 246, 0.16) 0%, rgba(6, 182, 212, 0.08) 40%, transparent 70%)',
+    dotColor: 'bg-blue-500',
+    cardBorder: 'border-blue-500/25 dark:border-blue-500/35'
   },
   {
     id: 'volunteer_lead',
@@ -321,11 +345,17 @@ export const SPECIAL_ROLES: SpecialRoleConfig[] = [
     badgeTextBn: 'অপারেশনস লিড',
     icon: '🤝',
     color: {
-      bg: 'bg-emerald-500/15 dark:bg-emerald-950/40',
-      text: 'text-emerald-750 dark:text-emerald-300 font-extrabold',
-      border: 'border-emerald-500/30 dark:border-emerald-500/40',
+      bg: 'bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 dark:from-emerald-950/50 dark:via-teal-950/50 dark:to-cyan-950/40 backdrop-blur-md',
+      text: 'text-emerald-700 dark:text-emerald-200 font-extrabold',
+      border: 'border-emerald-400/40 dark:border-emerald-500/50',
       gradient: 'from-emerald-600 to-teal-600'
-    }
+    },
+    glowClass: 'vip-glow-volunteer',
+    topBarGradient: 'from-emerald-600 via-teal-500 to-cyan-500',
+    avatarRing: 'from-emerald-600 via-teal-500 to-cyan-400',
+    ambientGradient: 'radial-gradient(circle at top right, rgba(16, 185, 129, 0.16) 0%, rgba(20, 184, 166, 0.08) 40%, transparent 70%)',
+    dotColor: 'bg-emerald-500',
+    cardBorder: 'border-emerald-500/25 dark:border-emerald-500/35'
   },
   {
     id: 'medical_advisor',
@@ -335,11 +365,17 @@ export const SPECIAL_ROLES: SpecialRoleConfig[] = [
     badgeTextBn: 'মেডিকেল কনসালটেন্ট',
     icon: '🩺',
     color: {
-      bg: 'bg-teal-500/15 dark:bg-teal-950/40',
-      text: 'text-teal-750 dark:text-teal-300 font-extrabold',
-      border: 'border-teal-500/30 dark:border-teal-500/40',
+      bg: 'bg-gradient-to-r from-teal-500/15 via-emerald-500/15 to-cyan-500/15 dark:from-teal-950/50 dark:via-emerald-950/50 dark:to-cyan-950/40 backdrop-blur-md',
+      text: 'text-teal-700 dark:text-teal-200 font-extrabold',
+      border: 'border-teal-400/40 dark:border-teal-500/50',
       gradient: 'from-teal-600 to-emerald-600'
-    }
+    },
+    glowClass: 'vip-glow-medical',
+    topBarGradient: 'from-teal-600 via-emerald-500 to-cyan-500',
+    avatarRing: 'from-teal-600 via-emerald-500 to-cyan-400',
+    ambientGradient: 'radial-gradient(circle at top right, rgba(20, 184, 166, 0.16) 0%, rgba(16, 185, 129, 0.08) 40%, transparent 70%)',
+    dotColor: 'bg-teal-500',
+    cardBorder: 'border-teal-500/25 dark:border-teal-500/35'
   },
   {
     id: 'ambassador',
@@ -349,11 +385,17 @@ export const SPECIAL_ROLES: SpecialRoleConfig[] = [
     badgeTextBn: 'স্ট্র্যাটেজিক অ্যাম্বাসেডর',
     icon: '🌟',
     color: {
-      bg: 'bg-amber-500/15 dark:bg-amber-950/40',
-      text: 'text-amber-750 dark:text-amber-300 font-extrabold',
-      border: 'border-amber-500/30 dark:border-amber-500/40',
+      bg: 'bg-gradient-to-r from-amber-500/15 via-yellow-500/15 to-orange-500/15 dark:from-amber-950/50 dark:via-yellow-950/50 dark:to-orange-950/40 backdrop-blur-md',
+      text: 'text-amber-800 dark:text-amber-200 font-extrabold',
+      border: 'border-amber-400/40 dark:border-amber-500/50',
       gradient: 'from-amber-600 to-orange-500'
-    }
+    },
+    glowClass: 'vip-glow-amber',
+    topBarGradient: 'from-amber-600 via-yellow-500 to-orange-500',
+    avatarRing: 'from-amber-600 via-yellow-500 to-orange-400',
+    ambientGradient: 'radial-gradient(circle at top right, rgba(245, 158, 11, 0.16) 0%, rgba(249, 115, 22, 0.08) 40%, transparent 70%)',
+    dotColor: 'bg-amber-500',
+    cardBorder: 'border-amber-500/25 dark:border-amber-500/35'
   }
 ];
 
@@ -366,7 +408,13 @@ export const getSpecialRoleBadge = (roleId?: string | null, language: string = '
     label: language === 'bn' ? found.badgeTextBn : found.badgeText,
     name: language === 'bn' ? found.nameBn : found.name,
     icon: found.icon,
-    color: found.color
+    color: found.color,
+    glowClass: found.glowClass || 'vip-glow-core',
+    topBarGradient: found.topBarGradient || 'from-red-600 via-rose-600 to-amber-500',
+    avatarRing: found.avatarRing || 'from-red-600 via-rose-500 to-amber-500',
+    ambientGradient: found.ambientGradient || 'radial-gradient(circle at top right, rgba(244, 63, 94, 0.16) 0%, rgba(251, 146, 60, 0.08) 40%, transparent 70%)',
+    dotColor: found.dotColor || 'bg-rose-500',
+    cardBorder: found.cardBorder || 'border-rose-500/25 dark:border-rose-500/35'
   };
 };
 

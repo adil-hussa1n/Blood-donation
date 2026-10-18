@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Navigation, Leaf, Lock, User, GraduationCap } from 'lucide-react';
+import { Search, MapPin, X, Heart, PlusCircle, AlertTriangle, ArrowRight, Flame, Phone, MessageCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Navigation, Leaf, Lock, User, GraduationCap, ShieldCheck } from 'lucide-react';
 import { useApp, AREAS, DISTRICT_AREAS, getDistrictForArea, getDistrictBadge, BLOOD_GROUPS, calculateDaysSince, getDonorBadge, getDonorBadgeLabel, getSpecialRoleBadge, normalizeDonor, getAreaLabel, isDefaultLetterAvatar } from '../context/AppContext';
 import { isDatabaseOrConnectionError } from '../services/db';
 import QuickStats from '../components/QuickStats';
@@ -174,7 +174,7 @@ export default function Home() {
     setCurrentPage(1);
   }, [appliedBloodGroup, appliedArea, appliedSearchQuery, appliedInstitute, appliedOccupation]);
 
-  const itemsPerPage = 10;
+  const itemsPerPage = 12;
   const totalPages = Math.max(1, Math.ceil(filteredDonors.length / itemsPerPage));
   const paginatedDonors = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -714,30 +714,38 @@ export default function Home() {
                                   `Assalamu Alaikum ${normalizedDonor.name}, we found your contact on Darun Donors. We urgently need ${normalizedDonor.blood_group} blood. Are you available to donate?`
                                 );
 
+                                const sRole = getSpecialRoleBadge(normalizedDonor.special_role, language);
+
                                 return (
-                                  <tr key={normalizedDonor.id} className="hover:bg-slate-50/70 dark:hover:bg-zinc-800/40 transition-colors duration-150">
+                                  <tr key={normalizedDonor.id} className={`hover:bg-slate-50/70 dark:hover:bg-zinc-800/40 transition-colors duration-150 ${sRole ? 'bg-gradient-to-r from-red-500/5 via-transparent to-transparent dark:from-red-500/10' : ''}`}>
                                     <td className="py-4 px-4 align-middle">
                                       <div className="flex items-center gap-3">
                                         {normalizedDonor.avatar_url && !normalizedDonor.hide_photo && !isDefaultLetterAvatar(normalizedDonor.avatar_url) ? (
                                           <div className="relative shrink-0">
-                                            <img
-                                              src={normalizedDonor.avatar_url}
-                                              alt={normalizedDonor.name}
-                                              referrerPolicy="no-referrer"
-                                              onError={(e) => {
-                                                (e.target as HTMLElement).style.display = 'none';
-                                                const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
-                                                if (fallback) fallback.style.display = 'flex';
-                                              }}
-                                              className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
-                                            />
-                                            <div className="w-9 h-9 rounded-full bg-red-650 text-white font-black text-xs items-center justify-center border border-red-500/30 hidden">
-                                              {normalizedDonor.blood_group}
+                                            <div className={sRole ? `p-[1.5px] rounded-full bg-gradient-to-tr ${sRole.avatarRing}` : ''}>
+                                              <img
+                                                src={normalizedDonor.avatar_url}
+                                                alt={normalizedDonor.name}
+                                                referrerPolicy="no-referrer"
+                                                onError={(e) => {
+                                                  (e.target as HTMLElement).style.display = 'none';
+                                                  const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
+                                                  if (fallback) fallback.style.display = 'flex';
+                                                }}
+                                                className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-zinc-700 shadow-xs"
+                                              />
+                                              <div className="w-9 h-9 rounded-full bg-red-650 text-white font-black text-xs items-center justify-center border border-red-500/30 hidden">
+                                                {normalizedDonor.blood_group}
+                                              </div>
                                             </div>
                                           </div>
                                         ) : (
-                                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600 to-rose-600 text-white font-black text-[11px] flex items-center justify-center shadow-xs border border-red-400/40 shrink-0">
-                                            {normalizedDonor.blood_group}
+                                          <div className="relative shrink-0">
+                                            <div className={sRole ? `p-[1.5px] rounded-full bg-gradient-to-tr ${sRole.avatarRing}` : ''}>
+                                              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600 to-rose-600 text-white font-black text-[11px] flex items-center justify-center shadow-xs border border-red-400/40 shrink-0">
+                                                {normalizedDonor.blood_group}
+                                              </div>
+                                            </div>
                                           </div>
                                         )}
                                         <div className="flex flex-col gap-1 min-w-0">
@@ -745,20 +753,25 @@ export default function Home() {
                                             <span className="font-extrabold text-slate-900 dark:text-white leading-snug truncate">
                                               {normalizedDonor.name}
                                             </span>
-                                            {(() => {
-                                              const sRole = getSpecialRoleBadge(normalizedDonor.special_role, language);
-                                              if (!sRole) return null;
-                                              return (
-                                                <span
-                                                  key={sRole.id}
-                                                  className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black border shadow-xs tracking-wide shrink-0 ${sRole.color.bg} ${sRole.color.text} ${sRole.color.border}`}
-                                                  title={sRole.name}
-                                                >
-                                                  <span>{sRole.icon}</span>
-                                                  <span>{sRole.label}</span>
+                                            {sRole && (
+                                              <span title={`Verified ${sRole.name}`} className="inline-flex items-center">
+                                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0 drop-shadow-xs" />
+                                              </span>
+                                            )}
+                                            {sRole && (
+                                              <span
+                                                key={sRole.id}
+                                                className={`vip-badge-shimmer inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full font-black border shadow-xs tracking-wide shrink-0 ${sRole.color.bg} ${sRole.color.text} ${sRole.color.border}`}
+                                                title={sRole.name}
+                                              >
+                                                <span className="relative flex h-1.5 w-1.5 shrink-0">
+                                                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${sRole.dotColor}`} />
+                                                  <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${sRole.dotColor}`} />
                                                 </span>
-                                              );
-                                            })()}
+                                                <span>{sRole.icon}</span>
+                                                <span>{sRole.label}</span>
+                                              </span>
+                                            )}
                                             {normalizedDonor.occupation === 'student' && (
                                               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/25">
                                                 🎓 {t('studentBadge')}
@@ -893,8 +906,8 @@ export default function Home() {
                         </div>
                       </div>
                     ) : (
-                      /* GRID VIEW: 1 col on mobile, 2 col on tablet/iPad, 3 col on laptops, 4 col on large screens */
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 animate-fade-in">
+                      /* GRID VIEW: 1 col mobile, 2 col tablet, 3 col laptop, 4 col standard PC (22-24"), 5 col large PC (27-32"+), 6 col 4K ultrawide */
+                      <div className="donor-grid-container animate-fade-in">
                         {paginatedDonors.map((donor) => (
                           <DonorCard
                             key={donor.id}

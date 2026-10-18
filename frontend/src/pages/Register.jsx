@@ -1426,7 +1426,7 @@ export default function Register() {
                           return (
                             <span 
                               key={sRole.id}
-                              className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-black border shadow-xs tracking-wide shrink-0 ${sRole.color.bg} ${sRole.color.text} ${sRole.color.border}`}
+                              className={`vip-badge-shimmer inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-black border shadow-xs tracking-wide shrink-0 ${sRole.color.bg} ${sRole.color.text} ${sRole.color.border}`}
                               title={sRole.name}
                             >
                               <span>{sRole.icon}</span>
