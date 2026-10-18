@@ -25,7 +25,7 @@ export async function getDonors(req: Request, res: Response): Promise<void> {
   try {
     const [rows]: any = await pool.query(
       `SELECT id, name, phone, blood_group, area, last_donation_date, is_available, 
-              total_donations, lifetime_donation_count, email, google_id, avatar_url, hide_photo,
+              total_donations, lifetime_donation_count, dob, email, google_id, avatar_url, hide_photo,
               occupation, special_role, institute, student_id, created_at 
        FROM donors 
        ORDER BY is_available DESC, created_at DESC`
@@ -42,7 +42,7 @@ export async function getDonorByPhone(req: Request, res: Response): Promise<void
   try {
     const [rows]: any = await pool.query(
       `SELECT id, name, phone, blood_group, area, last_donation_date, is_available, 
-              total_donations, lifetime_donation_count, email, google_id, avatar_url, hide_photo,
+              total_donations, lifetime_donation_count, dob, email, google_id, avatar_url, hide_photo,
               occupation, special_role, institute, student_id, created_at 
        FROM donors 
        WHERE phone = ?`,

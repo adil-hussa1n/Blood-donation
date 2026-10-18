@@ -534,6 +534,17 @@ export async function updateDonorDetailsByAdmin(req: Request, res: Response): Pr
       }
     }
 
+    const formatDateStr = (val: any) => {
+      if (!val) return '';
+      try {
+        if (typeof val === 'string') return val.substring(0, 10);
+        if (val instanceof Date) return val.toISOString().substring(0, 10);
+        return String(val).substring(0, 10);
+      } catch {
+        return '';
+      }
+    };
+
     const diffs: Record<string, { from: any; to: any }> = {};
     if (name !== undefined && (name || '').trim() !== (prev.name || '').trim()) {
       diffs.name = { from: prev.name || '', to: name.trim() };
@@ -548,8 +559,8 @@ export async function updateDonorDetailsByAdmin(req: Request, res: Response): Pr
       diffs.area = { from: prev.area || '', to: area };
     }
     if (last_donation_date !== undefined) {
-      const prevDate = prev.last_donation_date ? String(prev.last_donation_date).substring(0, 10) : '';
-      const newDate = last_donation_date ? String(last_donation_date).substring(0, 10) : '';
+      const prevDate = formatDateStr(prev.last_donation_date);
+      const newDate = formatDateStr(last_donation_date);
       if (prevDate !== newDate) diffs.last_donation_date = { from: prevDate, to: newDate };
     }
     if (total_donations !== undefined && parseInt(total_donations, 10) !== parseInt(prev.total_donations, 10)) {
@@ -559,8 +570,8 @@ export async function updateDonorDetailsByAdmin(req: Request, res: Response): Pr
       diffs.is_available = { from: Boolean(prev.is_available), to: Boolean(is_available) };
     }
     if (dob !== undefined) {
-      const prevDob = prev.dob ? String(prev.dob).substring(0, 10) : '';
-      const newDob = dob ? String(dob).substring(0, 10) : '';
+      const prevDob = formatDateStr(prev.dob);
+      const newDob = formatDateStr(dob);
       if (prevDob !== newDob) diffs.dob = { from: prevDob, to: newDob };
     }
     if (email !== undefined && (email || '').trim().toLowerCase() !== (prev.email || '').trim().toLowerCase()) {
@@ -582,22 +593,22 @@ export async function updateDonorDetailsByAdmin(req: Request, res: Response): Pr
     const updates: string[] = [];
     const values: any[] = [];
 
-    if (name !== undefined) { updates.push('name = ?'); values.push(name.trim()); }
-    if (phone !== undefined) { updates.push('phone = ?'); values.push(phone.trim()); }
-    if (blood_group !== undefined) { updates.push('blood_group = ?'); values.push(blood_group); }
-    if (area !== undefined) { updates.push('area = ?'); values.push(area); }
-    if (last_donation_date !== undefined) { updates.push('last_donation_date = ?'); values.push(last_donation_date || null); }
-    if (total_donations !== undefined) { 
+    if (diffs.name) { updates.push('name = ?'); values.push(name.trim()); }
+    if (diffs.phone) { updates.push('phone = ?'); values.push(phone.trim()); }
+    if (diffs.blood_group) { updates.push('blood_group = ?'); values.push(blood_group); }
+    if (diffs.area) { updates.push('area = ?'); values.push(area); }
+    if (diffs.last_donation_date) { updates.push('last_donation_date = ?'); values.push(last_donation_date ? formatDateStr(last_donation_date) : null); }
+    if (diffs.total_donations) { 
       updates.push('total_donations = ?'); values.push(parseInt(total_donations, 10) || 0); 
       updates.push('lifetime_donation_count = ?'); values.push(parseInt(total_donations, 10) || 0);
     }
-    if (is_available !== undefined) { updates.push('is_available = ?'); values.push(is_available ? 1 : 0); }
-    if (dob !== undefined) { updates.push('dob = ?'); values.push(dob || null); }
-    if (email !== undefined) { updates.push('email = ?'); values.push(email ? email.trim().toLowerCase() : null); }
-    if (req.body.occupation !== undefined) { updates.push('occupation = ?'); values.push(req.body.occupation ? req.body.occupation.trim() : 'other'); }
-    if (req.body.special_role !== undefined) { updates.push('special_role = ?'); values.push(req.body.special_role ? req.body.special_role.trim() : 'none'); }
-    if (req.body.institute !== undefined) { updates.push('institute = ?'); values.push(req.body.institute ? req.body.institute.trim() : null); }
-    if (req.body.student_id !== undefined) { updates.push('student_id = ?'); values.push(req.body.student_id ? req.body.student_id.trim() : null); }
+    if (diffs.is_available) { updates.push('is_available = ?'); values.push(is_available ? 1 : 0); }
+    if (diffs.dob) { updates.push('dob = ?'); values.push(dob ? formatDateStr(dob) : null); }
+    if (diffs.email) { updates.push('email = ?'); values.push(email ? email.trim().toLowerCase() : null); }
+    if (diffs.occupation) { updates.push('occupation = ?'); values.push(req.body.occupation ? req.body.occupation.trim() : 'other'); }
+    if (diffs.special_role) { updates.push('special_role = ?'); values.push(req.body.special_role ? req.body.special_role.trim() : 'none'); }
+    if (diffs.institute) { updates.push('institute = ?'); values.push(req.body.institute ? req.body.institute.trim() : null); }
+    if (diffs.student_id) { updates.push('student_id = ?'); values.push(req.body.student_id ? req.body.student_id.trim() : null); }
 
     if (updates.length > 0) {
       values.push(id);

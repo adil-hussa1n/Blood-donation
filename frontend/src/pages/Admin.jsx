@@ -227,6 +227,18 @@ export default function Admin() {
   });
   const [saveDonorLoading, setSaveDonorLoading] = useState(false);
 
+  const formatDateForInput = (val) => {
+    if (!val) return '';
+    try {
+      if (typeof val === 'string') return val.substring(0, 10);
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) return d.toISOString().substring(0, 10);
+    } catch {
+      // fallback
+    }
+    return '';
+  };
+
   const openEditDonorModal = (donor) => {
     setEditingDonor(donor);
     setEditDonorForm({
@@ -238,11 +250,11 @@ export default function Admin() {
       special_role: donor.special_role || 'none',
       institute: donor.institute || '',
       student_id: donor.student_id || '',
-      last_donation_date: donor.last_donation_date ? donor.last_donation_date.substring(0, 10) : '',
+      last_donation_date: formatDateForInput(donor.last_donation_date),
       total_donations: donor.total_donations ?? 0,
       is_available: donor.is_available !== false,
       email: donor.email || '',
-      dob: donor.dob ? donor.dob.substring(0, 10) : ''
+      dob: formatDateForInput(donor.dob)
     });
   };
 
@@ -254,10 +266,57 @@ export default function Admin() {
       return;
     }
     setSaveDonorLoading(true);
-    const res = await updateDonorByAdmin(editingDonor.id, {
-      ...editDonorForm,
-      total_donations: Number(editDonorForm.total_donations) || 0
-    });
+
+    // Build payload of only fields that exist or were changed, ensuring untouched fields are never wiped
+    const payload = {};
+    if (editDonorForm.name.trim() !== (editingDonor.name || '').trim()) {
+      payload.name = editDonorForm.name.trim();
+    }
+    if (editDonorForm.phone.trim() !== (editingDonor.phone || '').trim()) {
+      payload.phone = editDonorForm.phone.trim();
+    }
+    if (editDonorForm.blood_group !== (editingDonor.blood_group || '')) {
+      payload.blood_group = editDonorForm.blood_group;
+    }
+    if (editDonorForm.area !== (editingDonor.area || '')) {
+      payload.area = editDonorForm.area;
+    }
+    if ((editDonorForm.occupation || 'other') !== (editingDonor.occupation || 'other')) {
+      payload.occupation = editDonorForm.occupation || 'other';
+    }
+    if ((editDonorForm.special_role || 'none') !== (editingDonor.special_role || 'none')) {
+      payload.special_role = editDonorForm.special_role || 'none';
+    }
+    if ((editDonorForm.institute || '') !== (editingDonor.institute || '')) {
+      payload.institute = editDonorForm.institute;
+    }
+    if ((editDonorForm.student_id || '') !== (editingDonor.student_id || '')) {
+      payload.student_id = editDonorForm.student_id;
+    }
+    if (formatDateForInput(editDonorForm.last_donation_date) !== formatDateForInput(editingDonor.last_donation_date)) {
+      payload.last_donation_date = editDonorForm.last_donation_date || null;
+    }
+    if (Number(editDonorForm.total_donations) !== Number(editingDonor.total_donations ?? 0)) {
+      payload.total_donations = Number(editDonorForm.total_donations) || 0;
+    }
+    if (Boolean(editDonorForm.is_available) !== Boolean(editingDonor.is_available)) {
+      payload.is_available = Boolean(editDonorForm.is_available);
+    }
+    if ((editDonorForm.email || '').trim().toLowerCase() !== (editingDonor.email || '').trim().toLowerCase()) {
+      payload.email = editDonorForm.email ? editDonorForm.email.trim().toLowerCase() : null;
+    }
+    if (formatDateForInput(editDonorForm.dob) !== formatDateForInput(editingDonor.dob)) {
+      payload.dob = editDonorForm.dob || null;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      showToast('No changes detected', 'info');
+      setEditingDonor(null);
+      setSaveDonorLoading(false);
+      return;
+    }
+
+    const res = await updateDonorByAdmin(editingDonor.id, payload);
     if (res.success) {
       showToast('Donor details updated successfully!', 'success');
       setEditingDonor(null);
