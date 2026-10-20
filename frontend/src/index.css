@@ -645,38 +645,50 @@ input[type="date"]::-webkit-date-and-time-value {
 
 /* ========================================================
    RESPONSIVE DESIGN FOR LAPTOP & PC SCREENS (22" - 32"+)
+   FULL WIDTH ON LARGER PC SCREENS
    ======================================================== */
 .site-container-fluid {
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  max-width: 1280px;
+  max-width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .site-container-fluid {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 @media (min-width: 1536px) {
   .site-container-fluid {
-    max-width: 1536px;
+    width: 100%;
+    max-width: 100%;
   }
 }
 
 /* 22" - 24" 1080p PC Screens (1920px width) */
 @media (min-width: 1920px) {
   .site-container-fluid {
-    max-width: 1780px;
+    width: 100%;
+    max-width: 100%;
   }
 }
 
 /* 27" - 32" QHD (1440p) PC Screens (2560px width) */
 @media (min-width: 2560px) {
   .site-container-fluid {
-    max-width: 2200px;
+    width: 100%;
+    max-width: 100%;
   }
 }
 
 /* 32"+ 4K / Ultrawide PC Displays (3440px - 3840px+) */
 @media (min-width: 3440px) {
   .site-container-fluid {
-    max-width: 2800px;
+    width: 100%;
+    max-width: 100%;
   }
 }
 

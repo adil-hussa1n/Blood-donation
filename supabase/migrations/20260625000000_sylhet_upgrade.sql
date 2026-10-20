@@ -73,7 +73,7 @@ BEGIN
 
   -- Block check — reject if phone is blocked by admin
   IF EXISTS (SELECT 1 FROM public.blocked_donors WHERE phone = trim(p_phone)) THEN
-    RAISE EXCEPTION 'Your account has been blocked. Contact Support.';
+    RAISE EXCEPTION 'Your account has been suspended. Contact Support.';
   END IF;
 
   -- Server-side rate limit: max 1 registration attempt per phone per 60 seconds
@@ -142,7 +142,7 @@ DECLARE
 BEGIN
   -- Block check
   IF EXISTS (SELECT 1 FROM public.blocked_donors WHERE phone = trim(p_phone)) THEN
-    RAISE EXCEPTION 'Your account has been blocked. Contact Support.';
+    RAISE EXCEPTION 'Your account has been suspended. Contact Support.';
   END IF;
 
   -- Find donor matching name + phone + blood_group + dob

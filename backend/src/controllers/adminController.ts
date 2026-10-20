@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import pool from '../config/db.js';
 import { generateToken } from '../middleware/auth.js';
 import { getClientIp } from '../middleware/rateLimiter.js';
+import { sendDonorDirectNotification } from '../services/pushNotificationService.js';
 
 export async function googleAdminLogin(req: Request, res: Response): Promise<void> {
   const { credential, user } = req.body;
@@ -700,6 +702,201 @@ export async function updateEmergencyDetailsByAdmin(req: Request, res: Response)
     res.json({ success: true, data: updated[0], error: null });
   } catch (error: any) {
     res.status(500).json({ success: false, error: { message: error.message } });
+  }
+}
+
+// ==========================================
+// DONOR WARNINGS & ALERTS CONTROLLERS
+// ==========================================
+
+export async function createDonorWarning(req: Request, res: Response): Promise<void> {
+  const { donorId, donorPhone, donorName, warningType, severity, title, message, actionRequired, autoSetUnavailable } = req.body;
+  const adminName = (req as any).admin?.username || 'admin';
+
+  if (!donorPhone || !title || !message) {
+    res.status(400).json({ success: false, error: { message: 'Donor phone, warning title, and message are required.' } });
+    return;
+  }
+
+  try {
+    const warningId = crypto.randomUUID();
+    const cleanPhone = String(donorPhone).trim();
+    const cleanName = donorName ? String(donorName).trim() : 'Donor';
+    const type = warningType || 'unavailability';
+    const sev = severity || 'warning';
+    const shouldSetUnavailable = Boolean(autoSetUnavailable);
+
+    // 1. Insert warning into donor_warnings table
+    await pool.query(
+      `INSERT INTO donor_warnings 
+        (id, donor_id, donor_phone, donor_name, warning_type, severity, title, message, action_required, auto_set_unavailable, is_acknowledged, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+      [
+        warningId,
+        donorId || '',
+        cleanPhone,
+        cleanName,
+        type,
+        sev,
+        String(title).trim(),
+        String(message).trim(),
+        actionRequired || null,
+        shouldSetUnavailable ? 1 : 0,
+        adminName,
+      ]
+    );
+
+    // 2. If autoSetUnavailable was selected, immediately toggle donor's is_available to 0
+    if (shouldSetUnavailable) {
+      await pool.query(
+        'UPDATE donors SET is_available = 0 WHERE phone = ? OR id = ?',
+        [cleanPhone, donorId || '']
+      );
+    }
+
+    // 3. Log user activity
+    const clientIp = getClientIp(req);
+    await logUserActivity(
+      'donor_warning_issued',
+      `Admin (${adminName}) issued [${sev.toUpperCase()}] warning to donor ${cleanName} (${cleanPhone}): "${title}".`,
+      {
+        userId: donorId || null,
+        userPhone: cleanPhone,
+        ipAddress: clientIp,
+        metadata: {
+          warningId,
+          warningType: type,
+          severity: sev,
+          autoSetUnavailable: shouldSetUnavailable,
+          issuedBy: adminName,
+        }
+      }
+    );
+
+    // 4. Send background Web Push alert if donor has push notifications active
+    if (donorId) {
+      try {
+        await sendDonorDirectNotification(
+          donorId,
+          cleanPhone,
+          `⚠️ Darun Donors Admin Notice: ${title}`,
+          message,
+          '/register'
+        );
+      } catch (pushErr) {
+        console.warn('Push alert dispatch note:', pushErr);
+      }
+    }
+
+    const [created]: any = await pool.query('SELECT * FROM donor_warnings WHERE id = ?', [warningId]);
+    res.json({ success: true, data: created[0], error: null });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { message: error.message || 'Failed to issue donor warning' } });
+  }
+}
+
+export async function getDonorWarnings(req: Request, res: Response): Promise<void> {
+  try {
+    const { phone, donorId } = req.query;
+    let query = 'SELECT * FROM donor_warnings';
+    const params: any[] = [];
+
+    if (phone) {
+      query += ' WHERE donor_phone = ?';
+      params.push(String(phone).trim());
+    } else if (donorId) {
+      query += ' WHERE donor_id = ?';
+      params.push(String(donorId).trim());
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const [rows]: any = await pool.query(query, params);
+    res.json({ success: true, data: rows || [], error: null });
+  } catch (error: any) {
+    res.status(500).json({ success: false, data: [], error: { message: error.message } });
+  }
+}
+
+export async function deleteDonorWarning(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const adminName = (req as any).admin?.username || 'admin';
+
+  try {
+    const [existing]: any = await pool.query('SELECT * FROM donor_warnings WHERE id = ?', [id]);
+    if (!existing || existing.length === 0) {
+      res.status(404).json({ success: false, error: { message: 'Warning not found' } });
+      return;
+    }
+
+    await pool.query('DELETE FROM donor_warnings WHERE id = ?', [id]);
+
+    await logUserActivity(
+      'donor_warning_revoked',
+      `Admin (${adminName}) revoked warning ID ${id} for donor ${existing[0].donor_name} (${existing[0].donor_phone}).`,
+      {
+        userId: existing[0].donor_id,
+        userPhone: existing[0].donor_phone,
+        ipAddress: getClientIp(req),
+        metadata: { revokedBy: adminName, warningTitle: existing[0].title }
+      }
+    );
+
+    res.json({ success: true, error: null });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { message: error.message || 'Failed to delete warning' } });
+  }
+}
+
+export async function getWarningsForDonor(req: Request, res: Response): Promise<void> {
+  const phone = String(req.params.phone || '').trim();
+  try {
+    const [rows]: any = await pool.query(
+      'SELECT * FROM donor_warnings WHERE donor_phone = ? ORDER BY created_at DESC',
+      [phone]
+    );
+    res.json({ success: true, data: rows || [], error: null });
+  } catch (error: any) {
+    res.status(500).json({ success: false, data: [], error: { message: error.message } });
+  }
+}
+
+export async function acknowledgeDonorWarning(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { setUnavailable, donorPhone } = req.body;
+
+  try {
+    const [existing]: any = await pool.query('SELECT * FROM donor_warnings WHERE id = ?', [id]);
+    if (!existing || existing.length === 0) {
+      res.status(404).json({ success: false, error: { message: 'Warning not found' } });
+      return;
+    }
+
+    await pool.query(
+      'UPDATE donor_warnings SET is_acknowledged = 1, acknowledged_at = NOW() WHERE id = ?',
+      [id]
+    );
+
+    const phone = donorPhone || existing[0].donor_phone;
+    if (setUnavailable && phone) {
+      await pool.query('UPDATE donors SET is_available = 0 WHERE phone = ?', [phone]);
+    }
+
+    await logUserActivity(
+      'donor_warning_acknowledged',
+      `Donor ${existing[0].donor_name} (${phone}) acknowledged warning: "${existing[0].title}"${setUnavailable ? ' and switched status to Unavailable' : ''}.`,
+      {
+        userId: existing[0].donor_id,
+        userPhone: phone,
+        ipAddress: getClientIp(req),
+        metadata: { warningId: id, setUnavailable: !!setUnavailable }
+      }
+    );
+
+    const [updated]: any = await pool.query('SELECT * FROM donor_warnings WHERE id = ?', [id]);
+    res.json({ success: true, data: updated[0], error: null });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { message: error.message || 'Failed to acknowledge warning' } });
   }
 }
 

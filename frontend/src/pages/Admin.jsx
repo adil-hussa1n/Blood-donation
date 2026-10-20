@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Shield, AlertTriangle, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X, UserX, FileX, Clock, Phone, AlertCircle, CreditCard, Tag, Plus, Edit3, Edit2, Edit, Save, Activity, History, UserCheck, RefreshCw, LayoutList, LayoutGrid, GraduationCap } from 'lucide-react';
+import { Shield, AlertTriangle, ShieldAlert, AlertOctagon, Trash2, Heart, Flame, LogOut, CheckCircle, MapPin, ChevronLeft, ChevronRight, Ban, MessageSquare, Search, Calendar, Filter, X, UserX, FileX, Clock, Phone, AlertCircle, CreditCard, Tag, Plus, Edit3, Edit2, Edit, Save, Activity, History, UserCheck, RefreshCw, LayoutList, LayoutGrid, GraduationCap } from 'lucide-react';
 import { useApp, BLOOD_GROUPS, DISTRICT_AREAS, SPECIAL_ROLES, getSpecialRoleBadge, normalizeDonor, getAreaLabel, getDistrictBadge, isDefaultLetterAvatar } from '../context/AppContext';
 import InstituteAutocomplete from '../components/InstituteAutocomplete';
+import AdminWarningModal from '../components/AdminWarningModal';
 
 export default function Admin() {
   const {
@@ -29,13 +30,39 @@ export default function Admin() {
     createDonorCardOffer,
     updateDonorCardOffer,
     deleteDonorCardOffer,
+    donorWarnings,
+    deleteDonorWarning,
+    refreshDonorWarnings,
     showToast,
     language,
     t
   } = useApp();
 
-  // Dashboard view state: 'donors' | 'emergencies' | 'blocked' | 'support' | 'deleted_donors' | 'deleted_emergencies' | 'donor_card'
+  // Dashboard view state: 'donors' | 'emergencies' | 'warnings' | 'blocked' | 'support' | 'deleted_donors' | 'deleted_emergencies' | 'donor_card'
   const [adminTab, setAdminTab] = useState('donors');
+
+  // Alerts & Warnings State
+  const [warningModalDonor, setWarningModalDonor] = useState(null);
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [warningSearchQuery, setWarningSearchQuery] = useState('');
+  const [warningSeverityFilter, setWarningSeverityFilter] = useState(''); // '' means All, 'notice', 'warning', 'critical'
+  const [warningStatusFilter, setWarningStatusFilter] = useState(''); // '' means All, 'pending', 'acknowledged'
+  const [warningPage, setWarningPage] = useState(1);
+  const warningItemsPerPage = 10;
+
+  const openWarningModal = (donor) => {
+    setWarningModalDonor(donor);
+    setIsWarningModalOpen(true);
+  };
+
+  const donorWarningCounts = useMemo(() => {
+    const counts = {};
+    (donorWarnings || []).forEach(w => {
+      if (w.donor_id) counts[w.donor_id] = (counts[w.donor_id] || 0) + 1;
+      if (w.donor_phone) counts[w.donor_phone] = (counts[w.donor_phone] || 0) + 1;
+    });
+    return counts;
+  }, [donorWarnings]);
 
   // Blood group filter in Donors view
   const [bloodGroupFilter, setBloodGroupFilter] = useState(''); // '' means All
@@ -906,7 +933,7 @@ export default function Admin() {
   // RENDER: ADMIN PANEL DASHBOARD
   // ==============================================================
   return (
-    <div className="space-y-5 sm:space-y-8 max-w-6xl mx-auto relative">
+    <div className="space-y-5 sm:space-y-8 w-full relative">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 bg-slate-100 dark:bg-zinc-900/50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200/50 dark:border-zinc-800/30">
@@ -934,7 +961,7 @@ export default function Admin() {
       </div>
 
       {/* Stats Quick Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-9 gap-3 sm:gap-4">
         <button
           onClick={() => setAdminTab('donors')}
           className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${adminTab === 'donors'
@@ -992,6 +1019,26 @@ export default function Admin() {
           </div>
           <div className="p-2 sm:p-3 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">
             <Activity className="w-4 h-4 sm:w-6 sm:h-6" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('warnings')}
+          className={`glass-panel p-3 sm:p-5 rounded-2xl border text-left flex justify-between items-center transition-all cursor-pointer ${adminTab === 'warnings'
+              ? 'border-amber-500/40 ring-1 ring-amber-500/10 shadow-md'
+              : 'hover:border-slate-300 dark:hover:border-zinc-700'
+            }`}
+        >
+          <div className="space-y-0.5 sm:space-y-1 min-w-0">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block truncate">
+              {language === 'bn' ? 'সতর্কবার্তা ও নোটিশ' : 'Alerts & Warnings'}
+            </span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight block">
+              {(donorWarnings || []).length}
+            </span>
+          </div>
+          <div className="p-2 sm:p-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+            <AlertTriangle className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </button>
 
@@ -1766,6 +1813,18 @@ export default function Admin() {
                                 <td className="p-4 text-center">
                                   <div className="flex items-center justify-center gap-1">
                                     <button
+                                      onClick={() => openWarningModal(donor)}
+                                      className="relative text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 dark:hover:bg-amber-500/15 p-2 rounded-xl transition-all cursor-pointer"
+                                      title={language === 'bn' ? 'সতর্কবার্তা বা নোটিশ পাঠান' : 'Send Alert / Warning'}
+                                    >
+                                      <AlertTriangle className="w-4 h-4" />
+                                      {(donorWarningCounts[donor.id] || donorWarningCounts[donor.phone]) ? (
+                                        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
+                                          {donorWarningCounts[donor.id] || donorWarningCounts[donor.phone]}
+                                        </span>
+                                      ) : null}
+                                    </button>
+                                    <button
                                       onClick={() => openEditDonorModal(donor)}
                                       className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 dark:hover:bg-amber-500/15 p-2 rounded-xl transition-all cursor-pointer"
                                       title="Edit donor details"
@@ -1885,10 +1944,22 @@ export default function Admin() {
                               </span>
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-1">
+                            <div className="flex justify-end gap-2 pt-1 flex-wrap">
+                              <button
+                                onClick={() => openWarningModal(donor)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                <span>{language === 'bn' ? 'সতর্কতা' : 'Warning'}</span>
+                                {(donorWarningCounts[donor.id] || donorWarningCounts[donor.phone]) ? (
+                                  <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full">
+                                    {donorWarningCounts[donor.id] || donorWarningCounts[donor.phone]}
+                                  </span>
+                                ) : null}
+                              </button>
                               <button
                                 onClick={() => openEditDonorModal(donor)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
                                 Edit Details
@@ -2022,10 +2093,23 @@ export default function Admin() {
                               )}
                             </div>
 
-                            <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100 dark:border-zinc-800/80">
+                            <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-slate-100 dark:border-zinc-800/80">
+                              <button
+                                onClick={() => openWarningModal(donor)}
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                title={language === 'bn' ? 'সতর্কবার্তা পাঠান' : 'Send Warning'}
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                <span>{language === 'bn' ? 'সতর্কতা' : 'Warn'}</span>
+                                {(donorWarningCounts[donor.id] || donorWarningCounts[donor.phone]) ? (
+                                  <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full">
+                                    {donorWarningCounts[donor.id] || donorWarningCounts[donor.phone]}
+                                  </span>
+                                ) : null}
+                              </button>
                               <button
                                 onClick={() => openEditDonorModal(donor)}
-                                className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
                                 <span>Edit</span>
@@ -3976,6 +4060,478 @@ export default function Admin() {
             })()}
           </div>
         )}
+
+        {/* ALERTS & WARNINGS TAB */}
+        {adminTab === 'warnings' && (
+          <div className="space-y-4">
+            {/* Header with Search and Filter */}
+            <div className="p-5 border-b border-slate-200/50 dark:border-zinc-800/50 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-950 dark:text-white text-base">
+                    {language === 'bn' ? 'রক্তদাতা সতর্কবার্তা ও নোটিশ ব্যবস্থাপনা' : 'Donor Warnings & Conduct Notices'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium">
+                    {language === 'bn'
+                      ? 'জরুরি পরিস্থিতিতে অনুপস্থিত থাকা বা রক্তদানে অস্বীকৃতি জানানো রক্তদাতাদের নোটিশ ও স্ট্যাটাস ট্র্যাকিং'
+                      : 'Issue disciplinary notices, availability reminders, and track acknowledgments from registered donors'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminTab('donors');
+                    showToast(
+                      language === 'bn'
+                        ? 'যেকোনো রক্তদাতার সারিতে ⚠️ বাটনে ক্লিক করে সরাসরি সতর্কবার্তা পাঠান'
+                        : 'Click the ⚠️ warning icon next to any donor to issue a notice',
+                      'info'
+                    );
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{language === 'bn' ? 'নতুন নোটিশ পাঠান' : 'Issue New Warning'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => refreshDonorWarnings()}
+                  className="p-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-amber-500 transition-colors cursor-pointer"
+                  title={language === 'bn' ? 'রিফ্রেশ করুন' : 'Refresh'}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="px-5 pt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-850/60 border border-slate-200/60 dark:border-zinc-800 text-left">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 block">
+                    {language === 'bn' ? 'মোট নোটিশ' : 'Total Issued'}
+                  </span>
+                  <span className="text-xl font-black text-slate-900 dark:text-white mt-0.5 block">
+                    {(donorWarnings || []).length}
+                  </span>
+                </div>
+                <div className="p-3 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 text-left">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">
+                    {language === 'bn' ? 'অপেক্ষমান (Pending)' : 'Pending Action'}
+                  </span>
+                  <span className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5 block">
+                    {(donorWarnings || []).filter(w => !w.is_acknowledged).length}
+                  </span>
+                </div>
+                <div className="p-3 rounded-2xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 text-left">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                    {language === 'bn' ? 'গৃহীত (Acknowledged)' : 'Acknowledged'}
+                  </span>
+                  <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                    {(donorWarnings || []).filter(w => w.is_acknowledged).length}
+                  </span>
+                </div>
+                <div className="p-3 rounded-2xl bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/20 text-left">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block">
+                    {language === 'bn' ? 'জরুরি সতর্কবার্তা' : 'Critical Notices'}
+                  </span>
+                  <span className="text-xl font-black text-rose-600 dark:text-rose-400 mt-0.5 block">
+                    {(donorWarnings || []).filter(w => w.severity === 'critical').length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="px-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-left">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={warningSearchQuery}
+                  onChange={(e) => setWarningSearchQuery(e.target.value)}
+                  placeholder={language === 'bn' ? 'নাম, ফোন বা শিরোনাম খুঁজুন...' : 'Search name, phone, title...'}
+                  className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/70 dark:bg-zinc-800/70 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  value={warningStatusFilter}
+                  onChange={(e) => setWarningStatusFilter(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/70 dark:bg-zinc-800/70 text-xs text-slate-900 dark:text-white font-semibold focus:outline-none focus:ring-1 focus:ring-amber-500"
+                >
+                  <option value="">{language === 'bn' ? 'সব স্ট্যাটাস' : 'All Status'}</option>
+                  <option value="pending">{language === 'bn' ? 'অপেক্ষমান (Pending)' : 'Pending Action'}</option>
+                  <option value="acknowledged">{language === 'bn' ? 'গৃহীত (Acknowledged)' : 'Acknowledged'}</option>
+                </select>
+
+                <select
+                  value={warningSeverityFilter}
+                  onChange={(e) => setWarningSeverityFilter(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/70 dark:bg-zinc-800/70 text-xs text-slate-900 dark:text-white font-semibold focus:outline-none focus:ring-1 focus:ring-amber-500"
+                >
+                  <option value="">{language === 'bn' ? 'সব মাত্রা' : 'All Severities'}</option>
+                  <option value="notice">{language === 'bn' ? 'নোটিশ (Notice)' : 'Notice'}</option>
+                  <option value="warning">{language === 'bn' ? 'সতর্কবার্তা (Warning)' : 'Warning'}</option>
+                  <option value="critical">{language === 'bn' ? 'জরুরি (Critical)' : 'Critical'}</option>
+                </select>
+              </div>
+            </div>
+
+            {(() => {
+              const filtered = (donorWarnings || []).filter(w => {
+                const q = warningSearchQuery.trim().toLowerCase();
+                const matchesSearch = !q ||
+                  (w.donor_name && w.donor_name.toLowerCase().includes(q)) ||
+                  (w.donor_phone && w.donor_phone.toLowerCase().includes(q)) ||
+                  (w.title && w.title.toLowerCase().includes(q)) ||
+                  (w.message && w.message.toLowerCase().includes(q)) ||
+                  (w.warning_type && w.warning_type.toLowerCase().includes(q));
+
+                const matchesSeverity = !warningSeverityFilter || w.severity === warningSeverityFilter;
+
+                const matchesStatus = !warningStatusFilter ||
+                  (warningStatusFilter === 'pending' && !w.is_acknowledged) ||
+                  (warningStatusFilter === 'acknowledged' && Boolean(w.is_acknowledged));
+
+                return matchesSearch && matchesSeverity && matchesStatus;
+              });
+
+              const totalPages = Math.max(1, Math.ceil(filtered.length / warningItemsPerPage));
+              const currentPage = Math.min(warningPage, totalPages);
+              const startIndex = (currentPage - 1) * warningItemsPerPage;
+              const paginated = filtered.slice(startIndex, startIndex + warningItemsPerPage);
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="p-12 text-center text-sm text-slate-500 dark:text-zinc-400">
+                    <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto mb-2 opacity-60" />
+                    <p className="font-bold">
+                      {language === 'bn' ? 'কোনো সতর্কবার্তা বা নোটিশ পাওয়া যায়নি' : 'No warnings or notices found.'}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                      {language === 'bn'
+                        ? 'রক্তদাতা তালিকা থেকে যেকোনো রক্তদাতার সারিতে ⚠️ বাটনে ক্লিক করে নতুন নোটিশ পাঠাতে পারেন।'
+                        : 'You can issue alerts to active donors who decline to donate or stay unresponsive by clicking the ⚠️ button in the Donors tab.'}
+                    </p>
+                  </div>
+                );
+              }
+
+              const getSeverityBadge = (sev) => {
+                if (sev === 'critical') {
+                  return {
+                    label: language === 'bn' ? 'জরুরি' : 'Critical',
+                    bg: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                  };
+                }
+                if (sev === 'notice') {
+                  return {
+                    label: language === 'bn' ? 'নোটিশ' : 'Notice',
+                    bg: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30'
+                  };
+                }
+                return {
+                  label: language === 'bn' ? 'সতর্কতা' : 'Warning',
+                  bg: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                };
+              };
+
+              const getWarningTypeLabel = (type) => {
+                switch (type) {
+                  case 'denial':
+                    return language === 'bn' ? 'রক্তদানে অস্বীকৃতি' : 'Donation Refusal';
+                  case 'unresponsive':
+                    return language === 'bn' ? 'সাড়া না দেওয়া' : 'Unresponsive';
+                  case 'unavailability':
+                    return language === 'bn' ? 'স্ট্যাটাস আপডেট' : 'Status Update';
+                  case 'conduct':
+                    return language === 'bn' ? 'শৃঙ্খলা নোটিশ' : 'Conduct Notice';
+                  default:
+                    return language === 'bn' ? 'নোটিশ' : 'Notice';
+                }
+              };
+
+              return (
+                <div>
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto text-left">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-200/60 dark:border-zinc-800/60 bg-slate-50/50 dark:bg-zinc-850/40 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                          <th className="p-4">Donor</th>
+                          <th className="p-4">Type & Severity</th>
+                          <th className="p-4">Notice Title & Message</th>
+                          <th className="p-4">Status</th>
+                          <th className="p-4">Sent Date</th>
+                          <th className="p-4 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-zinc-850">
+                        {paginated.map((warning) => {
+                          const sev = getSeverityBadge(warning.severity);
+                          const typeLabel = getWarningTypeLabel(warning.warning_type);
+                          const donorObj = safeDonors.find(d => String(d.id) === String(warning.donor_id) || d.phone === warning.donor_phone) || {
+                            id: warning.donor_id,
+                            phone: warning.donor_phone,
+                            name: warning.donor_name,
+                            blood_group: warning.donor_blood_group
+                          };
+
+                          return (
+                            <tr key={warning.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
+                              {/* Donor Details */}
+                              <td className="p-4">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600 to-rose-600 text-white font-black text-xs flex items-center justify-center border border-red-400/40 shadow-xs shrink-0">
+                                    {warning.donor_blood_group || '—'}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="font-extrabold text-slate-900 dark:text-white text-sm block truncate">
+                                      {warning.donor_name || 'Donor'}
+                                    </span>
+                                    <span className="font-mono text-xs text-slate-500 dark:text-zinc-400 block">
+                                      {warning.donor_phone}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Type & Severity */}
+                              <td className="p-4">
+                                <div className="space-y-1">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${sev.bg}`}>
+                                    {sev.label}
+                                  </span>
+                                  <span className="text-[11px] text-slate-600 dark:text-zinc-400 font-semibold block">
+                                    {typeLabel}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Title & Message */}
+                              <td className="p-4 max-w-xs lg:max-w-md">
+                                <div className="space-y-1">
+                                  <span className="font-bold text-slate-900 dark:text-white block text-xs">
+                                    {warning.title}
+                                  </span>
+                                  <p className="text-[11px] text-slate-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                                    {warning.message}
+                                  </p>
+                                </div>
+                              </td>
+
+                              {/* Status */}
+                              <td className="p-4">
+                                {warning.is_acknowledged ? (
+                                  <div className="space-y-0.5">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] border border-emerald-500/20">
+                                      <CheckCircle className="w-3 h-3" />
+                                      <span>{language === 'bn' ? 'গৃহীত' : 'Acknowledged'}</span>
+                                    </span>
+                                    {warning.acknowledged_at && (
+                                      <span className="text-[10px] text-slate-400 dark:text-zinc-500 block">
+                                        {new Date(warning.acknowledged_at).toLocaleDateString()}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold text-[10px] border border-amber-500/20">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                    <span>{language === 'bn' ? 'অপেক্ষমান' : 'Pending Action'}</span>
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Sent Date */}
+                              <td className="p-4 text-[11px] text-slate-500 dark:text-zinc-400">
+                                <span className="block font-medium">
+                                  {warning.created_at ? new Date(warning.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                                </span>
+                                <span className="text-[10px] text-slate-400 block">
+                                  {warning.created_by_admin || 'Admin'}
+                                </span>
+                              </td>
+
+                              {/* Actions */}
+                              <td className="p-4 text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    onClick={() => openWarningModal(donorObj)}
+                                    className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 rounded-xl transition-all cursor-pointer"
+                                    title={language === 'bn' ? 'পুনরায় নোটিশ পাঠান' : 'Send follow-up notice'}
+                                  >
+                                    <AlertTriangle className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setConfirmBlockData({
+                                        phone: warning.donor_phone,
+                                        reason: `Disciplinary block following warning: ${warning.title}`
+                                      });
+                                    }}
+                                    className="p-1.5 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-500/10 rounded-xl transition-all cursor-pointer"
+                                    title={language === 'bn' ? 'নম্বর ব্লক করুন' : 'Block donor phone'}
+                                  >
+                                    <Ban className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (window.confirm(language === 'bn' ? 'আপনি কি নিশ্চিত যে এই সতর্কবার্তাটি প্রত্যাহার করবেন?' : 'Revoke this warning notice?')) {
+                                        await deleteDonorWarning(warning.id);
+                                      }
+                                    }}
+                                    className="p-1.5 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-xl transition-all cursor-pointer"
+                                    title={language === 'bn' ? 'সতর্কবার্তা প্রত্যাহার করুন' : 'Revoke notice'}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Stack Cards */}
+                  <div className="md:hidden divide-y divide-slate-100 dark:divide-zinc-850 text-left">
+                    {paginated.map((warning) => {
+                      const sev = getSeverityBadge(warning.severity);
+                      const typeLabel = getWarningTypeLabel(warning.warning_type);
+                      const donorObj = safeDonors.find(d => String(d.id) === String(warning.donor_id) || d.phone === warning.donor_phone) || {
+                        id: warning.donor_id,
+                        phone: warning.donor_phone,
+                        name: warning.donor_name,
+                        blood_group: warning.donor_blood_group
+                      };
+
+                      return (
+                        <div key={warning.id} className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-zinc-900/5 transition-colors">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${sev.bg}`}>
+                                {sev.label}
+                              </span>
+                              <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold">
+                                {typeLabel}
+                              </span>
+                            </div>
+                            {warning.is_acknowledged ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
+                                <CheckCircle className="w-3 h-3" />
+                                <span>{language === 'bn' ? 'গৃহীত' : 'Acknowledged'}</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold text-[10px]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                <span>{language === 'bn' ? 'অপেক্ষমান' : 'Pending'}</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="font-extrabold text-slate-900 dark:text-white text-sm block">
+                                {warning.donor_name || 'Donor'}
+                              </span>
+                              <span className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
+                                {warning.donor_phone}
+                              </span>
+                            </div>
+                            <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-black px-2 py-0.5 rounded-md text-xs shrink-0">
+                              {warning.donor_blood_group || '—'}
+                            </span>
+                          </div>
+
+                          <div className="bg-slate-50 dark:bg-zinc-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-zinc-800/60 space-y-1">
+                            <span className="font-bold text-slate-900 dark:text-white text-xs block">
+                              {warning.title}
+                            </span>
+                            <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+                              {warning.message}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] pt-1 text-slate-400 dark:text-zinc-500">
+                            <span>
+                              {warning.created_at ? new Date(warning.created_at).toLocaleDateString() : '—'}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => openWarningModal(donorObj)}
+                                className="px-2 py-1 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-bold"
+                              >
+                                Follow-up
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setConfirmBlockData({
+                                    phone: warning.donor_phone,
+                                    reason: `Disciplinary block following warning: ${warning.title}`
+                                  });
+                                }}
+                                className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold"
+                              >
+                                Block
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm(language === 'bn' ? 'সতর্কবার্তা প্রত্যাহার করবেন?' : 'Revoke this notice?')) {
+                                    await deleteDonorWarning(warning.id);
+                                  }
+                                }}
+                                className="px-2 py-1 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-bold"
+                              >
+                                Revoke
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-between items-center p-5 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
+                      <button
+                        type="button"
+                        onClick={() => setWarningPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        {t('previousPage')}
+                      </button>
+                      <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
+                        {t('pageIndicator', { current: currentPage, total: totalPages })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setWarningPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {t('nextPage')}
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
       </div>
 
       {/* Edit Donor Details Modal rendered via createPortal */}
@@ -4379,6 +4935,16 @@ export default function Admin() {
         </div>,
         document.body
       )}
+
+      {/* Admin Warning Modal */}
+      <AdminWarningModal
+        donor={warningModalDonor}
+        isOpen={isWarningModalOpen}
+        onClose={() => {
+          setIsWarningModalOpen(false);
+          setWarningModalDonor(null);
+        }}
+      />
 
     </div>
   );

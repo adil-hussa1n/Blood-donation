@@ -730,6 +730,110 @@ export const dbService = {
     };
   },
 
+  // ==========================================
+  // DONOR ALERTS & WARNINGS
+  // ==========================================
+  async createDonorWarning(warningData: any, adminUsername?: string, adminPassword?: string): Promise<{ success: boolean; data?: any; error: any }> {
+    if (isDemoMode) {
+      const warnings = JSON.parse(localStore.getItem('bb_donor_warnings') || '[]');
+      const newWarning = {
+        id: 'warn_' + Date.now(),
+        ...warningData,
+        is_acknowledged: 0,
+        created_by: adminUsername || 'admin',
+        created_at: new Date().toISOString(),
+      };
+      warnings.unshift(newWarning);
+      localStore.setItem('bb_donor_warnings', JSON.stringify(warnings));
+
+      if (warningData.autoSetUnavailable) {
+        let donors = JSON.parse(localStore.getItem('bb_donors') || '[]');
+        donors = donors.map((d: any) => (d.phone === warningData.donorPhone || d.id === warningData.donorId) ? { ...d, is_available: false } : d);
+        localStore.setItem('bb_donors', JSON.stringify(donors));
+      }
+      return { success: true, data: newWarning, error: null };
+    }
+
+    const res = await apiRequest('/admin/warnings', {
+      method: 'POST',
+      body: JSON.stringify({ ...warningData, adminUsername, adminPassword }),
+    });
+    return { success: !!res.success, data: res.data, error: res.error };
+  },
+
+  async getDonorWarnings(filters?: { phone?: string; donorId?: string }, adminUsername?: string, adminPassword?: string): Promise<{ success: boolean; data: any[]; error: any }> {
+    if (isDemoMode) {
+      let warnings = JSON.parse(localStore.getItem('bb_donor_warnings') || '[]');
+      if (filters?.phone) {
+        warnings = warnings.filter((w: any) => w.donor_phone === filters.phone);
+      }
+      return { success: true, data: warnings, error: null };
+    }
+
+    const query = new URLSearchParams();
+    if (filters?.phone) query.set('phone', filters.phone);
+    if (filters?.donorId) query.set('donorId', filters.donorId);
+    if (adminUsername) query.set('adminUsername', adminUsername);
+    if (adminPassword) query.set('adminPassword', adminPassword);
+
+    const res = await apiRequest<any[]>(`/admin/warnings?${query.toString()}`);
+    return { success: !res.error, data: res.data || [], error: res.error };
+  },
+
+  async deleteDonorWarning(id: string, adminUsername?: string, adminPassword?: string): Promise<{ success: boolean; error: any }> {
+    if (isDemoMode) {
+      let warnings = JSON.parse(localStore.getItem('bb_donor_warnings') || '[]');
+      warnings = warnings.filter((w: any) => w.id !== id);
+      localStore.setItem('bb_donor_warnings', JSON.stringify(warnings));
+      return { success: true, error: null };
+    }
+
+    const res = await apiRequest(`/admin/warnings/${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ adminUsername, adminPassword }),
+    });
+    return { success: !!res.success, error: res.error };
+  },
+
+  async getWarningsForDonor(phone: string): Promise<{ success: boolean; data: any[]; error: any }> {
+    if (isDemoMode) {
+      const warnings = JSON.parse(localStore.getItem('bb_donor_warnings') || '[]');
+      const filtered = warnings.filter((w: any) => w.donor_phone === phone);
+      return { success: true, data: filtered, error: null };
+    }
+
+    const res = await apiRequest<any[]>(`/donors/${encodeURIComponent(phone.trim())}/warnings`);
+    return { success: !res.error, data: res.data || [], error: res.error };
+  },
+
+  async acknowledgeDonorWarning(id: string, options?: { setUnavailable?: boolean; donorPhone?: string }): Promise<{ success: boolean; data?: any; error: any }> {
+    if (isDemoMode) {
+      let warnings = JSON.parse(localStore.getItem('bb_donor_warnings') || '[]');
+      let updated: any = null;
+      warnings = warnings.map((w: any) => {
+        if (w.id === id) {
+          updated = { ...w, is_acknowledged: 1, acknowledged_at: new Date().toISOString() };
+          return updated;
+        }
+        return w;
+      });
+      localStore.setItem('bb_donor_warnings', JSON.stringify(warnings));
+
+      if (options?.setUnavailable && options?.donorPhone) {
+        let donors = JSON.parse(localStore.getItem('bb_donors') || '[]');
+        donors = donors.map((d: any) => d.phone === options.donorPhone ? { ...d, is_available: false } : d);
+        localStore.setItem('bb_donors', JSON.stringify(donors));
+      }
+      return { success: true, data: updated, error: null };
+    }
+
+    const res = await apiRequest(`/donors/warnings/${id}/acknowledge`, {
+      method: 'POST',
+      body: JSON.stringify(options || {}),
+    });
+    return { success: !!res.success, data: res.data, error: res.error };
+  },
+
   async checkHealth(): Promise<{ isMaintenance: boolean; message?: string }> {
     if (isDemoMode) return { isMaintenance: false };
     const res = await apiRequest('/health');

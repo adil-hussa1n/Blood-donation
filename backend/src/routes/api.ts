@@ -37,6 +37,11 @@ import {
   getUserActivityLogs,
   updateDonorDetailsByAdmin,
   updateEmergencyDetailsByAdmin,
+  createDonorWarning,
+  getDonorWarnings,
+  deleteDonorWarning,
+  getWarningsForDonor,
+  acknowledgeDonorWarning,
 } from '../controllers/adminController.js';
 import {
   submitSupportRequest,
@@ -115,6 +120,15 @@ router.get('/admin/deleted-emergencies', requireAdmin, getDeletedEmergencies);
 router.get('/admin/activity-logs', requireAdmin, getUserActivityLogs);
 router.put('/admin/donors/:id', requireAdmin, updateDonorDetailsByAdmin);
 router.put('/admin/emergencies/:id', requireAdmin, updateEmergencyDetailsByAdmin);
+
+// ==========================================
+// DONOR ALERTS & WARNINGS
+// ==========================================
+router.post('/admin/warnings', requireAdmin, createDonorWarning);
+router.get('/admin/warnings', requireAdmin, getDonorWarnings);
+router.delete('/admin/warnings/:id', requireAdmin, deleteDonorWarning);
+router.get('/donors/:phone/warnings', getWarningsForDonor);
+router.post('/donors/warnings/:id/acknowledge', acknowledgeDonorWarning);
 
 // ==========================================
 // SUPPORT & PROBLEM TICKETS

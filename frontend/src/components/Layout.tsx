@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, ExternalLink, LucideIcon, ChevronRight, LogOut, User, Bell, BellOff, BellRing, Wrench, AlertOctagon, RotateCw } from 'lucide-react';
 import { useApp, isDefaultLetterAvatar } from '../context/AppContext';
+import DonorWarningAlertModal from './DonorWarningAlertModal';
 
 interface NavigationItem {
   nameKey: string;
@@ -521,6 +522,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </div>
       </footer>
+      <DonorWarningAlertModal />
     </div>
   );
 }

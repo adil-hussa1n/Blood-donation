@@ -579,7 +579,7 @@ export default function Emergency() {
 
       {/* Notifications */}
       {successMsg && (
-        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-950/50 text-emerald-800 dark:text-emerald-400 p-4 rounded-2xl text-sm flex items-center justify-between gap-3 animate-fade-in max-w-7xl mx-auto shadow-sm">
+        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-950/50 text-emerald-800 dark:text-emerald-400 p-4 rounded-2xl text-sm flex items-center justify-between gap-3 animate-fade-in w-full shadow-sm">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500" />
             <span className="font-semibold">{successMsg}</span>
@@ -595,7 +595,7 @@ export default function Emergency() {
       )}
 
       {errorMsg && !isMaintenanceMode && (
-        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950/50 text-rose-800 dark:text-rose-400 p-4 rounded-2xl text-sm flex items-center justify-between gap-3 animate-fade-in max-w-7xl mx-auto shadow-sm">
+        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-950/50 text-rose-800 dark:text-rose-400 p-4 rounded-2xl text-sm flex items-center justify-between gap-3 animate-fade-in w-full shadow-sm">
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 shrink-0 text-rose-500" />
             <span className="font-semibold">{errorMsg}</span>
@@ -611,7 +611,7 @@ export default function Emergency() {
       )}
 
       {/* Top Action & Filter Row */}
-      <div className="space-y-4 max-w-7xl mx-auto w-full">
+      <div className="space-y-4 w-full">
         {/* Top Control Bar: Post Request Button + Mobile Filter Toggle */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <button
@@ -838,7 +838,7 @@ export default function Emergency() {
       </div>
 
       {/* Main Content: Full-Width Requests Feed */}
-      <div className="space-y-6 text-left max-w-7xl mx-auto w-full">
+      <div className="space-y-6 text-left w-full">
         {loading ? (
           <div className="glass-panel border rounded-2xl overflow-hidden animate-pulse">
             <div className="h-12 bg-slate-100 dark:bg-zinc-900 w-full" />

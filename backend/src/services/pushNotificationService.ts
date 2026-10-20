@@ -173,3 +173,57 @@ export async function broadcastEmergencyPush(emergency: {
     console.error('❌ Failed to broadcast emergency push:', error);
   }
 }
+
+/**
+ * Dispatch a direct background Web Push alert to a specific donor
+ */
+export async function sendDonorDirectNotification(donorId: string, phone: string, title: string, body: string, url: string = '/register') {
+  try {
+    const [rows]: any = await pool.query(
+      'SELECT * FROM push_subscriptions WHERE donor_id = ?',
+      [donorId]
+    );
+
+    if (!rows || rows.length === 0) {
+      return;
+    }
+
+    const payload = JSON.stringify({
+      title,
+      body,
+      icon: '/apple-touch-icon-180x180.png',
+      badge: '/apple-touch-icon-180x180.png',
+      tag: `donor-warning-${Date.now()}`,
+      data: {
+        url,
+        donorId,
+        phone,
+      },
+    });
+
+    const sendPromises = rows.map(async (subRow: any) => {
+      const pushSub = {
+        endpoint: subRow.endpoint,
+        keys: {
+          p256dh: subRow.p256dh,
+          auth: subRow.auth,
+        },
+      };
+
+      try {
+        await webpush.sendNotification(pushSub, payload, {
+          TTL: 60 * 60 * 24, // 24 hours
+          urgency: 'high',
+        });
+      } catch (err: any) {
+        if (err.statusCode === 404 || err.statusCode === 410) {
+          await pool.query('DELETE FROM push_subscriptions WHERE id = ?', [subRow.id]);
+        }
+      }
+    });
+
+    await Promise.allSettled(sendPromises);
+  } catch (error: any) {
+    console.warn('Direct donor push notification failed:', error.message);
+  }
+}

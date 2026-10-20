@@ -145,7 +145,7 @@ export async function registerDonor(req: Request, res: Response): Promise<void> 
     const [blocked]: any = await pool.query('SELECT phone FROM blocked_donors WHERE phone = ?', [phone]);
     if (blocked && blocked.length > 0) {
       await logRateLimit(clientIp, 'donor_registration', 'blocked', 'phone_blocked');
-      res.status(403).json({ data: null, error: { message: 'Your account has been blocked. Contact Support.' } });
+      res.status(403).json({ data: null, error: { message: 'Your account has been suspended. Contact Support.' } });
       return;
     }
 
@@ -253,7 +253,7 @@ export async function verifyDonor(req: Request, res: Response): Promise<void> {
     // Block check
     const [blocked]: any = await pool.query('SELECT phone FROM blocked_donors WHERE phone = ?', [cleanPhone]);
     if (blocked && blocked.length > 0) {
-      res.status(403).json({ data: null, error: { message: 'Your account has been blocked. Contact Support.' } });
+      res.status(403).json({ data: null, error: { message: 'Your account has been suspended. Contact Support.' } });
       return;
     }
 
@@ -672,7 +672,7 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
         [email, googleId]
       );
       if (blocked && blocked.length > 0) {
-        res.status(403).json({ success: false, error: { message: 'Your account has been blocked. Contact Support.' } });
+        res.status(403).json({ success: false, error: { message: 'Your account has been suspended. Contact Support.' } });
         return;
       }
     }

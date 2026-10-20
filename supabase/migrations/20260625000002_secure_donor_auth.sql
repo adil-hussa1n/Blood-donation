@@ -17,7 +17,7 @@ DECLARE
 BEGIN
   -- Block check
   IF EXISTS (SELECT 1 FROM public.blocked_donors WHERE phone = trim(p_phone)) THEN
-    RAISE EXCEPTION 'Your account has been blocked. Contact Support.';
+    RAISE EXCEPTION 'Your account has been suspended. Contact Support.';
   END IF;
 
   SELECT * INTO v_row

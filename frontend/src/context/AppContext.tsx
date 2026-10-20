@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { dbService, isDatabaseOrConnectionError } from '../services/db';
@@ -95,6 +95,14 @@ interface AppContextType {
   updateEmergencyByAdmin: (id: string, emergencyData: any) => Promise<{ success: boolean; data?: any; error?: any }>;
   getUserActivityLogs: (filters?: { userId?: string; phone?: string; limit?: number }) => Promise<{ success: boolean; data: any[]; error?: any }>;
   deleteDonorCardOffer: (id: string) => Promise<{ success: boolean; error?: any }>;
+  donorWarnings: any[];
+  activeDonorWarnings: any[];
+  createDonorWarning: (warningData: any) => Promise<{ success: boolean; data?: any; error?: any }>;
+  getDonorWarnings: (filters?: any) => Promise<{ success: boolean; data: any[]; error?: any }>;
+  deleteDonorWarning: (id: string) => Promise<{ success: boolean; error?: any }>;
+  getWarningsForDonor: (phone: string) => Promise<{ success: boolean; data: any[]; error?: any }>;
+  acknowledgeDonorWarning: (id: string, options?: { setUnavailable?: boolean }) => Promise<{ success: boolean; data?: any; error?: any }>;
+  refreshDonorWarnings: () => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'warning') => void;
   checkIfBlocked: (phone: string) => Promise<{ data: boolean; error?: any }>;
   notificationPermission: NotificationPermission;
@@ -795,6 +803,9 @@ export const TRANSLATIONS = {
     exitAdminButton: 'Exit Admin',
     manageDonorsTab: 'Manage Donors',
     manageEmergenciesTab: 'Manage Emergencies',
+    manageWarningsTab: 'Alerts & Warnings',
+    sendWarningButton: 'Send Alert / Warning',
+    issueWarningTitle: 'Issue Donor Warning or Notice',
     areYouSureTitle: 'Are you absolutely sure?',
     permanentActionWarning: 'This action is permanent and cannot be undone. You are about to delete a {type} record.',
     registeredDonorWord: 'registered donor',
@@ -1281,6 +1292,9 @@ export const TRANSLATIONS = {
     exitAdminButton: 'অ্যাডমিন প্রস্থান',
     manageDonorsTab: 'রক্তদাতা পরিচালনা',
     manageEmergenciesTab: 'জরুরি অনুরোধ পরিচালনা',
+    manageWarningsTab: 'সতর্কবার্তা ও নোটিশ',
+    sendWarningButton: 'সতর্কবার্তা পাঠান',
+    issueWarningTitle: 'রক্তদাতাকে সতর্কতা বা নোটিশ পাঠান',
     areYouSureTitle: 'আপনি কি নিশ্চিত?',
     permanentActionWarning: 'এই কাজটি স্থায়ী এবং পুনরুদ্ধার করা সম্ভব নয়। আপনি একটি {type} রেকর্ড মুছে ফেলতে চলেছেন।',
     registeredDonorWord: 'নিবন্ধিত রক্তদাতা',
@@ -1749,8 +1763,8 @@ export const AppProvider = ({ children }) => {
           if (intervalId) clearInterval(intervalId);
           showToast(
             localStorage.getItem('language') === 'bn'
-              ? 'আপনার অ্যাকাউন্টটি নিষ্ক্রিয় করা হয়েছে। আরও তথ্যের জন্য সহায়তায় যোগাযোগ করুন।'
-              : 'Your account has been deactivated by the administrator.',
+              ? 'আপনার অ্যাকাউন্টটি Darun Tech কর্তৃক স্থগিত করা হয়েছে।'
+              : 'Your account has been suspended by Darun Tech.',
             'error'
           );
           setTimeout(() => {
@@ -2626,6 +2640,109 @@ export const AppProvider = ({ children }) => {
     return await dbService.checkIfBlocked(phone);
   };
 
+  // Donor Alerts & Warnings State
+  const [donorWarnings, setDonorWarnings] = useState<any[]>([]);
+  const [activeDonorWarnings, setActiveDonorWarnings] = useState<any[]>([]);
+
+  const refreshDonorWarnings = useCallback(async () => {
+    if (!isAdmin) return;
+    const res = await dbService.getDonorWarnings();
+    if (res.success && res.data) {
+      setDonorWarnings(res.data);
+    }
+  }, [isAdmin]);
+
+  const createDonorWarning = async (warningData: any) => {
+    if (!isAdmin) return { success: false, error: { message: 'Unauthorized' } };
+    const res = await dbService.createDonorWarning(warningData);
+    if (res.success) {
+      showToast(
+        language === 'bn' ? 'সতর্কবার্তা ও নোটিশ সফলভাবে পাঠানো হয়েছে' : 'Alert & warning notice issued successfully',
+        'success'
+      );
+      await refreshDonorWarnings();
+      if (warningData.autoSetUnavailable) {
+        await refreshData(true);
+      }
+    } else {
+      showToast(res.error?.message || 'Failed to issue warning', 'error');
+    }
+    return res;
+  };
+
+  const getDonorWarnings = async (filters?: any) => {
+    if (!isAdmin) return { success: false, data: [], error: { message: 'Unauthorized' } };
+    return await dbService.getDonorWarnings(filters);
+  };
+
+  const deleteDonorWarning = async (id: string) => {
+    if (!isAdmin) return { success: false, error: { message: 'Unauthorized' } };
+    const res = await dbService.deleteDonorWarning(id);
+    if (res.success) {
+      showToast(
+        language === 'bn' ? 'সতর্কবার্তা প্রত্যাহার করা হয়েছে' : 'Warning notice revoked',
+        'success'
+      );
+      setDonorWarnings(prev => prev.filter(w => w.id !== id));
+    } else {
+      showToast(res.error?.message || 'Failed to revoke warning', 'error');
+    }
+    return res;
+  };
+
+  const getWarningsForDonor = async (phone: string) => {
+    return await dbService.getWarningsForDonor(phone);
+  };
+
+  const acknowledgeDonorWarning = async (id: string, options?: { setUnavailable?: boolean }) => {
+    const phone = currentDonor?.phone;
+    const res = await dbService.acknowledgeDonorWarning(id, { ...options, donorPhone: phone });
+    if (res.success) {
+      setActiveDonorWarnings(prev => prev.filter(w => w.id !== id));
+      if (options?.setUnavailable && currentDonor) {
+        setCurrentDonor((prev: any) => ({ ...prev, is_available: false }));
+        await updateDonorAvailability(currentDonor.id, false);
+      }
+      showToast(
+        language === 'bn' ? 'নোটিশটি গৃহীত হয়েছে' : 'Notice acknowledged',
+        'success'
+      );
+    }
+    return res;
+  };
+
+  // Sync warnings for active logged-in donor
+  useEffect(() => {
+    let cancel = false;
+    const fetchUserWarnings = async () => {
+      if (!currentDonor?.phone) {
+        setActiveDonorWarnings([]);
+        return;
+      }
+      try {
+        const res = await dbService.getWarningsForDonor(currentDonor.phone);
+        if (!cancel && res.success && res.data) {
+          const unack = res.data.filter((w: any) => !w.is_acknowledged);
+          setActiveDonorWarnings(unack);
+        }
+      } catch (e) {}
+    };
+
+    fetchUserWarnings();
+    const interval = setInterval(fetchUserWarnings, 20000);
+    return () => {
+      cancel = true;
+      clearInterval(interval);
+    };
+  }, [currentDonor?.phone]);
+
+  // Load donorWarnings for admin on mount or admin login
+  useEffect(() => {
+    if (isAdmin) {
+      refreshDonorWarnings();
+    }
+  }, [isAdmin, refreshDonorWarnings]);
+
   return (
     <AppContext.Provider
       value={{
@@ -2674,6 +2791,14 @@ export const AppProvider = ({ children }) => {
         updateDonorByAdmin,
         updateEmergencyByAdmin,
         getUserActivityLogs,
+        donorWarnings,
+        activeDonorWarnings,
+        createDonorWarning,
+        getDonorWarnings,
+        deleteDonorWarning,
+        getWarningsForDonor,
+        acknowledgeDonorWarning,
+        refreshDonorWarnings,
         showToast,
         checkIfBlocked,
         notificationPermission,

@@ -478,6 +478,30 @@ export async function initDatabase() {
       `);
     }
 
+    // 13. Donor Alerts & Warnings (Admin Disciplinary & Availability Notices)
+    await dbConn.query(`
+      CREATE TABLE IF NOT EXISTS donor_warnings (
+        id VARCHAR(36) PRIMARY KEY,
+        donor_id VARCHAR(36) NOT NULL,
+        donor_phone VARCHAR(20) NOT NULL,
+        donor_name VARCHAR(150) NOT NULL,
+        warning_type ENUM('unavailability', 'denial', 'unresponsive', 'conduct', 'other') NOT NULL DEFAULT 'unavailability',
+        severity ENUM('notice', 'warning', 'critical') NOT NULL DEFAULT 'warning',
+        title VARCHAR(200) NOT NULL,
+        message TEXT NOT NULL,
+        action_required VARCHAR(100) NULL,
+        auto_set_unavailable TINYINT(1) DEFAULT 0,
+        is_acknowledged TINYINT(1) DEFAULT 0,
+        acknowledged_at DATETIME NULL,
+        created_by VARCHAR(100) NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_warn_donor_id (donor_id),
+        INDEX idx_warn_donor_phone (donor_phone),
+        INDEX idx_warn_ack (is_acknowledged),
+        INDEX idx_warn_created (created_at)
+      ) ENGINE=InnoDB;
+    `);
+
     // Cleanup mock data and test emergencies
     try {
       await dbConn.query(`

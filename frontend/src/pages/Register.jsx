@@ -387,7 +387,7 @@ export default function Register() {
 
   // Pagination for Donation History Log
   const [historyPage, setHistoryPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 5;
 
   // Reset page when lookup occurs or history list updates
   useEffect(() => {
@@ -782,7 +782,7 @@ export default function Register() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="w-full max-w-[1720px] 3xl:max-w-[1840px] mx-auto space-y-6 sm:space-y-8">
       
       {/* Title */}
       <div className="text-center space-y-2.5">
@@ -844,7 +844,7 @@ export default function Register() {
       )}
 
       {/* Main Forms container */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 items-start">
         
         {/* ============================================================== */}
         {/* SCENARIO 1: NEW GOOGLE USER PROFILE COMPLETION                 */}
@@ -852,7 +852,7 @@ export default function Register() {
         {googleProfile && !foundDonor && (
           <form 
             onSubmit={handleRegister} 
-            className="md:col-span-8 md:col-start-3 glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-slate-200/50 dark:border-zinc-800/50 space-y-5 sm:space-y-6 animate-scale-up"
+            className="md:col-span-8 md:col-start-3 xl:col-span-8 xl:col-start-3 2xl:col-span-8 2xl:col-start-3 max-w-4xl mx-auto w-full glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-slate-200/50 dark:border-zinc-800/50 space-y-5 sm:space-y-6 animate-scale-up"
           >
             {/* High-Visibility Profile Completion Warning Banner */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-red-500/15 border-2 border-amber-500/40 dark:border-amber-500/30 p-4 sm:p-5 shadow-lg shadow-amber-500/5 animate-pulse-glow">
@@ -1302,7 +1302,7 @@ export default function Register() {
         {/* SCENARIO 2: UNAUTHENTICATED PORTAL GATEWAY (GOOGLE AUTH FIRST) */}
         {/* ============================================================== */}
         {!googleProfile && !foundDonor && (
-          <div className="md:col-span-8 md:col-start-3 space-y-6">
+          <div className="md:col-span-8 md:col-start-3 xl:col-span-6 xl:col-start-4 2xl:col-span-6 2xl:col-start-4 max-w-xl mx-auto w-full space-y-6">
             {/* Exclusive Google Authentication Card */}
             <div className="glass-panel rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 border border-slate-200/50 dark:border-zinc-800/50 text-center space-y-6 shadow-xl animate-scale-up">
                 
@@ -1373,7 +1373,7 @@ export default function Register() {
         {/* ============================================================== */}
         {foundDonor && (
           <>
-            <div className="md:col-span-5 space-y-6">
+            <div className="md:col-span-5 lg:col-span-4 xl:col-span-4 2xl:col-span-4 3xl:col-span-3 space-y-6 xl:sticky xl:top-24">
               {/* Ultra-Modern Profile Hero Summary Card */}
               <div className="glass-panel border-slate-200/60 dark:border-zinc-800/80 rounded-3xl p-5 sm:p-6 border relative overflow-hidden space-y-5 animate-slide-up shadow-xl shadow-slate-900/5 dark:shadow-black/40">
                 {/* Ambient dynamic glow orbs */}
@@ -1582,380 +1582,389 @@ export default function Register() {
             </div>
 
             {/* Profile Update Controls & Log Donation forms */}
-            <div className="md:col-span-7 space-y-6 animate-fade-in">
+            <div className="md:col-span-7 lg:col-span-8 xl:col-span-8 2xl:col-span-8 3xl:col-span-9 animate-fade-in">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
                 
-                {/* 1. Log Donation Event Form with Cooldown Guard */}
-                {(() => {
-                  const daysSince = calculateDaysSince(foundDonor.last_donation_date);
-                  const isCooldown = daysSince < 90;
-                  const daysRemaining = 90 - daysSince;
-                  const cooldownEndDate = foundDonor.last_donation_date
-                    ? new Date(new Date(foundDonor.last_donation_date).getTime() + 90 * 24 * 60 * 60 * 1000)
-                    : null;
+                {/* Center Sub-Column: Log Donation Event & History Log */}
+                <div className="xl:col-span-6 2xl:col-span-5 3xl:col-span-5 space-y-6">
+                  {/* 1. Log Donation Event Form with Cooldown Guard */}
+                  {(() => {
+                    const daysSince = calculateDaysSince(foundDonor.last_donation_date);
+                    const isCooldown = daysSince < 90;
+                    const daysRemaining = 90 - daysSince;
+                    const cooldownEndDate = foundDonor.last_donation_date
+                      ? new Date(new Date(foundDonor.last_donation_date).getTime() + 90 * 24 * 60 * 60 * 1000)
+                      : null;
 
-                  return (
-                    <form 
-                      onSubmit={handleRequestDonationLog}
-                      className="glass-panel rounded-3xl p-5 sm:p-6 border border-slate-200/60 dark:border-zinc-800/80 space-y-4 font-semibold text-xs relative overflow-hidden shadow-lg shadow-slate-900/5 dark:shadow-black/30"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-200/60 dark:border-zinc-800/60">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md ${
-                            isCooldown 
-                              ? 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/25' 
-                              : 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/25'
-                          }`}>
-                            {isCooldown ? <Clock className="w-4 h-4 animate-spin-slow" /> : <History className="w-4 h-4" />}
-                          </div>
-                          <div className="min-w-0">
-                            <h3 className="font-black text-slate-900 dark:text-white text-base leading-tight tracking-tight">
-                              {t('logDonationTitle')}
-                            </h3>
-                            <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium leading-normal mt-0.5">
-                              {language === 'bn' ? 'চিকিৎসা সুরক্ষার জন্য ৯০ দিনের কুলডাউন প্রযোজ্য' : 'Medical safety standard: 90 days cooldown'}
-                            </p>
-                          </div>
-                        </div>
-
-                        {isCooldown && (
-                          <div className="self-start sm:self-auto">
-                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1.5 shrink-0">
-                              <Clock className="w-3.5 h-3.5 animate-pulse" />
-                              {t('daysRemainingCooldown', { days: daysRemaining })}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Cooldown Active Warning Box */}
-                      {isCooldown ? (
-                        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 space-y-2 text-xs">
-                          <div className="flex items-start gap-2.5">
-                            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                            <div>
-                              <p className="font-bold">{t('cooldownActiveTitle')}</p>
-                              <p className="text-[11px] text-amber-700/90 dark:text-amber-400/90 leading-relaxed mt-0.5">
-                                {t('cooldownActiveDesc', {
-                                  date: foundDonor.last_donation_date
-                                    ? new Date(foundDonor.last_donation_date).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-                                    : ''
-                                })}
+                    return (
+                      <form 
+                        onSubmit={handleRequestDonationLog}
+                        className="glass-panel rounded-3xl p-5 sm:p-6 border border-slate-200/60 dark:border-zinc-800/80 space-y-4 font-semibold text-xs relative overflow-hidden shadow-lg shadow-slate-900/5 dark:shadow-black/30"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-200/60 dark:border-zinc-800/60">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md ${
+                              isCooldown 
+                                ? 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/25' 
+                                : 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/25'
+                            }`}>
+                              {isCooldown ? <Clock className="w-4 h-4 animate-spin-slow" /> : <History className="w-4 h-4" />}
+                            </div>
+                            <div className="min-w-0">
+                              <h3 className="font-black text-slate-900 dark:text-white text-base leading-tight tracking-tight">
+                                {t('logDonationTitle')}
+                              </h3>
+                              <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium leading-normal mt-0.5">
+                                {language === 'bn' ? 'চিকিৎসা সুরক্ষার জন্য ৯০ দিনের কুলডাউন প্রযোজ্য' : 'Medical safety standard: 90 days cooldown'}
                               </p>
                             </div>
                           </div>
-                          {cooldownEndDate && (
-                            <div className="text-[10px] font-extrabold text-amber-900 dark:text-amber-200 bg-amber-500/15 px-3 py-1 rounded-lg inline-block">
-                              {t('cooldownEndsOn', {
-                                date: cooldownEndDate.toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-                              })}
+
+                          {isCooldown && (
+                            <div className="self-start sm:self-auto">
+                              <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1.5 shrink-0">
+                                <Clock className="w-3.5 h-3.5 animate-pulse" />
+                                {t('daysRemainingCooldown', { days: daysRemaining })}
+                              </span>
                             </div>
                           )}
                         </div>
-                      ) : null}
+
+                        {/* Cooldown Active Warning Box */}
+                        {isCooldown ? (
+                          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 space-y-2 text-xs">
+                            <div className="flex items-start gap-2.5">
+                              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="font-bold">{t('cooldownActiveTitle')}</p>
+                                <p className="text-[11px] text-amber-700/90 dark:text-amber-400/90 leading-relaxed mt-0.5">
+                                  {t('cooldownActiveDesc', {
+                                    date: foundDonor.last_donation_date
+                                      ? new Date(foundDonor.last_donation_date).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                                      : ''
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                            {cooldownEndDate && (
+                              <div className="text-[10px] font-extrabold text-amber-900 dark:text-amber-200 bg-amber-500/15 px-3 py-1 rounded-lg inline-block">
+                                {t('cooldownEndsOn', {
+                                  date: cooldownEndDate.toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
+                            {t('donationDate')}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="date"
+                              required
+                              disabled={isCooldown || formLoading}
+                              max={new Date().toISOString().split('T')[0]}
+                              value={newDonationDate}
+                              onChange={(e) => setNewDonationDate(e.target.value)}
+                              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-xs font-medium"
+                            />
+                            <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={isCooldown || formLoading}
+                          className={`w-full font-black py-3 px-4 rounded-xl shadow-md active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 text-xs ${
+                            isCooldown
+                              ? 'bg-slate-200/80 dark:bg-zinc-800/80 text-slate-400 dark:text-zinc-500 cursor-not-allowed border border-slate-300/40 dark:border-zinc-700/40 shadow-none'
+                              : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/20 hover:shadow-emerald-600/30 cursor-pointer disabled:opacity-50'
+                          }`}
+                        >
+                          {isCooldown ? (
+                            <>
+                              <Clock className="w-4 h-4 text-amber-500" />
+                              <span>{t('cooldownRestrictedNotice')}</span>
+                            </>
+                          ) : formLoading ? (
+                            t('loggingButton')
+                          ) : (
+                            t('logDonationButton')
+                          )}
+                        </button>
+                      </form>
+                    );
+                  })()}
+
+                  {/* 3. Donation History Log Table */}
+                  <div className="glass-panel rounded-3xl p-5 sm:p-6 border border-slate-200/60 dark:border-zinc-800/80 space-y-4 shadow-lg shadow-slate-900/5 dark:shadow-black/30">
+                    <div className="flex items-center gap-3 pb-3.5 border-b border-slate-200/60 dark:border-zinc-800/60">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center shadow-md shadow-red-500/20">
+                        <History className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-black text-slate-900 dark:text-white text-base tracking-tight">
+                          {t('donationHistoryTitle')}
+                        </h4>
+                        <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+                          {language === 'bn' ? 'অতীতের সমস্ত সফল রক্তদানের রেকর্ড' : 'Verified log of all your life-saving donations'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {historyLoading ? (
+                      <div className="py-8 text-center text-xs text-slate-400 dark:text-zinc-500 animate-pulse font-semibold flex items-center justify-center gap-2">
+                        <Clock className="w-4 h-4 animate-spin" />
+                        <span>{t('loadingDonationHistory')}</span>
+                      </div>
+                    ) : donorHistory.length === 0 ? (
+                      <div className="py-8 text-center space-y-1.5">
+                        <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 dark:bg-zinc-900 flex items-center justify-center text-slate-400">
+                          <Droplet className="w-5 h-5 text-slate-300 dark:text-zinc-600" />
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
+                          {t('noDonationEvents')}
+                        </p>
+                        <p className="text-[11px] text-slate-400 dark:text-zinc-500">
+                          {language === 'bn' ? 'উপরের ফর্ম থেকে আপনার রক্তদান যোগ করুন।' : 'Log your first donation using the form above.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="overflow-x-auto rounded-2xl border border-slate-200/60 dark:border-zinc-800/60 bg-white/40 dark:bg-zinc-950/40">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50/80 dark:bg-zinc-900/80 border-b border-slate-200/60 dark:border-zinc-800/60 text-slate-400 dark:text-zinc-500 uppercase tracking-wider text-[10px]">
+                                <th className="py-3 px-4 font-black">{t('eventDateLabel')}</th>
+                                <th className="py-3 px-4 font-black text-right">{t('statusLabel')}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-zinc-900">
+                              {paginatedHistory.map((item, idx) => (
+                                <tr key={item.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/40 transition-colors">
+                                  <td className="py-3 px-4 font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                                    <span>{new Date(item.donation_date).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                  </td>
+                                  <td className="py-3 px-4 text-right">
+                                    <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-black uppercase tracking-wider inline-flex items-center gap-1">
+                                      <Check className="w-3 h-3" />
+                                      <span>{t('loggedStatus')}</span>
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Pagination Controls */}
+                        {totalHistoryPages > 1 && (
+                          <div className="flex justify-between items-center pt-3 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
+                            <button
+                              type="button"
+                              onClick={() => setHistoryPage(prev => Math.max(1, prev - 1))}
+                              disabled={historyPage === 1}
+                              className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold py-1.5 px-3 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border border-slate-200/50 dark:border-zinc-800"
+                            >
+                              <ChevronLeft className="w-3.5 h-3.5" />
+                              <span>{t('previousPage')}</span>
+                            </button>
+                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
+                              {t('pageIndicator', { current: historyPage, total: totalHistoryPages })}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setHistoryPage(prev => Math.min(totalHistoryPages, prev + 1))}
+                              disabled={historyPage === totalHistoryPages}
+                              className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold py-1.5 px-3 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border border-slate-200/50 dark:border-zinc-800"
+                            >
+                              <span>{t('nextPage')}</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Sub-Column: Edit Profile Form */}
+                <div className="xl:col-span-6 2xl:col-span-7 3xl:col-span-7 space-y-6">
+                  {/* 2. Edit Profile Form */}
+                  <form 
+                    onSubmit={handleUpdateProfile}
+                    className="glass-panel rounded-3xl p-5 sm:p-6 border border-slate-200/60 dark:border-zinc-800/80 space-y-4 shadow-lg shadow-slate-900/5 dark:shadow-black/30"
+                  >
+                    <div className="flex items-center gap-3 pb-3.5 border-b border-slate-200/60 dark:border-zinc-800/60">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+                        <Settings className="w-4 h-4" />
+                      </div>
+                      <h3 className="font-black text-slate-900 dark:text-white text-base tracking-tight">
+                        {t('updateDetailsTitle')}
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                          {t('fullName')}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white font-medium shadow-xs"
+                        />
+                      </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
-                          {t('donationDate')}
+                        <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+                          {t('areaLabel')}
+                        </label>
+                        <select
+                          value={editArea}
+                          onChange={(e) => setEditArea(e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white cursor-pointer font-medium shadow-xs"
+                        >
+                          {DISTRICT_AREAS.map((district) => (
+                            <optgroup
+                              key={district.id}
+                              label={`📍 ${language === 'bn' ? district.nameBn : district.name}`}
+                              className={district.color.optGroupClass}
+                            >
+                              {district.upazilas.map((a) => (
+                                <option key={a} value={a} className="text-slate-800 dark:text-zinc-200 font-normal">
+                                  {getAreaLabel(a, t)}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Occupation in Profile Edit */}
+                      <div className="space-y-1.5 sm:col-span-2 xl:col-span-1 2xl:col-span-2">
+                        <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
+                          <span>{t('occupationLabel')}</span>
                         </label>
                         <div className="relative">
-                          <input
-                            type="date"
-                            required
-                            disabled={isCooldown || formLoading}
-                            max={new Date().toISOString().split('T')[0]}
-                            value={newDonationDate}
-                            onChange={(e) => setNewDonationDate(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-xs"
-                          />
-                          <Calendar className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={isCooldown || formLoading}
-                        className={`w-full font-black py-3 px-4 rounded-xl shadow-md active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 text-xs ${
-                          isCooldown
-                            ? 'bg-slate-200/80 dark:bg-zinc-800/80 text-slate-400 dark:text-zinc-500 cursor-not-allowed border border-slate-300/40 dark:border-zinc-700/40 shadow-none'
-                            : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/20 hover:shadow-emerald-600/30 cursor-pointer disabled:opacity-50'
-                        }`}
-                      >
-                        {isCooldown ? (
-                          <>
-                            <Clock className="w-4 h-4 text-amber-500" />
-                            <span>{t('cooldownRestrictedNotice')}</span>
-                          </>
-                        ) : formLoading ? (
-                          t('loggingButton')
-                        ) : (
-                          t('logDonationButton')
-                        )}
-                      </button>
-                    </form>
-                  );
-                })()}
-
-                {/* 2. Edit Profile Form */}
-                <form 
-                  onSubmit={handleUpdateProfile}
-                  className="glass-panel rounded-3xl p-5 sm:p-6 border border-slate-200/60 dark:border-zinc-800/80 space-y-4 shadow-lg shadow-slate-900/5 dark:shadow-black/30"
-                >
-                  <div className="flex items-center gap-3 pb-3.5 border-b border-slate-200/60 dark:border-zinc-800/60">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-                      <Settings className="w-4 h-4" />
-                    </div>
-                    <h3 className="font-black text-slate-900 dark:text-white text-base tracking-tight">
-                      {t('updateDetailsTitle')}
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                        {t('fullName')}
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white font-medium shadow-xs"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                        {t('areaLabel')}
-                      </label>
-                      <select
-                        value={editArea}
-                        onChange={(e) => setEditArea(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white cursor-pointer font-medium shadow-xs"
-                      >
-                        {DISTRICT_AREAS.map((district) => (
-                          <optgroup
-                            key={district.id}
-                            label={`📍 ${language === 'bn' ? district.nameBn : district.name}`}
-                            className={district.color.optGroupClass}
+                          <select
+                            value={editOccupation}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEditOccupation(val);
+                              if (val === 'other') {
+                                setEditInstitute('');
+                                setEditStudentId('');
+                              }
+                            }}
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white cursor-pointer font-medium shadow-xs transition-all appearance-none"
                           >
-                            {district.upazilas.map((a) => (
-                              <option key={a} value={a} className="text-slate-800 dark:text-zinc-200 font-normal">
-                                {getAreaLabel(a, t)}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Occupation in Profile Edit */}
-                    <div className="space-y-1.5 sm:col-span-2">
-                      <label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>{t('occupationLabel')}</span>
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={editOccupation}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setEditOccupation(val);
-                            if (val === 'other') {
-                              setEditInstitute('');
-                              setEditStudentId('');
-                            }
-                          }}
-                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white cursor-pointer font-medium shadow-xs transition-all appearance-none"
-                        >
-                          <option value="other">👤 {t('occupationGeneral')}</option>
-                          <option value="student">🎓 {t('occupationStudent')}</option>
-                          <option value="teacher">👨‍🏫 {t('occupationTeacher')}</option>
-                          <option value="doctor">🩺 {t('occupationDoctor')}</option>
-                          <option value="management">💼 {t('occupationManagement')}</option>
-                          <option value="staff">👔 {t('occupationStaff')}</option>
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center px-3.5 pointer-events-none text-slate-400">
-                          <Sliders className="w-4 h-4" />
+                            <option value="other">👤 {t('occupationGeneral')}</option>
+                            <option value="student">🎓 {t('occupationStudent')}</option>
+                            <option value="teacher">👨‍🏫 {t('occupationTeacher')}</option>
+                            <option value="doctor">🩺 {t('occupationDoctor')}</option>
+                            <option value="management">💼 {t('occupationManagement')}</option>
+                            <option value="staff">👔 {t('occupationStaff')}</option>
+                          </select>
+                          <div className="absolute inset-y-0 right-0 flex items-center px-3.5 pointer-events-none text-slate-400">
+                            <Sliders className="w-4 h-4" />
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Institute & ID in Profile Edit */}
-                    {editOccupation && editOccupation !== 'other' && (
-                      <div className="space-y-3 sm:col-span-2 p-3.5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-800/40 animate-fade-in">
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
-                            {t('instituteLabel')}
-                          </label>
-                          <InstituteAutocomplete
-                            value={editInstitute}
-                            onChange={setEditInstitute}
-                            placeholder={t('institutePlaceholder')}
-                            language={language}
-                          />
+                      {/* Institute & ID in Profile Edit */}
+                      {editOccupation && editOccupation !== 'other' && (
+                        <div className="space-y-3 sm:col-span-2 xl:col-span-1 2xl:col-span-2 p-3.5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-800/40 animate-fade-in">
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
+                              {t('instituteLabel')}
+                            </label>
+                            <InstituteAutocomplete
+                              value={editInstitute}
+                              onChange={setEditInstitute}
+                              placeholder={t('institutePlaceholder')}
+                              language={language}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
+                              {editOccupation === 'student' ? t('studentIdLabel') : (language === 'bn' ? 'শিক্ষক / ফ্যাকাল্টি আইডি' : 'Faculty ID')}
+                            </label>
+                            <input
+                              type="text"
+                              value={editStudentId}
+                              onChange={(e) => setEditStudentId(e.target.value)}
+                              placeholder={editOccupation === 'student' ? 'e.g. 2021331001' : 'e.g. FAC-1024'}
+                              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white font-mono"
+                            />
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
-                            {editOccupation === 'student' ? t('studentIdLabel') : (language === 'bn' ? 'শিক্ষক / ফ্যাকাল্টি আইডি' : 'Faculty ID')}
-                          </label>
-                          <input
-                            type="text"
-                            value={editStudentId}
-                            onChange={(e) => setEditStudentId(e.target.value)}
-                            placeholder={editOccupation === 'student' ? 'e.g. 2021331001' : 'e.g. FAC-1024'}
-                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white font-mono"
-                          />
-                        </div>
-                      </div>
-                    )}
+                      )}
 
-                    <div className="space-y-1.5 sm:col-span-2 flex items-center gap-2.5 pt-2">
-                      <input
-                        type="checkbox"
-                        id="editAvailable"
-                        checked={editAvailable}
-                        onChange={(e) => setEditAvailable(e.target.checked)}
-                        className="w-5 h-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      />
-                      <label htmlFor="editAvailable" className="cursor-pointer select-none">
-                        <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">
-                          {t('setAvailable')}
-                        </span>
-                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 block">
-                          {t('toggleManualPresence')}
-                        </span>
-                      </label>
-                    </div>
-
-                    {/* Google Profile Photo Visibility Toggle */}
-                    {Boolean(foundDonor.avatar_url || foundDonor.google_id) && (
-                      <div className="space-y-1.5 sm:col-span-2 flex items-start gap-2.5 pt-2 border-t border-slate-200/50 dark:border-zinc-800/50">
+                      <div className="space-y-1.5 sm:col-span-2 xl:col-span-1 2xl:col-span-2 flex items-center gap-2.5 pt-2">
                         <input
                           type="checkbox"
-                          id="editHidePhoto"
-                          checked={editHidePhoto}
-                          onChange={(e) => setEditHidePhoto(e.target.checked)}
-                          className="w-5 h-5 mt-0.5 rounded-md border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                          id="editAvailable"
+                          checked={editAvailable}
+                          onChange={(e) => setEditAvailable(e.target.checked)}
+                          className="w-5 h-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                         />
-                        <label htmlFor="editHidePhoto" className="cursor-pointer select-none flex-1">
-                          <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
-                            {editHidePhoto ? (
-                              <EyeOff className="w-4 h-4 text-amber-500 shrink-0" />
-                            ) : (
-                              <Eye className="w-4 h-4 text-emerald-500 shrink-0" />
-                            )}
-                            <span>{t('hideGooglePhoto')}</span>
+                        <label htmlFor="editAvailable" className="cursor-pointer select-none">
+                          <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">
+                            {t('setAvailable')}
                           </span>
-                          <span className="text-[11px] text-slate-500 dark:text-zinc-400 block mt-0.5 leading-relaxed">
-                            {t('hideGooglePhotoDesc')}
+                          <span className="text-[11px] text-slate-400 dark:text-zinc-500 block">
+                            {t('toggleManualPresence')}
                           </span>
                         </label>
                       </div>
-                    )}
-                  </div>
 
-                  <button
-                    type="submit"
-                    disabled={formLoading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-3 px-4 rounded-xl shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{t('saveChanges')}</span>
-                  </button>
-                </form>
-
-                {/* 3. Donation History Log Table */}
-                <div className="glass-panel rounded-3xl p-5 sm:p-6 border border-slate-200/60 dark:border-zinc-800/80 space-y-4 shadow-lg shadow-slate-900/5 dark:shadow-black/30">
-                  <div className="flex items-center gap-3 pb-3.5 border-b border-slate-200/60 dark:border-zinc-800/60">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center shadow-md shadow-red-500/20">
-                      <History className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="font-black text-slate-900 dark:text-white text-base tracking-tight">
-                        {t('donationHistoryTitle')}
-                      </h4>
-                      <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
-                        {language === 'bn' ? 'অতীতের সমস্ত সফল রক্তদানের রেকর্ড' : 'Verified log of all your life-saving donations'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {historyLoading ? (
-                    <div className="py-8 text-center text-xs text-slate-400 dark:text-zinc-500 animate-pulse font-semibold flex items-center justify-center gap-2">
-                      <Clock className="w-4 h-4 animate-spin" />
-                      <span>{t('loadingDonationHistory')}</span>
-                    </div>
-                  ) : donorHistory.length === 0 ? (
-                    <div className="py-8 text-center space-y-1.5">
-                      <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 dark:bg-zinc-900 flex items-center justify-center text-slate-400">
-                        <Droplet className="w-5 h-5 text-slate-300 dark:text-zinc-600" />
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
-                        {t('noDonationEvents')}
-                      </p>
-                      <p className="text-[11px] text-slate-400 dark:text-zinc-500">
-                        {language === 'bn' ? 'উপরের ফর্ম থেকে আপনার রক্তদান যোগ করুন।' : 'Log your first donation using the form above.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="overflow-x-auto rounded-2xl border border-slate-200/60 dark:border-zinc-800/60 bg-white/40 dark:bg-zinc-950/40">
-                        <table className="w-full text-left text-xs border-collapse">
-                          <thead>
-                            <tr className="bg-slate-50/80 dark:bg-zinc-900/80 border-b border-slate-200/60 dark:border-zinc-800/60 text-slate-400 dark:text-zinc-500 uppercase tracking-wider text-[10px]">
-                              <th className="py-3 px-4 font-black">{t('eventDateLabel')}</th>
-                              <th className="py-3 px-4 font-black text-right">{t('statusLabel')}</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 dark:divide-zinc-900">
-                            {paginatedHistory.map((item, idx) => (
-                              <tr key={item.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/40 transition-colors">
-                                <td className="py-3 px-4 font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-2">
-                                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                                  <span>{new Date(item.donation_date).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                                </td>
-                                <td className="py-3 px-4 text-right">
-                                  <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-black uppercase tracking-wider inline-flex items-center gap-1">
-                                    <Check className="w-3 h-3" />
-                                    <span>{t('loggedStatus')}</span>
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Pagination Controls */}
-                      {totalHistoryPages > 1 && (
-                        <div className="flex justify-between items-center pt-3 border-t border-slate-200/50 dark:border-zinc-800/50 animate-fade-in">
-                          <button
-                            type="button"
-                            onClick={() => setHistoryPage(prev => Math.max(1, prev - 1))}
-                            disabled={historyPage === 1}
-                            className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold py-1.5 px-3 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border border-slate-200/50 dark:border-zinc-800"
-                          >
-                            <ChevronLeft className="w-3.5 h-3.5" />
-                            <span>{t('previousPage')}</span>
-                          </button>
-                          <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold">
-                            {t('pageIndicator', { current: historyPage, total: totalHistoryPages })}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setHistoryPage(prev => Math.min(totalHistoryPages, prev + 1))}
-                            disabled={historyPage === totalHistoryPages}
-                            className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl text-xs font-bold py-1.5 px-3 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border border-slate-200/50 dark:border-zinc-800"
-                          >
-                            <span>{t('nextPage')}</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
+                      {/* Google Profile Photo Visibility Toggle */}
+                      {Boolean(foundDonor.avatar_url || foundDonor.google_id) && (
+                        <div className="space-y-1.5 sm:col-span-2 xl:col-span-1 2xl:col-span-2 flex items-start gap-2.5 pt-2 border-t border-slate-200/50 dark:border-zinc-800/50">
+                          <input
+                            type="checkbox"
+                            id="editHidePhoto"
+                            checked={editHidePhoto}
+                            onChange={(e) => setEditHidePhoto(e.target.checked)}
+                            className="w-5 h-5 mt-0.5 rounded-md border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                          />
+                          <label htmlFor="editHidePhoto" className="cursor-pointer select-none flex-1">
+                            <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
+                              {editHidePhoto ? (
+                                <EyeOff className="w-4 h-4 text-amber-500 shrink-0" />
+                              ) : (
+                                <Eye className="w-4 h-4 text-emerald-500 shrink-0" />
+                              )}
+                              <span>{t('hideGooglePhoto')}</span>
+                            </span>
+                            <span className="text-[11px] text-slate-500 dark:text-zinc-400 block mt-0.5 leading-relaxed">
+                              {t('hideGooglePhotoDesc')}
+                            </span>
+                          </label>
                         </div>
                       )}
-                    </>
-                  )}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={formLoading}
+                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-3 px-4 rounded-xl shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 text-xs cursor-pointer"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>{t('saveChanges')}</span>
+                    </button>
+                  </form>
                 </div>
+
               </div>
+            </div>
           </>
         )}
       </div>

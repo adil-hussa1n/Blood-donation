@@ -60,7 +60,7 @@ serve(async (req) => {
           status: "blocked",
           reason: "phone_blocked_recovery"
         }]);
-        return new Response(JSON.stringify({ error: { message: "Your account has been blocked. Contact Support." } }), {
+        return new Response(JSON.stringify({ error: { message: "Your account has been suspended. Contact Support." } }), {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
@@ -156,7 +156,7 @@ serve(async (req) => {
             status: "blocked",
             reason: "phone_blocked_update"
           }]);
-          return new Response(JSON.stringify({ error: { message: "Your account has been blocked. Contact Support." } }), {
+          return new Response(JSON.stringify({ error: { message: "Your account has been suspended. Contact Support." } }), {
             status: 403,
             headers: { ...corsHeaders, "Content-Type": "application/json" }
           });

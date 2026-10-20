@@ -55,3 +55,20 @@ export interface AdminUser {
   password_hash: string;
   created_at?: string;
 }
+
+export interface DonorWarning {
+  id: string;
+  donor_id: string;
+  donor_phone: string;
+  donor_name: string;
+  warning_type: 'unavailability' | 'denial' | 'unresponsive' | 'conduct' | 'other';
+  severity: 'notice' | 'warning' | 'critical';
+  title: string;
+  message: string;
+  action_required?: string | null;
+  auto_set_unavailable?: boolean;
+  is_acknowledged: boolean;
+  acknowledged_at?: string | null;
+  created_by: string;
+  created_at?: string;
+}
