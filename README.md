@@ -90,7 +90,7 @@ npm run dev
 - **Frontend**: `http://localhost:5173`
 - **Backend API**: `http://localhost:5000`
 - **API Health Check**: `http://localhost:5000/api/health`
-- **Admin Dashboard**: `http://localhost:5173/adil` (Default: `adilhussa1n` / `Adil@1267`)
+- **Admin Dashboard**: `http://localhost:5173/adil` (Requires authorized Google Authentication)
 
 ---
 

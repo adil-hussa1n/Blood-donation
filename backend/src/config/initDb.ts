@@ -524,20 +524,6 @@ export async function initDatabase() {
       console.warn('Mock cleanup note:', cleanupErr.message);
     }
 
-    // Seed default admin if not exists
-    const adminUser = 'adilhussa1n';
-    const adminPass = 'Adil@1267';
-    const [existingAdmin]: any = await dbConn.query('SELECT id FROM admins WHERE username = ?', [adminUser]);
-
-    if (!existingAdmin || existingAdmin.length === 0) {
-      const hashedPass = await bcrypt.hash(adminPass, 10);
-      await dbConn.query(
-        'INSERT INTO admins (id, username, password_hash) VALUES (?, ?, ?)',
-        [crypto.randomUUID(), adminUser, hashedPass]
-      );
-      console.log(`✅ Default admin created: ${adminUser}`);
-    }
-
     // Register Google admin emails (ADMIN_GOOGLE_EMAIL) in the admins table
     const adminEmails = (process.env.ADMIN_GOOGLE_EMAIL || process.env.ADMIN_EMAIL || 'adilh5353@gmail.com,daruntech.pvt.ltd@gmail.com')
       .split(',')

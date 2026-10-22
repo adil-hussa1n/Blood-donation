@@ -22,11 +22,11 @@ export function verifyToken(token: string): any {
   }
 }
 
-// Middleware: Authenticates admin via Bearer JWT OR request body (adminUsername & adminPassword)
+// Middleware: Authenticates admin via Bearer JWT from verified Google Admin Login
 export async function requireAdmin(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
   
-  // 1. Try Bearer JWT
+  // 1. Try Bearer JWT (issued upon Google Admin Login)
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     try {
@@ -37,39 +37,11 @@ export async function requireAdmin(req: AuthRequest, res: Response, next: NextFu
         return;
       }
     } catch (err) {
-      // Invalid JWT, continue to fallback check
+      // Invalid JWT
     }
   }
 
-  // 2. Fallback: Check admin credentials from query or body (backward compatibility with existing frontend)
-  const username = req.body?.adminUsername || req.query?.adminUsername;
-  const password = req.body?.adminPassword || req.query?.adminPassword;
-
-  if (username && password) {
-    try {
-      const cleanUser = String(username).trim().toLowerCase();
-      // Fast fallback for default configured admin
-      if (cleanUser === 'adilhussa1n' && password === 'Adil@1267') {
-        req.admin = { username: cleanUser };
-        next();
-        return;
-      }
-
-      const [rows]: any = await pool.query('SELECT password_hash FROM admins WHERE LOWER(username) = ?', [cleanUser]);
-      if (rows && rows.length > 0) {
-        const match = await bcrypt.compare(String(password), rows[0].password_hash);
-        if (match) {
-          req.admin = { username: cleanUser };
-          next();
-          return;
-        }
-      }
-    } catch (err) {
-      console.error('Admin verification error:', err);
-    }
-  }
-
-  res.status(401).json({ error: { message: 'Unauthorized: Admin authentication required.' } });
+  res.status(401).json({ error: { message: 'Unauthorized: Admin authentication via Google required.' } });
 }
 
 // Middleware: Authenticates admin OR donor self-action

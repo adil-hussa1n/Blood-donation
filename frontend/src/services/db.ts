@@ -551,27 +551,11 @@ export const dbService = {
   // ==========================================
   // ADMIN AUTHENTICATION
   // ==========================================
-  async verifyAdminCredentials(username: string, password?: string): Promise<{ success: boolean; token?: string; error: any }> {
-    if (isDemoMode) {
-      if (username.trim().toLowerCase() === 'adilhussa1n' && password === 'Adil@1267') {
-        return { success: true, error: null };
-      }
-      return { success: false, error: { message: 'Invalid Admin credentials.' } };
-    }
-
-    const res = await apiRequest<{ token?: string }>('/admin/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (res.success && res.data?.token) {
-      localStore.setItem('adminToken', res.data.token);
-    }
-
+  async verifyAdminCredentials(_username?: string, _password?: string): Promise<{ success: boolean; token?: string; error: any }> {
     return {
-      success: !!res.success,
-      token: res.data?.token,
-      error: res.error,
+      success: false,
+      token: undefined,
+      error: { message: 'Password-based admin login is disabled. Admin must sign in via Google Authentication.' },
     };
   },
 

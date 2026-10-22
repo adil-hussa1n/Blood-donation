@@ -155,26 +155,13 @@ export async function updateEmergencyRequestStatus(req: Request, res: Response):
       authorized = true;
     }
 
-    // Check Admin auth via Bearer token OR username/password
+    // Check Admin auth via Bearer token
     const authHeader = req.headers.authorization;
     if (!authorized && authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
       const decoded: any = verifyToken(token);
       if (decoded && decoded.role === 'admin') {
         authorized = true;
-      }
-    }
-
-    if (!authorized && adminUsername && adminPassword) {
-      if (adminUsername.trim().toLowerCase() === 'adilhussa1n' && adminPassword === 'Adil@1267') {
-        authorized = true;
-      } else {
-        const [admin]: any = await pool.query('SELECT password_hash FROM admins WHERE LOWER(username) = ?', [
-          adminUsername.trim().toLowerCase(),
-        ]);
-        if (admin && admin.length > 0) {
-          authorized = await bcrypt.compare(adminPassword, admin[0].password_hash);
-        }
       }
     }
 
@@ -225,26 +212,13 @@ export async function deleteEmergencyRequest(req: Request, res: Response): Promi
       authorized = true;
     }
 
-    // 2. Admin auth check via Bearer token OR username/password
+    // 2. Admin auth check via Bearer token
     const authHeader = req.headers.authorization;
     if (!authorized && authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
       const decoded: any = verifyToken(token);
       if (decoded && decoded.role === 'admin') {
         authorized = true;
-      }
-    }
-
-    if (!authorized && adminUsername && adminPassword) {
-      if (adminUsername.trim().toLowerCase() === 'adilhussa1n' && adminPassword === 'Adil@1267') {
-        authorized = true;
-      } else {
-        const [admin]: any = await pool.query('SELECT password_hash FROM admins WHERE LOWER(username) = ?', [
-          adminUsername.trim().toLowerCase(),
-        ]);
-        if (admin && admin.length > 0) {
-          authorized = await bcrypt.compare(adminPassword, admin[0].password_hash);
-        }
       }
     }
 

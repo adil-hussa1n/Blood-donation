@@ -63,35 +63,11 @@ export async function googleAdminLogin(req: Request, res: Response): Promise<voi
   });
 }
 
-export async function verifyAdminCredentials(req: Request, res: Response): Promise<void> {
-  const { username, password } = req.body;
-  const cleanUser = String(username || '').trim().toLowerCase();
-
-  // Fast check for default fallback admin
-  if (cleanUser === 'adilhussa1n' && password === 'Adil@1267') {
-    const token = generateToken({ username: cleanUser, role: 'admin' });
-    res.json({ success: true, token, error: null });
-    return;
-  }
-
-  try {
-    const [rows]: any = await pool.query('SELECT password_hash FROM admins WHERE LOWER(username) = ?', [cleanUser]);
-    if (!rows || rows.length === 0) {
-      res.status(401).json({ success: false, error: { message: 'Invalid Admin credentials.' } });
-      return;
-    }
-
-    const match = await bcrypt.compare(String(password || ''), rows[0].password_hash);
-    if (!match) {
-      res.status(401).json({ success: false, error: { message: 'Invalid Admin credentials.' } });
-      return;
-    }
-
-    const token = generateToken({ username: cleanUser, role: 'admin' });
-    res.json({ success: true, token, error: null });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: { message: error.message } });
-  }
+export async function verifyAdminCredentials(_req: Request, res: Response): Promise<void> {
+  res.status(403).json({
+    success: false,
+    error: { message: 'Password-based admin login has been disabled. Administrators must sign in exclusively via authorized Google Authentication.' }
+  });
 }
 
 export async function blockDonorByPhone(req: Request, res: Response): Promise<void> {
