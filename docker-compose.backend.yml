@@ -22,7 +22,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-*}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      ADMIN_GOOGLE_EMAIL: ${ADMIN_GOOGLE_EMAIL:-adilh5353@gmail.com}
+      ADMIN_GOOGLE_EMAIL: ${ADMIN_GOOGLE_EMAIL:-adilh5353@gmail.com,daruntech.pvt.ltd@gmail.com}
     ports:
       - "${BACKEND_PORT:-5000}:5000"
     networks:

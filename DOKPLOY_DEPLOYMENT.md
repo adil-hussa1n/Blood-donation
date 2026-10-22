@@ -57,8 +57,8 @@ GOOGLE_CLIENT_ID=your_google_client_id_here.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 VITE_GOOGLE_CLIENT_ID=your_google_client_id_here.apps.googleusercontent.com
 
-# Single Authorized Admin Google Account
-ADMIN_GOOGLE_EMAIL=adilh5353@gmail.com
+# Authorized Admin Google Accounts (Comma-separated)
+ADMIN_GOOGLE_EMAIL=adilh5353@gmail.com,daruntech.pvt.ltd@gmail.com
 ```
 
 ### Step 5: Configure Domain & SSL
@@ -112,7 +112,7 @@ Once deployed:
    ```
 3. **Admin Login**:
    - Go to `https://your-domain.com/adil`.
-   - Sign in with your authorized Google account (`adilh5353@gmail.com`).
+   - Sign in with an authorized Google account (`adilh5353@gmail.com` or `daruntech.pvt.ltd@gmail.com`).
    - Verify administrative controls, emergency approvals, and donor management.
 
 ---
