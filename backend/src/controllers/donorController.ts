@@ -637,16 +637,8 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
       }
     }
 
-    // 2. Fallback to provided user object (supports dev / demo simulated Google sign-in)
-    if (!googleId && user) {
-      googleId = user.sub || user.google_id || `google_${Date.now()}`;
-      email = user.email ? String(user.email).trim().toLowerCase() : '';
-      name = user.name || '';
-      avatarUrl = user.picture || user.avatar_url || '';
-    }
-
-    if (!email && !googleId) {
-      res.status(400).json({ success: false, error: { message: 'Invalid Google authentication payload.' } });
+    if (!email || !googleId) {
+      res.status(401).json({ success: false, error: { message: 'Invalid Google authentication payload: valid Google token required.' } });
       return;
     }
 

@@ -7,13 +7,11 @@ import { detectInAppBrowser, getAndroidChromeIntentUrl, copyUrlToClipboard } fro
 interface InAppBrowserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onContinueAnyway?: () => void;
 }
 
 export default function InAppBrowserModal({
   isOpen,
   onClose,
-  onContinueAnyway,
 }: InAppBrowserModalProps) {
   const { language } = useApp();
   const [copied, setCopied] = useState(false);
@@ -140,27 +138,15 @@ export default function InAppBrowserModal({
             )}
           </button>
 
-          {/* Dismiss / Continue anyway */}
-          <div className="flex items-center justify-between text-xs pt-1">
+          {/* Dismiss button */}
+          <div className="flex items-center justify-center pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors"
+              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 font-medium py-1.5 px-5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
             >
               {language === 'bn' ? 'বন্ধ করুন' : 'Close'}
             </button>
-            {onContinueAnyway && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onContinueAnyway();
-                }}
-                className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
-              >
-                {language === 'bn' ? 'লগইন টেস্ট মোড দিয়ে চেষ্টা করুন' : 'Try Test Mode Login'}
-              </button>
-            )}
           </div>
         </div>
 

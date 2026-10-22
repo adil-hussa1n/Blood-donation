@@ -29,16 +29,8 @@ export async function googleAdminLogin(req: Request, res: Response): Promise<voi
     }
   }
 
-  // 2. Fallback to provided user object (supports dev / testing)
-  if (!email && user) {
-    email = String(user.email || '').toLowerCase().trim();
-    googleId = user.sub || user.google_id || '';
-    name = user.name || '';
-    avatarUrl = user.picture || user.avatar_url || '';
-  }
-
-  if (!email) {
-    res.status(400).json({ success: false, error: { message: 'Invalid Google authentication payload: no email found.' } });
+  if (!email || !googleId) {
+    res.status(401).json({ success: false, error: { message: 'Invalid Google authentication payload: valid Google token required.' } });
     return;
   }
 

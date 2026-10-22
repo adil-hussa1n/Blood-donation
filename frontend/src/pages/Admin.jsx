@@ -462,8 +462,6 @@ export default function Admin() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState('');
   const [hasRenderedGoogleBtn, setHasRenderedGoogleBtn] = useState(false);
-  const [showSimModal, setShowSimModal] = useState(false);
-  const [simEmail, setSimEmail] = useState('adilh5353@gmail.com');
   const googleBtnRef = useRef(null);
 
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
@@ -525,29 +523,6 @@ export default function Admin() {
       }
     } catch (err) {
       setGoogleError(err.message || 'Google sign-in failed.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  const handleSimulatedGoogleSubmit = async (e) => {
-    e.preventDefault();
-    setGoogleLoading(true);
-    setGoogleError('');
-    setShowSimModal(false);
-    try {
-      const res = await loginAdminWithGoogle({
-        user: {
-          email: simEmail.trim().toLowerCase(),
-          name: 'Adil Hussain (Admin)',
-          sub: 'google_admin_simulated',
-        }
-      });
-      if (!res.success) {
-        setGoogleError(res.error?.message || `Access Denied: The Google account (${simEmail}) is not authorized as an administrator.`);
-      }
-    } catch (err) {
-      setGoogleError(err.message || 'Google authentication failed.');
     } finally {
       setGoogleLoading(false);
     }
@@ -832,9 +807,13 @@ export default function Admin() {
                 disabled={googleLoading}
                 onClick={() => {
                   if (window.google?.accounts?.id && isRealGoogleConfigured) {
-                    window.google.accounts.id.prompt();
+                    window.google.accounts.id.prompt((notification) => {
+                      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                        setGoogleError('Google sign-in popup was closed or blocked. Please allow popups or try again.');
+                      }
+                    });
                   } else {
-                    setShowSimModal(true);
+                    setGoogleError('Google Sign-In is initializing. Please try again in a moment.');
                   }
                 }}
                 className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-2xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 hover:border-red-500/40 dark:hover:border-red-500/40 text-slate-800 dark:text-white font-bold text-xs shadow-xs hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
@@ -863,68 +842,6 @@ export default function Admin() {
             )}
           </div>
         </div>
-
-        {/* Development / Testing Google Auth Modal */}
-        {showSimModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in text-left">
-            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl animate-scale-up">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
-                    <Shield className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">Admin Google Sign-In</h3>
-                    <p className="text-[10px] text-slate-400 dark:text-zinc-500">Test or verify admin authorization</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSimModal(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleSimulatedGoogleSubmit} className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
-                    Google Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={simEmail}
-                    onChange={(e) => setSimEmail(e.target.value)}
-                    placeholder="e.g. adilh5353@gmail.com"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-red-500"
-                  />
-                  <p className="text-[10px] text-slate-400 dark:text-zinc-500">
-                    Pre-set with authorized admin email. Try entering another email to test unauthorized rejection.
-                  </p>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowSimModal(false)}
-                    className="flex-1 py-2 px-3 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={googleLoading}
-                    className="flex-1 py-2 px-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {googleLoading ? 'Verifying...' : 'Authorize Admin'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
