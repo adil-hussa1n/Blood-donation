@@ -4,6 +4,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sun, Moon, Menu, X, Heart, UserPlus, Flame, Shield, Database, Languages, ExternalLink, LucideIcon, ChevronRight, LogOut, User, Bell, BellOff, BellRing, Wrench, AlertOctagon, RotateCw } from 'lucide-react';
 import { useApp, isDefaultLetterAvatar } from '../context/AppContext';
 import DonorWarningAlertModal from './DonorWarningAlertModal';
+import InAppBrowserModal from './InAppBrowserModal';
+import { detectInAppBrowser, getAndroidChromeIntentUrl } from '../utils/browser';
 
 interface NavigationItem {
   nameKey: string;
@@ -37,6 +39,16 @@ export default function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMenuAnimKey, setMobileMenuAnimKey] = useState(0);
   const location = useLocation();
+
+  // In-App Browser (Messenger/FB/Instagram) State
+  const [showIabModal, setShowIabModal] = useState(false);
+  const [dismissedIabBanner, setDismissedIabBanner] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('dismissed_iab_banner') === 'true';
+    }
+    return false;
+  });
+  const browserInfo = React.useMemo(() => detectInAppBrowser(), []);
 
   const headerRef = React.useRef<HTMLElement | null>(null);
 
@@ -117,6 +129,51 @@ export default function Layout({ children }: LayoutProps) {
         <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-1.5 backdrop-blur-sm">
           <Database className="w-3.5 h-3.5" />
           <span>Demo Mode Enabled: Data is saved locally in your browser. Start backend server to connect to MySQL.</span>
+        </div>
+      )}
+
+      {/* Top Banner for In-App Browser (Messenger / Facebook / Instagram) */}
+      {browserInfo.isInApp && !dismissedIabBanner && (
+        <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white text-xs sm:text-sm py-2 px-3 sm:px-4 shadow-md flex items-center justify-between gap-2 z-50">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <span className="text-sm shrink-0">📱</span>
+            <span className="text-[11px] sm:text-xs font-medium truncate">
+              {language === 'bn' 
+                ? `${browserInfo.appName || 'মেসেঞ্জার'}-এ দেখছেন। পূর্ণ সুবিধা ও গুগল সাইন-ইনের জন্য ক্রোম বা সাফারিতে খুলুন।` 
+                : `Viewing inside ${browserInfo.appName || 'Messenger'}. Open in Chrome or Safari for full Google Sign-In.`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {browserInfo.isAndroid ? (
+              <a
+                href={getAndroidChromeIntentUrl()}
+                className="inline-flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-[11px] sm:text-xs font-bold px-2.5 py-1 rounded-full border border-white/30 transition-all active:scale-95"
+              >
+                <span>{language === 'bn' ? 'ক্রোমে খুলুন' : 'Open in Chrome'}</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowIabModal(true)}
+                className="inline-flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-[11px] sm:text-xs font-bold px-2.5 py-1 rounded-full border border-white/30 transition-all active:scale-95 cursor-pointer"
+              >
+                <span>{language === 'bn' ? 'কীভাবে খুলবেন' : 'How to Open'}</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setDismissedIabBanner(true);
+                sessionStorage.setItem('dismissed_iab_banner', 'true');
+              }}
+              className="p-1 text-white/70 hover:text-white rounded transition-colors cursor-pointer"
+              aria-label="Dismiss banner"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -523,6 +580,10 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </footer>
       <DonorWarningAlertModal />
+      <InAppBrowserModal
+        isOpen={showIabModal}
+        onClose={() => setShowIabModal(false)}
+      />
     </div>
   );
 }

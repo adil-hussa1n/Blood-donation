@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
+import { detectInAppBrowser } from '../utils/browser';
+import InAppBrowserModal from './InAppBrowserModal';
 
 interface GoogleAuthButtonProps {
   mode: 'login' | 'register';
@@ -23,15 +25,25 @@ export default function GoogleAuthButton({
   const { loginDonorWithGoogle, t, language } = useApp();
   const [loading, setLoading] = useState(false);
   const [showSimModal, setShowSimModal] = useState(false);
+  const [showInAppModal, setShowInAppModal] = useState(false);
   const [simName, setSimName] = useState('Adil Hussain');
   const [simEmail, setSimEmail] = useState('adilhussa1n.dev@gmail.com');
   const googleBtnContainerRef = useRef<HTMLDivElement>(null);
   const [hasRenderedGoogleBtn, setHasRenderedGoogleBtn] = useState(false);
 
+  const browserInfo = detectInAppBrowser();
   const clientId = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '';
   const isRealGoogleConfigured = clientId && clientId.trim() !== '' && !clientId.includes('YOUR_GOOGLE_CLIENT_ID');
 
   useEffect(() => {
+    // If user is inside an in-app browser like Messenger or Facebook, DO NOT render Google's iframe button.
+    // Google strictly blocks authentication inside WebViews and Messenger sandboxing breaks popup communication,
+    // causing a blank white page. We keep hasRenderedGoogleBtn as false so our safe branded button is shown.
+    if (browserInfo.isInApp) {
+      setHasRenderedGoogleBtn(false);
+      return;
+    }
+
     // If real Google Client ID is configured, initialize Google Identity Services
     if (isRealGoogleConfigured && typeof window !== 'undefined') {
       const initGsi = () => {
@@ -77,7 +89,7 @@ export default function GoogleAuthButton({
         return () => clearInterval(interval);
       }
     }
-  }, [clientId, isRealGoogleConfigured, mode]);
+  }, [clientId, isRealGoogleConfigured, mode, browserInfo.isInApp]);
 
   const handleGoogleCredential = async (credential: string) => {
     setLoading(true);
@@ -97,6 +109,12 @@ export default function GoogleAuthButton({
 
   const handleButtonClick = () => {
     if (disabled || loading) return;
+
+    // Intercept in-app browser to prevent Google's blank screen / disallowed_useragent error
+    if (browserInfo.isInApp) {
+      setShowInAppModal(true);
+      return;
+    }
 
     if (isRealGoogleConfigured && (window as any).google?.accounts?.id) {
       // Trigger native Google prompt
@@ -179,8 +197,21 @@ export default function GoogleAuthButton({
           </svg>
 
           <span>{loading ? 'Connecting Google...' : label}</span>
+
+          {browserInfo.isInApp && (
+            <span className="text-[10px] bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 font-bold px-2 py-0.5 rounded-full border border-amber-500/20 ml-auto sm:ml-1">
+              {browserInfo.appName || 'In-App'}
+            </span>
+          )}
         </button>
       )}
+
+      {/* In-App Browser Guidance Modal (Prevents blank white page when clicking inside Messenger/FB) */}
+      <InAppBrowserModal
+        isOpen={showInAppModal}
+        onClose={() => setShowInAppModal(false)}
+        onContinueAnyway={() => setShowSimModal(true)}
+      />
 
       {/* Simulated Google Sign-In Modal (Active when no VITE_GOOGLE_CLIENT_ID is set in .env) */}
       {showSimModal && typeof document !== 'undefined' && createPortal(
