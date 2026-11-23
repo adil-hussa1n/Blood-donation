@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import QRCode from 'qrcode';
 import {
   X,
   Download,
@@ -78,12 +79,35 @@ export default function DonorCardModal({ donor, onClose }) {
     return () => { mounted = false; };
   }, []);
 
-  if (!donor) return null;
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
 
-  const district = getDistrictBadge(donor.area, language);
-  const cardId = `BD-${(donor.id || 'DONOR').replace(/-/g, '').slice(0, 8).toUpperCase()}`;
-  const qrVerificationUrl = `https://donors.daruntech.com/?donor=${donor.id || ''}`;
-  const qrImageSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrVerificationUrl)}&color=0f172a&bgcolor=ffffff`;
+  const district = donor ? getDistrictBadge(donor.area, language) : '';
+  const cardId = `BD-${((donor && donor.id) || 'DONOR').replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+  const qrVerificationUrl = `https://donors.daruntech.com/?donor=${(donor && donor.id) || ''}`;
+
+  useEffect(() => {
+    if (!donor) return;
+    let active = true;
+    const url = `https://donors.daruntech.com/?donor=${donor.id || ''}`;
+    QRCode.toDataURL(url, {
+      width: 256,
+      margin: 1,
+      color: { dark: '#0f172a', light: '#ffffff' },
+      errorCorrectionLevel: 'M'
+    }).then((dataUrl) => {
+      if (active) setQrCodeDataUrl(dataUrl);
+    }).catch((err) => {
+      console.warn('Local QR generation error, using fallback:', err);
+      if (active) {
+        setQrCodeDataUrl(`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}&color=0f172a&bgcolor=ffffff`);
+      }
+    });
+    return () => { active = false; };
+  }, [donor?.id]);
+
+  const qrImageSrc = qrCodeDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrVerificationUrl)}&color=0f172a&bgcolor=ffffff`;
+
+  if (!donor) return null;
 
   const handleFlip = () => {
     setIsFlipping(true);
@@ -336,8 +360,15 @@ export default function DonorCardModal({ donor, onClose }) {
           ctx.fillStyle = '#0f172a';
           ctx.font = '700 12px monospace';
           ctx.textAlign = 'center';
-          ctx.fillText(cardConfig.qr_label || 'SCAN TO VERIFY', 160, 240);
-          ctx.fillText(cardId, 160, 390);
+          ctx.fillText(cardConfig.qr_label || 'SCAN TO VERIFY', 160, 235);
+          if (qrCodeDataUrl) {
+            try {
+              const qrImg = new Image();
+              qrImg.src = qrCodeDataUrl;
+              ctx.drawImage(qrImg, 95, 245, 130, 130);
+            } catch (e) {}
+          }
+          ctx.fillText(cardId, 160, 395);
         }
 
         ctx.textAlign = 'left';
@@ -423,8 +454,23 @@ export default function DonorCardModal({ donor, onClose }) {
       <style>{`
         @media print {
           @page {
-            size: landscape;
-            margin: 8mm !important;
+            size: A4 portrait;
+            margin: 8mm 10mm;
+          }
+          *, *::before, *::after {
+            box-sizing: border-box !important;
+          }
+          html, body {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 100% !important;
+            overflow: visible !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           body > *:not(#donor-card-modal-overlay),
           #root,
@@ -434,25 +480,28 @@ export default function DonorCardModal({ donor, onClose }) {
           main {
             display: none !important;
           }
-          body {
-            background: #0f172a !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: visible !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
           #donor-card-modal-overlay {
             position: static !important;
-            display: block !important;
-            background: transparent !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            background: #ffffff !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
             padding: 0 !important;
-            margin: 0 !important;
+            margin: 0 auto !important;
             width: 100% !important;
+            max-width: 100% !important;
             height: auto !important;
             overflow: visible !important;
+            box-shadow: none !important;
+          }
+          #donor-card-modal-overlay > div {
+            margin: 0 auto !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 136mm !important;
           }
           .donor-card-screen-only {
             display: none !important;
@@ -461,22 +510,29 @@ export default function DonorCardModal({ donor, onClose }) {
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
-            justify-content: center !important;
-            gap: 12mm !important;
+            justify-content: flex-start !important;
             width: 100% !important;
+            max-width: 136mm !important;
             margin: 0 auto !important;
-            padding: 4mm 0 !important;
+            padding: 0 !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            page-break-after: avoid !important;
+            page-break-before: avoid !important;
           }
           .donor-card-print-item {
             display: flex !important;
-            width: 155mm !important;
-            max-width: 100% !important;
+            width: 136mm !important;
+            max-width: 136mm !important;
             aspect-ratio: 1.58 / 1 !important;
-            break-inside: avoid !important;
             page-break-inside: avoid !important;
+            break-inside: avoid !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            border-radius: 16px !important;
+            border-width: 2px !important;
             box-shadow: none !important;
+            overflow: hidden !important;
           }
         }
       `}</style>
@@ -740,10 +796,36 @@ export default function DonorCardModal({ donor, onClose }) {
         {/* ============================================================== */}
         {/* PRINT ONLY: CLEAN DUAL-SIDED (FRONT & BACK) FOR PDF & PRINT    */}
         {/* ============================================================== */}
-        <div className="donor-card-print-container hidden print:flex flex-col items-center gap-8 w-full">
+        <div className="donor-card-print-container hidden print:flex flex-col items-center w-full max-w-[136mm] mx-auto text-slate-900">
+
+          {/* --- PRINT SHEET HEADER --- */}
+          <div className="w-[136mm] mb-2 pb-1.5 border-b border-slate-300 flex items-center justify-between text-slate-700">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-md bg-red-600 flex items-center justify-center text-white text-[10px] font-black">
+                ♥
+              </div>
+              <div className="text-left">
+                <span className="font-black text-[11px] tracking-wide uppercase text-slate-900 block leading-tight">
+                  Darun Donors • Voluntary Life Saver Identity
+                </span>
+                <span className="text-[8px] text-slate-500 font-semibold block leading-tight">
+                  Sylhet Emergency Blood Network • Verified Registry
+                </span>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[9px] font-mono font-bold text-slate-800 block">
+                CARD ID: {cardId}
+              </span>
+              <span className="text-[7.5px] text-slate-500 block font-mono">
+                ISSUED: 12/{expiryYear - 3 || 2026} • VALID: 12/{expiryYear}
+              </span>
+            </div>
+          </div>
+
           {/* --- FRONT SIDE FOR PRINT --- */}
           <div
-            className={`donor-card-print-item relative w-full aspect-[1.58/1] rounded-3xl p-6 border-2 bg-gradient-to-br ${themeStyle.frontGradient} text-white flex flex-col justify-between overflow-hidden`}
+            className={`donor-card-print-item relative w-[136mm] aspect-[1.58/1] rounded-2xl p-5 border-2 bg-gradient-to-br ${themeStyle.frontGradient} text-white flex flex-col justify-between overflow-hidden shadow-none`}
             style={{ borderColor: themeStyle.accent }}
           >
             {/* Top Accent Ribbon */}
@@ -751,43 +833,43 @@ export default function DonorCardModal({ donor, onClose }) {
 
             {/* Top Row: Logo & Brand Header */}
             <div className="flex items-center justify-between relative z-10 gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-white p-1.5 border border-white/20 flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-white p-1 border border-white/20 flex items-center justify-center shrink-0">
                   <img src="/logo.png" alt="Darun Donors Logo" className="w-full h-full object-contain" />
                 </div>
                 <div className="text-left space-y-0.5 min-w-0">
-                  <h3 className="text-xl font-black tracking-wide uppercase text-white truncate">
+                  <h3 className="text-base font-black tracking-wide uppercase text-white truncate leading-tight">
                     {cardConfig.card_title || 'DARUN DONORS'}
                   </h3>
-                  <span className="text-xs text-slate-300 font-semibold block tracking-wide truncate">
+                  <span className="text-[10px] text-slate-300 font-semibold block tracking-wide truncate">
                     {cardConfig.card_subtitle || 'Sylhet Emergency Blood Network'}
                   </span>
                 </div>
               </div>
 
               {/* Top Right Lifesaver Seal */}
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl ${themeStyle.badgeBg} border shrink-0`}>
-                <Award className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="text-xs font-black tracking-wider uppercase">
+              <div className={`flex items-center gap-1 px-2.5 py-1 rounded-lg ${themeStyle.badgeBg} border shrink-0`}>
+                <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="text-[10px] font-black tracking-wider uppercase">
                   {cardConfig.badge_text || 'Life Saver'}
                 </span>
               </div>
             </div>
 
             {/* Middle Row: Name, ID, Blood Group Crest */}
-            <div className="flex items-center justify-between gap-4 my-auto py-2 relative z-10">
-              <div className="space-y-1 min-w-0 pr-2">
-                <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold block">
+            <div className="flex items-center justify-between gap-3 my-auto py-1 relative z-10">
+              <div className="space-y-0.5 min-w-0 pr-2 text-left">
+                <span className="text-[8.5px] uppercase tracking-widest text-slate-400 font-bold block">
                   {cardConfig.front_tag_label || 'Registered Life Saver'}
                 </span>
-                <h2 className="text-2xl font-black text-white tracking-tight truncate">
+                <h2 className="text-xl font-black text-white tracking-tight truncate leading-tight">
                   {donor.name}
                 </h2>
-                <div className="flex items-center gap-2 font-mono text-xs text-sky-400 font-bold">
+                <div className="flex items-center gap-2 font-mono text-[10px] text-sky-400 font-bold">
                   <span>ID: {cardId}</span>
                   <span className="text-slate-600">•</span>
                   <span className="text-emerald-400 flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                    <ShieldCheck className="w-3 h-3 shrink-0" />
                     {cardConfig.verified_status_text || 'Verified Voluntary Donor'}
                   </span>
                 </div>
@@ -795,11 +877,11 @@ export default function DonorCardModal({ donor, onClose }) {
 
               {/* Blood Group Emblem */}
               <div className="relative shrink-0 flex items-center justify-center">
-                <div className={`w-18 h-18 rounded-2xl bg-gradient-to-br ${themeStyle.crestGradient} border-2 flex flex-col items-center justify-center text-white ring-4 ${themeStyle.crestRing}`}>
-                  <span className="text-[8px] font-bold uppercase tracking-widest text-white/80">
+                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${themeStyle.crestGradient} border-2 flex flex-col items-center justify-center text-white ring-2 ${themeStyle.crestRing}`}>
+                  <span className="text-[7.5px] font-bold uppercase tracking-widest text-white/80 leading-none">
                     {cardConfig.blood_group_label || 'Group'}
                   </span>
-                  <span className="text-3xl font-black leading-none mt-0.5 tracking-tight">
+                  <span className="text-2xl font-black leading-none mt-0.5 tracking-tight">
                     {donor.blood_group}
                   </span>
                 </div>
@@ -807,37 +889,37 @@ export default function DonorCardModal({ donor, onClose }) {
             </div>
 
             {/* Bottom Row: 3-column stats & hotline */}
-            <div className="relative z-10 pt-2 border-t border-slate-800">
-              <div className="grid grid-cols-3 gap-3 text-left">
+            <div className="relative z-10 pt-1.5 border-t border-slate-800">
+              <div className="grid grid-cols-3 gap-2 text-left">
                 <div className="min-w-0">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider">
+                  <span className="text-[8px] text-slate-400 font-bold uppercase block tracking-wider leading-tight">
                     {cardConfig.district_label || 'District / Area'}
                   </span>
-                  <strong className="text-sm font-bold text-slate-200 block truncate">
+                  <strong className="text-xs font-bold text-slate-200 block truncate">
                     {donor.area || 'Sylhet'}
                   </strong>
                 </div>
 
                 <div className="min-w-0">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider">
+                  <span className="text-[8px] text-slate-400 font-bold uppercase block tracking-wider leading-tight">
                     {cardConfig.donations_label || 'Total Donations'}
                   </span>
-                  <strong className="text-sm font-bold text-amber-400 block truncate">
+                  <strong className="text-xs font-bold text-amber-400 block truncate">
                     {t('timesUnit', { count: donor.total_donations || 1 })}
                   </strong>
                 </div>
 
                 <div className="min-w-0">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider">
+                  <span className="text-[8px] text-slate-400 font-bold uppercase block tracking-wider leading-tight">
                     {cardConfig.valid_thru_label || 'Valid Thru'}
                   </span>
-                  <strong className="text-sm font-bold text-sky-300 block truncate font-mono">
+                  <strong className="text-xs font-bold text-sky-300 block truncate font-mono">
                     12/{expiryYear}
                   </strong>
                 </div>
               </div>
 
-              <div className="mt-2.5 pt-1.5 flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-800/60">
+              <div className="mt-1.5 pt-1 flex items-center justify-between text-[8px] text-slate-400 border-t border-slate-800/60">
                 <span className="truncate pr-2">
                   {cardConfig.front_notes || 'Verified voluntary blood donor dedicated to saving human lives.'}
                 </span>
@@ -848,48 +930,58 @@ export default function DonorCardModal({ donor, onClose }) {
             </div>
           </div>
 
+          {/* --- CUTTING & FOLDING GUIDE --- */}
+          <div className="w-[136mm] my-2 py-1 flex items-center justify-between text-[8px] font-mono text-slate-500 border-t border-b border-dashed border-slate-300">
+            <span className="flex items-center gap-1 font-semibold text-slate-600">
+              ✂ Cut or fold along this line to assemble dual-sided wallet card
+            </span>
+            <span className="text-slate-400 font-bold uppercase tracking-wider text-[7px]">
+              Standard ID Card Size (85.6mm × 54mm)
+            </span>
+          </div>
+
           {/* --- BACK SIDE FOR PRINT --- */}
           <div
-            className={`donor-card-print-item relative w-full aspect-[1.58/1] rounded-3xl p-6 border-2 bg-gradient-to-br ${themeStyle.backGradient} text-white flex flex-col justify-between overflow-hidden`}
+            className={`donor-card-print-item relative w-[136mm] aspect-[1.58/1] rounded-2xl p-5 border-2 bg-gradient-to-br ${themeStyle.backGradient} text-white flex flex-col justify-between overflow-hidden shadow-none`}
             style={{ borderColor: themeStyle.accent }}
           >
             {/* Magnetic Stripe Strip Emulation */}
             {(cardConfig.show_magnetic_strip !== 0 && cardConfig.show_magnetic_strip !== false) && (
-              <div className="absolute top-5 inset-x-0 h-10 bg-black border-y border-slate-800 flex items-center px-6">
-                <div className="w-full flex items-center justify-between opacity-40 text-[8px] font-mono tracking-widest text-slate-400">
+              <div className="absolute top-3.5 inset-x-0 h-8 bg-black border-y border-slate-800 flex items-center px-5">
+                <div className="w-full flex items-center justify-between opacity-40 text-[7px] font-mono tracking-widest text-slate-400">
                   <span className="truncate">{cardConfig.security_strip_text || 'DARUN DONORS DIGITAL SECURITY STRIP • VERIFIED VOLUNTARY REGISTRY'}</span>
                 </div>
               </div>
             )}
 
             {/* Middle Content: QR Verification + Terms & Conditions */}
-            <div className={`${(cardConfig.show_magnetic_strip !== 0 && cardConfig.show_magnetic_strip !== false) ? 'mt-12' : 'mt-4'} flex items-center gap-4 relative z-10 my-auto`}>
+            <div className={`${(cardConfig.show_magnetic_strip !== 0 && cardConfig.show_magnetic_strip !== false) ? 'mt-10' : 'mt-2'} flex items-center gap-3 relative z-10 my-auto`}>
               {showQrOnCard && (
-                <div className="w-24 shrink-0 p-2 rounded-2xl bg-white text-slate-900 shadow-md flex flex-col items-center justify-center space-y-1">
+                <div className="w-20 shrink-0 p-1.5 rounded-xl bg-white text-slate-900 shadow-sm flex flex-col items-center justify-center space-y-0.5">
                   <img
                     src={qrImageSrc}
                     alt="Verification QR"
-                    className="w-20 h-20 object-contain rounded-lg"
+                    className="w-16 h-16 object-contain rounded-md"
                   />
-                  <span className="text-[7px] font-mono font-bold tracking-tight text-slate-700">
+                  <span className="text-[6.5px] font-mono font-bold tracking-tight text-slate-700">
                     {cardConfig.qr_label || 'SCAN TO VERIFY'}
                   </span>
                 </div>
               )}
 
-              <div className="space-y-1.5 text-left min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-amber-400">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <h4 className="text-xs font-black uppercase tracking-wider">
+              <div className="space-y-1 text-left min-w-0 flex-1">
+                <div className="flex items-center gap-1 text-amber-400">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <h4 className="text-[10px] font-black uppercase tracking-wider">
                     {cardConfig.back_guidelines_title || (language === 'bn' ? 'ব্যবহারবিধি ও পার্টনার সুবিধা' : 'Guidelines & Partner Benefits')}
                   </h4>
                 </div>
 
-                <p className="text-[10px] text-slate-300 leading-relaxed font-normal whitespace-pre-line">
+                <p className="text-[8.5px] text-slate-300 leading-relaxed font-normal whitespace-pre-line">
                   {cardConfig.back_terms || '1. Non-transferable voluntary donor identity.\n2. Present this card or QR code to claim partner benefits.\n3. Clinical cooldown of 90 days applies between whole blood donations.\n4. Always verify medical eligibility before transfusion.'}
                 </p>
 
-                <div className="pt-1.5 flex items-center justify-between border-t border-slate-800 text-[9px] text-slate-400">
+                <div className="pt-1 flex items-center justify-between border-t border-slate-800 text-[8px] text-slate-400">
                   <span className="text-slate-300">
                     {cardConfig.issued_by_label ? `${cardConfig.issued_by_label} ` : 'Issued by: '}<strong className="text-white">{cardConfig.issue_org || ''}</strong>
                   </span>
@@ -901,23 +993,30 @@ export default function DonorCardModal({ donor, onClose }) {
             </div>
 
             {/* Back Footer Sponsor Strip */}
-            <div className="relative z-10 pt-2 border-t border-slate-800">
-              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-2">
+            <div className="relative z-10 pt-1.5 border-t border-slate-800">
+              <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <Tag className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="text-[10px] font-bold text-amber-300 truncate">
+                  <Tag className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span className="text-[8.5px] font-bold text-amber-300 truncate">
                     {offers.length > 0
                       ? `${offers[0].sponsor_name}: ${offers[0].discount_text} (${offers[0].title})`
                       : (cardConfig.footer_sponsor_text || 'Partner discounts valid at recognized diagnostic centers and clinics in Sylhet.')
                     }
                   </span>
                 </div>
-                <span className="text-[9px] font-bold text-amber-400/90 font-mono">
+                <span className="text-[7.5px] font-bold text-amber-400/90 font-mono">
                   PARTNER PRIVILEGES
                 </span>
               </div>
             </div>
           </div>
+
+          {/* --- PRINT SHEET FOOTER --- */}
+          <div className="w-[136mm] mt-2 pt-1 border-t border-slate-300 flex items-center justify-between text-[8px] text-slate-500 font-mono">
+            <span>Digital Verification: {qrVerificationUrl}</span>
+            <span>Helpline: {cardConfig.emergency_hotline || '+880 1700-000000'}</span>
+          </div>
+
         </div>
 
         {/* ============================================================== */}

@@ -436,48 +436,6 @@ export async function initDatabase() {
       ) ENGINE=InnoDB;
     `);
 
-    // Seed initial sponsorship offers if table is empty
-    const [offerRows]: any = await dbConn.query('SELECT id FROM donor_card_offers LIMIT 1');
-    if (!offerRows || offerRows.length === 0) {
-      await dbConn.query(`
-        INSERT INTO donor_card_offers (id, sponsor_name, title, discount_text, description, promo_code, valid_until, category, is_active)
-        VALUES 
-        (
-          'offer-1',
-          'Popular Diagnostic Centre',
-          'Full Blood & Health Checkup Package',
-          '25% OFF',
-          'Special discount for registered voluntary donors on CBC, Serum Ferritin, and screening profiles.',
-          'DARUNHEALTH25',
-          'Dec 31, 2026',
-          'diagnostic',
-          1
-        ),
-        (
-          'offer-2',
-          'Sylhet Eye Hospital & Laser',
-          'Free Consultation & Eye Checkup',
-          '100% FREE',
-          'Complimentary comprehensive vision screening and consultation upon presenting this card.',
-          'DARUNEYE',
-          'Dec 31, 2026',
-          'consultation',
-          1
-        ),
-        (
-          'offer-3',
-          'MedLife Pharmacy Network',
-          'Prescription Medicines & First Aid',
-          '12% OFF',
-          'Instant flat discount on all essential medicines and first-aid kits across Sylhet branches.',
-          'DARUNMED12',
-          'Dec 31, 2026',
-          'pharmacy',
-          1
-        )
-      `);
-    }
-
     // 13. Donor Alerts & Warnings (Admin Disciplinary & Availability Notices)
     await dbConn.query(`
       CREATE TABLE IF NOT EXISTS donor_warnings (
@@ -519,7 +477,13 @@ export async function initDatabase() {
           '01965758903', '01927566808', '01335306976', '01745485364'
         ) OR name IN ('Keya Ali', 'Hasan Hasan', 'Sadia Kazi', 'Mariam Kazi', 'Sujon Sheikh');
       `);
-      console.log('🧹 Cleaned up mock donors and test emergency requests from database.');
+      await dbConn.query(`
+        DELETE FROM donor_card_offers 
+        WHERE id IN ('offer-1', 'offer-2', 'offer-3') 
+           OR promo_code IN ('DARUNHEALTH25', 'DARUNEYE', 'DARUNMED12')
+           OR sponsor_name IN ('Popular Diagnostic Centre', 'Sylhet Eye Hospital & Laser', 'MedLife Pharmacy Network');
+      `);
+      console.log('🧹 Cleaned up mock donors, test emergency requests, and mock sponsorship offers from database.');
     } catch (cleanupErr: any) {
       console.warn('Mock cleanup note:', cleanupErr.message);
     }

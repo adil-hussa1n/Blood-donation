@@ -55,6 +55,7 @@ app.use(
           'https://*.google.com',
           'https://*.doubleclick.net',
           'https://*.googlesyndication.com',
+          'https://api.qrserver.com',
         ],
         connectSrc: ["'self'", 'https:', 'http://localhost:*', 'ws:', 'wss:'],
         frameSrc: [

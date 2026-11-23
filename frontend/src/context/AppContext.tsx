@@ -923,7 +923,6 @@ export const TRANSLATIONS = {
     enableAlertsButton: 'Enable Emergency Alerts',
     alertsActiveButton: 'Alerts Active',
     notificationTestSent: 'A test emergency blood alert has been triggered!',
-    testAlertButton: 'Send Test Alert',
     notificationsIosPwaTip: 'On iPhone, tap Safari Share (square with arrow) and select "Add to Home Screen" to receive push notifications.',
   },
   bn: {
@@ -1412,7 +1411,6 @@ export const TRANSLATIONS = {
     enableAlertsButton: 'নোটিফিকেশন চালু করুন',
     alertsActiveButton: 'নোটিফিকেশন চালু আছে',
     notificationTestSent: 'একটি পরীক্ষামূলক জরুরি রক্তের নোটিফিকেশন পাঠানো হয়েছে!',
-    testAlertButton: 'টেস্ট নোটিফিকেশন পাঠান',
     notificationsIosPwaTip: 'আইফোনে (iPhone) পুশ নোটিফিকেশন পেতে সাফারি ব্রাউজারের শেয়ার আইকন (তীরসহ চারকোণা) চেপে "Add to Home Screen" নির্বাচন করুন।',
   }
 };
@@ -1563,6 +1561,28 @@ const isMockDonor = (donor: any): boolean => {
   if (mockPhones.includes(phone)) return true;
   if (['keya ali', 'hasan hasan', 'sadia kazi', 'mariam kazi', 'sujon sheikh'].includes(name)) return true;
   return false;
+};
+
+// Helper to check if two donor objects have identical meaningful fields
+const isDonorEqual = (a: any, b: any) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.id === b.id &&
+    a.name === b.name &&
+    a.phone === b.phone &&
+    a.blood_group === b.blood_group &&
+    a.area === b.area &&
+    a.occupation === b.occupation &&
+    a.institute === b.institute &&
+    a.student_id === b.student_id &&
+    Boolean(a.is_available) === Boolean(b.is_available) &&
+    Boolean(a.hide_photo) === Boolean(b.hide_photo) &&
+    a.last_donation_date === b.last_donation_date &&
+    (a.total_donations ?? 0) === (b.total_donations ?? 0) &&
+    (a.lifetime_donation_count ?? 0) === (b.lifetime_donation_count ?? 0) &&
+    a.avatar_url === b.avatar_url
+  );
 };
 
 export const AppProvider = ({ children }) => {
@@ -1726,7 +1746,11 @@ export const AppProvider = ({ children }) => {
         const cached = localStorage.getItem('bb_donor_session');
         if (cached) {
           const parsed = JSON.parse(cached);
-          setCurrentDonorState(parsed?.donor || null);
+          const nextDonor = parsed?.donor ? normalizeDonor(parsed.donor) : null;
+          setCurrentDonorState((prev: any) => {
+            if (isDonorEqual(prev, nextDonor)) return prev;
+            return nextDonor;
+          });
         } else {
           setCurrentDonorState(null);
         }
@@ -2026,7 +2050,12 @@ export const AppProvider = ({ children }) => {
               if (activeId) {
                 const refreshedSelf = normalizedList.find(d => d.id === activeId || d.phone === session.donor.phone);
                 if (refreshedSelf) {
-                  setCurrentDonorState(refreshedSelf);
+                  setCurrentDonorState((prev: any) => {
+                    if (isDonorEqual(prev, refreshedSelf)) {
+                      return prev;
+                    }
+                    return refreshedSelf;
+                  });
                   localStorage.setItem('bb_donor_session', JSON.stringify({
                     ...session,
                     donor: refreshedSelf,
@@ -2725,7 +2754,7 @@ export const AppProvider = ({ children }) => {
           const unack = res.data.filter((w: any) => !w.is_acknowledged);
           setActiveDonorWarnings(unack);
         }
-      } catch (e) {}
+      } catch (e) { }
     };
 
     fetchUserWarnings();

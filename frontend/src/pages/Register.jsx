@@ -308,6 +308,52 @@ export default function Register() {
     }
   };
 
+  // ----------------------------------------
+  // UPDATE FORM STATE & REFS
+  // ----------------------------------------
+  const [searchPassword, setSearchPassword] = useState('');
+  const [foundDonor, setFoundDonor] = useState(null);
+  const [donorHistory, setDonorHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Profile Edit fields
+  const [editName, setEditName] = useState('');
+  const [editArea, setEditArea] = useState('');
+  const [editOccupation, setEditOccupation] = useState('other');
+  const [editInstitute, setEditInstitute] = useState('');
+  const [editStudentId, setEditStudentId] = useState('');
+  const [editAvailable, setEditAvailable] = useState(true);
+  const [editHidePhoto, setEditHidePhoto] = useState(false);
+
+  // Track initialization and user edit state to prevent reloads/resets during user edits or donation logging
+  const initializedDonorIdRef = useRef(null);
+  const isFormDirtyRef = useRef(false);
+
+  // Pagination for Donation History Log
+  const [historyPage, setHistoryPage] = useState(1);
+  const itemsPerPage = 5;
+
+  // Reset page when lookup occurs or history list updates
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [donorHistory.length]);
+
+  const totalHistoryPages = Math.max(1, Math.ceil(donorHistory.length / itemsPerPage));
+  const paginatedHistory = useMemo(() => {
+    const startIndex = (historyPage - 1) * itemsPerPage;
+    return donorHistory.slice(startIndex, startIndex + itemsPerPage);
+  }, [donorHistory, historyPage]);
+
+  // Add new donation event field
+  const [newDonationDate, setNewDonationDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showDonationConfirmModal, setShowDonationConfirmModal] = useState(false);
+
+  // Account deletion states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePasswordInput, setDeletePasswordInput] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   // Security elements
   const [honeypot, setHoneypot] = useState('');
   const [formLoadTime, setFormLoadTime] = useState(Date.now());
@@ -316,7 +362,7 @@ export default function Register() {
     setFormLoadTime(Date.now());
   }, [activeTab]);
 
-  // Load session from appStorage on mount & sync with currentDonor
+  // Load session from appStorage on mount & sync with currentDonor safely without wiping user edits
   useEffect(() => {
     try {
       const cached = localStorage.getItem('bb_donor_session');
@@ -336,25 +382,58 @@ export default function Register() {
       if (donorData) {
         const donor = normalizeDonor(donorData);
         setFoundDonor(donor);
-        if (password) setSearchPassword(password);
-        setEditName(donor.name);
-        setEditArea(donor.area);
-        setEditOccupation(donor.occupation || 'other');
-        setEditInstitute(donor.institute || '');
-        setEditStudentId(donor.student_id || '');
-        setEditAvailable(donor.is_available);
-        setEditHidePhoto(Boolean(donor.hide_photo));
-        setActiveTab('update');
-        
-        setHistoryLoading(true);
-        dbService.getDonationHistory(donor.id).then((historyRes) => {
-          if (!historyRes.error) {
-            setDonorHistory(historyRes.data || []);
+        if (password && !searchPassword) setSearchPassword(password);
+
+        // Initial mount or switched to a different donor
+        if (initializedDonorIdRef.current !== donor.id) {
+          initializedDonorIdRef.current = donor.id;
+          isFormDirtyRef.current = false;
+          setEditName(donor.name || '');
+          setEditArea(donor.area || 'Sylhet City Corporation');
+          setEditOccupation(donor.occupation || 'other');
+          setEditInstitute(donor.institute || '');
+          setEditStudentId(donor.student_id || '');
+          setEditAvailable(Boolean(donor.is_available));
+          setEditHidePhoto(Boolean(donor.hide_photo));
+          setActiveTab('update');
+
+          setHistoryLoading(true);
+          dbService.getDonationHistory(donor.id).then((historyRes) => {
+            if (!historyRes.error) {
+              setDonorHistory(historyRes.data || []);
+            }
+          }).catch((err) => {
+            console.error("Failed to load donation history:", err);
+          }).finally(() => {
+            setHistoryLoading(false);
+          });
+        } else {
+          // Same donor active: keep donor stats fresh without overwriting user's active form edits
+          if (!isFormDirtyRef.current) {
+            setEditName(prev => prev === donor.name ? prev : (donor.name || ''));
+            setEditArea(prev => prev === donor.area ? prev : (donor.area || 'Sylhet City Corporation'));
+            setEditOccupation(prev => prev === donor.occupation ? prev : (donor.occupation || 'other'));
+            setEditInstitute(prev => prev === donor.institute ? prev : (donor.institute || ''));
+            setEditStudentId(prev => prev === donor.student_id ? prev : (donor.student_id || ''));
+            setEditAvailable(prev => prev === Boolean(donor.is_available) ? prev : Boolean(donor.is_available));
+            setEditHidePhoto(prev => prev === Boolean(donor.hide_photo) ? prev : Boolean(donor.hide_photo));
           }
-          setHistoryLoading(false);
-        }).catch(() => {
-          setHistoryLoading(false);
-        });
+          // Silent background sync of donation history (no spinner flicker)
+          dbService.getDonationHistory(donor.id).then((historyRes) => {
+            if (!historyRes.error && historyRes.data) {
+              setDonorHistory(prev => {
+                if (prev.length === historyRes.data.length &&
+                    prev.every((item, i) => item.id === historyRes.data[i]?.id && item.donation_date === historyRes.data[i]?.donation_date)) {
+                  return prev;
+                }
+                return historyRes.data;
+              });
+            }
+          }).catch(() => {});
+        }
+      } else {
+        initializedDonorIdRef.current = null;
+        isFormDirtyRef.current = false;
       }
     } catch (e) {
       console.error("Failed to restore donor session:", e);
@@ -376,48 +455,6 @@ export default function Register() {
   const [regAvailable, setRegAvailable] = useState(true);
   const [regDob, setRegDob] = useState('');
   const [regAgreeTerms, setRegAgreeTerms] = useState(false);
-
-  // ----------------------------------------
-  // UPDATE FORM STATE
-  // ----------------------------------------
-  const [searchPassword, setSearchPassword] = useState('');
-  const [foundDonor, setFoundDonor] = useState(null);
-  const [donorHistory, setDonorHistory] = useState([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
-
-  // Pagination for Donation History Log
-  const [historyPage, setHistoryPage] = useState(1);
-  const itemsPerPage = 5;
-
-  // Reset page when lookup occurs or history list updates
-  useEffect(() => {
-    setHistoryPage(1);
-  }, [donorHistory.length]);
-
-  const totalHistoryPages = Math.max(1, Math.ceil(donorHistory.length / itemsPerPage));
-  const paginatedHistory = useMemo(() => {
-    const startIndex = (historyPage - 1) * itemsPerPage;
-    return donorHistory.slice(startIndex, startIndex + itemsPerPage);
-  }, [donorHistory, historyPage]);
-
-  // Profile Edit fields
-  const [editName, setEditName] = useState('');
-  const [editArea, setEditArea] = useState('');
-  const [editOccupation, setEditOccupation] = useState('other');
-  const [editInstitute, setEditInstitute] = useState('');
-  const [editStudentId, setEditStudentId] = useState('');
-  const [editAvailable, setEditAvailable] = useState(true);
-  const [editHidePhoto, setEditHidePhoto] = useState(false);
-  
-  // Add new donation event field
-  const [newDonationDate, setNewDonationDate] = useState(new Date().toISOString().split('T')[0]);
-  const [showDonationConfirmModal, setShowDonationConfirmModal] = useState(false);
-
-  // Account deletion states
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deletePasswordInput, setDeletePasswordInput] = useState('');
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // ----------------------------------------
   // ACTIONS: GOOGLE AUTHENTICATION
@@ -657,6 +694,7 @@ export default function Register() {
 
       const res = await updateDonorProfile(foundDonor.id, profileData, searchPassword);
       if (res.success) {
+        isFormDirtyRef.current = false;
         setSuccessMsg(t('profileUpdateSuccess'));
         const updatedDonor = normalizeDonor({
           ...foundDonor,
@@ -710,11 +748,20 @@ export default function Register() {
       if (res.success) {
         setSuccessMsg(t('donationLoggedSuccess'));
         
-        setHistoryLoading(true);
-        const historyRes = await dbService.getDonationHistory(foundDonor.id);
-        if (!historyRes.error) {
-          setDonorHistory(historyRes.data || []);
-        }
+        // Optimistically add to local history without flashing loading spinner
+        const newEvent = {
+          id: res.data?.id || `temp-${Date.now()}`,
+          donor_id: foundDonor.id,
+          donation_date: newDonationDate,
+        };
+        setDonorHistory(prev => [newEvent, ...(prev || [])]);
+
+        // Silent background sync from database
+        dbService.getDonationHistory(foundDonor.id).then((historyRes) => {
+          if (!historyRes.error && historyRes.data) {
+            setDonorHistory(historyRes.data);
+          }
+        }).catch(() => {});
 
         const newCount = getDonorDonationCount(foundDonor) + 1;
         const updatedDonor = normalizeDonor({
@@ -733,13 +780,12 @@ export default function Register() {
           console.error("Failed to sync donor session on log donation:", e);
         }
       } else {
-        setErrorMsg(res.error.message || t('donationLoggedError'));
+        setErrorMsg(res.error?.message || t('donationLoggedError'));
       }
     } catch (err) {
       setErrorMsg(t('unexpectedError'));
     } finally {
       setFormLoading(false);
-      setHistoryLoading(false);
     }
   };
 
@@ -763,6 +809,8 @@ export default function Register() {
       });
 
       if (res.success) {
+        initializedDonorIdRef.current = null;
+        isFormDirtyRef.current = false;
         setShowDeleteModal(false);
         setFoundDonor(null);
         setDonorHistory([]);
@@ -1449,6 +1497,8 @@ export default function Register() {
                   <button
                     type="button"
                     onClick={() => {
+                      initializedDonorIdRef.current = null;
+                      isFormDirtyRef.current = false;
                       localStorage.removeItem('bb_donor_session');
                       setCurrentDonor(null);
                       setFoundDonor(null);
@@ -1816,7 +1866,10 @@ export default function Register() {
                           type="text"
                           required
                           value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
+                          onChange={(e) => {
+                            isFormDirtyRef.current = true;
+                            setEditName(e.target.value);
+                          }}
                           className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white font-medium shadow-xs"
                         />
                       </div>
@@ -1827,7 +1880,10 @@ export default function Register() {
                         </label>
                         <select
                           value={editArea}
-                          onChange={(e) => setEditArea(e.target.value)}
+                          onChange={(e) => {
+                            isFormDirtyRef.current = true;
+                            setEditArea(e.target.value);
+                          }}
                           className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white cursor-pointer font-medium shadow-xs"
                         >
                           {DISTRICT_AREAS.map((district) => (
@@ -1856,6 +1912,7 @@ export default function Register() {
                           <select
                             value={editOccupation}
                             onChange={(e) => {
+                              isFormDirtyRef.current = true;
                               const val = e.target.value;
                               setEditOccupation(val);
                               if (val === 'other') {
@@ -1887,7 +1944,10 @@ export default function Register() {
                             </label>
                             <InstituteAutocomplete
                               value={editInstitute}
-                              onChange={setEditInstitute}
+                              onChange={(val) => {
+                                isFormDirtyRef.current = true;
+                                setEditInstitute(val);
+                              }}
                               placeholder={t('institutePlaceholder')}
                               language={language}
                             />
@@ -1899,7 +1959,10 @@ export default function Register() {
                             <input
                               type="text"
                               value={editStudentId}
-                              onChange={(e) => setEditStudentId(e.target.value)}
+                              onChange={(e) => {
+                                isFormDirtyRef.current = true;
+                                setEditStudentId(e.target.value);
+                              }}
                               placeholder={editOccupation === 'student' ? 'e.g. 2021331001' : 'e.g. FAC-1024'}
                               className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white font-mono"
                             />
@@ -1912,7 +1975,10 @@ export default function Register() {
                           type="checkbox"
                           id="editAvailable"
                           checked={editAvailable}
-                          onChange={(e) => setEditAvailable(e.target.checked)}
+                          onChange={(e) => {
+                            isFormDirtyRef.current = true;
+                            setEditAvailable(e.target.checked);
+                          }}
                           className="w-5 h-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                         />
                         <label htmlFor="editAvailable" className="cursor-pointer select-none">
@@ -1932,7 +1998,10 @@ export default function Register() {
                             type="checkbox"
                             id="editHidePhoto"
                             checked={editHidePhoto}
-                            onChange={(e) => setEditHidePhoto(e.target.checked)}
+                            onChange={(e) => {
+                              isFormDirtyRef.current = true;
+                              setEditHidePhoto(e.target.checked);
+                            }}
                             className="w-5 h-5 mt-0.5 rounded-md border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
                           />
                           <label htmlFor="editHidePhoto" className="cursor-pointer select-none flex-1">
